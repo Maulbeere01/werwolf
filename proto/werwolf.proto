@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package werewolf;
+
+import "google/protobuf/empty.proto";
+
+option java_multiple_files = true;
+option java_package = "com.uni.werewolf.grpc";
+
+/* * auth:
+    - user_id is not sent in request messages
+    - the client attaches the login token to gRPC metadata for every call
+    - server-side interceptor validates the token and identifies the user
+    - the service implementation retrieves the user_id securely from the context
+ * * error handling:
+    - we use native gRPC status codes (OK, NOT_FOUND, PERMISSION_DENIED, etc.)
+    - for methods that don't need to return data on success, we use google.protobuf.Empty
+    - if a call returns without an exception, it is considered successful
+ */
+
+service UserService {
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Register (RegisterRequest) returns (google.protobuf.Empty);
+  rpc GetProfile (ProfileRequest) returns (UserProfile);
+  
+  // rpc GetGameHistory (GameHistoryRequest) returns (GameHistoryResponse);
+  // rpc BuySkin (SkinRequest) returns (google.protobuf.Empty);
+}
+
+service GameService {
+  rpc CreateLobby (CreateLobbyRequest) returns (LobbyInfo);
+  rpc JoinLobby (JoinRequest) returns (LobbyInfo);
+  rpc StartGame (StartGameRequest) returns (google.protobuf.Empty); 
+  
+  rpc SubscribeToGame (SubscribeRequest) returns (stream GameUpdate);
+  rpc PerformAction (GameAction) returns (google.protobuf.Empty);
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  WEREWOLF = 1;
+  VILLAGER = 2;
+  SEER = 3;
+  WITCH = 4;
+  FOX = 5;
+  VILLAGE_IDIOT = 6;
+  HUNTER = 7;
+}
+
+enum Phase {
+  PHASE_UNSPECIFIED = 0;
+  LOBBY = 1;
+  NIGHT_START = 2;
+  NIGHT_WEREWOLVES = 3;
+  NIGHT_SEER = 4;
+  NIGHT_WITCH = 5;
+  NIGHT_FOX = 6;
+  DAY_RESULT = 7;
+  DAY_DISCUSSION = 8;
+  DAY_VOTING = 9;
+  HUNTER_REVENGE = 10;
+  GAME_END = 11;
+}
+
+// user
+
+message UserProfile {
+  string user_id = 1;
+  string username = 2;
+  int32 score = 3;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  UserProfile profile = 2;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message ProfileRequest {
+  string target_user_id = 1; // empty for own profile
+}
+
+// lobby
+
+message RoleCount {
+  Role role = 1;
+  int32 count = 2;
+}
+
+message LobbySettings {
+  int32 max_players = 1;
+  repeated RoleCount roles = 2; 
+  int32 discussion_time_seconds = 3;
+}
+
+message CreateLobbyRequest {
+  LobbySettings settings = 1;
+}
+
+message JoinRequest {
+  string lobby_code = 1;
+}
+
+message StartGameRequest {
+  string lobby_code = 1;
+}
+
+message LobbyInfo {
+  string lobby_code = 1;
+  repeated PlayerStatus players = 2;
+  bool can_start = 3;
+  string host_id = 4;
+  LobbySettings settings = 5;
+}
+
+// gameplay
+
+message SubscribeRequest {
+  string lobby_code = 1;
+}
+
+message GameUpdate {
+  Phase current_phase = 1;
+  string display_text = 2;       
+  string tts_text = 3;  
+  repeated PlayerStatus players = 4;
+  string private_info = 5;  
+  bool ability_active = 6;  
+  Role winning_team = 7; 
+}
+
+message PlayerStatus {
+  string id = 1;
+  string name = 2;
+  bool is_alive = 3;
+  bool has_voted = 4;
+  string voted_for_target_id = 5; // masked by backend
+  Role role = 6; // masked by backend
+  bool is_host = 7;
+}
+
+message GameAction {
+  string lobby_code = 1; 
+  oneof action {
+    VoteAction vote = 2;
+    WitchAction witch = 3;
+    SeerAction seer = 4;
+    FoxAction fox = 5;
+    HunterAction hunter = 6;
+  }
+}
+
+message VoteAction {
+  string target_id = 1;
+}
+
+message WitchAction {
+  bool heal_target = 1;
+  string poison_target_id = 2;
+}
+
+message SeerAction {
+  string target_id = 1;
+}
+
+message FoxAction {
+  repeated string target_ids = 1;
+}
+
+message HunterAction {
+  string target_id = 1;
+}
