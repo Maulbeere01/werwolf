@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:werwolf/LoginView.dart';
 import 'RegistrationView.dart';
 
 void main() {
@@ -32,13 +33,15 @@ class MyHomePage extends StatelessWidget {
     return Material(
       child: Stack(
         children: [
+
           Image.asset(
-              "image/hintergrund.png",
-            fit: BoxFit.fill,
+              "/himmelbild.jpeg",
+            fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
             semanticLabel: "Hintergrundbild",
           ),
+
 
           Column(
             //zentriert Buttons
@@ -68,10 +71,16 @@ class MyHomePage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const LoginView(),
+                      ),
+                    );
+                  }, // Hier fehlte die schließende Klammer für onPressed
                   child: const Text("Login"),
                 ),
-              ),
+              )
             ],
           ),
         ],
