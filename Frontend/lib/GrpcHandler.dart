@@ -1,5 +1,5 @@
 import 'package:grpc/grpc.dart';
-import '../generated/werwolf.pbgrpc.dart'; // Pfad zu deiner generierten Datei
+import '../generated/werwolf.pbgrpc.dart';
 
 class GrpcHandler {
   late GameServiceClient gameClient;
