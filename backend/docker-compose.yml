@@ -1,7 +1,7 @@
 services:
   db:
     image: mysql:8.0
-    restart: always
+    restart: no
     container_name: werwolf-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
