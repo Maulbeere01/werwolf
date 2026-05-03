@@ -128,15 +128,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(200, 60),
                 ),
-                  onPressed: (){
-                  if(_formKey.currentState!.validate()) {
+                onPressed: () async {
+
+                  if (_formKey.currentState!.validate()) {
+
                     String name = _usernameController.text;
-                    String email = _emailController.text;
-                    String passwort = _passwordController.text;
-                    String passwortRepeat = _passwordRepeatController.text;
-                    print("Erfolgreich! Name: $name, Email: $email, Passwort $passwort");
+                    String mail = _emailController.text;
+                    String pw = _passwordController.text;
+
+                    print("Starte Registrierung für: $name");
+
+                    await RegistrationViewController.registerUser(name,mail, pw);
+
+                    print("Registrierungs-Prozess abgeschlossen");
+
+                  } else {
+                    print("Validierung fehlgeschlagen - Bitte Fehler korrigieren");
                   }
-                  },
+                },
                   child: Text("Registrieren"),
 
               )
