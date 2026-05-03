@@ -72,7 +72,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         decoration: const InputDecoration(
                           labelText: "Email-Adresse",
                           labelStyle: TextStyle(color: Colors.grey),
-                          hintText: "Gib deinen eine E-Mail ein",
+                          hintText: "Gib deine E-Mail ein",
                           hintStyle: TextStyle(color: Colors.grey),
                           prefixIcon: Icon(Icons.email, color: Colors.grey),
                         ),
@@ -88,7 +88,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         decoration: const InputDecoration(
                           labelText: "Passwort eingeben",
                           labelStyle: TextStyle(color: Colors.grey),
-                          hintText: "Gib deinen Namen ein",
+                          hintText: "Gib ein Passwort ein",
                           hintStyle: TextStyle(color: Colors.grey),
                           prefixIcon: Icon(Icons.password, color: Colors.grey),
                         ),
@@ -104,7 +104,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         decoration: const InputDecoration(
                           labelText: "Passwort wiederholen",
                           labelStyle: TextStyle(color: Colors.grey),
-                          hintText: "Gib deinen Namen ein",
+                          hintText: "Gib das Passwort ein",
                           hintStyle: TextStyle(color: Colors.grey),
                           prefixIcon: Icon(Icons.password, color: Colors.grey),
                         ),
