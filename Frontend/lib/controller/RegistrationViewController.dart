@@ -1,3 +1,7 @@
+import 'package:werwolf/GrpcHandler.dart';
+
+import '../generated/werwolf.pb.dart';
+
 class RegistrationViewController {
 
   //Kontrolliert, ob Benutzername nicht leer und kürzer als 13 Zeichen ist
@@ -49,5 +53,22 @@ class RegistrationViewController {
     }
 
     return null;
+  }
+
+  static Future<void> registerUser(String name, String email, String password) async {
+    final grpc = GrpcHandler();
+    try {
+      var request = RegisterRequest();
+      request.username = name;
+      request.email = email;
+      request.password = password;
+
+      //await wartet bis Antwort vom Server
+      await grpc.userClient.register(request);
+
+      print("Erfolg");
+    } catch (e) {
+      print("Fehler: $e");
+    }
   }
 }

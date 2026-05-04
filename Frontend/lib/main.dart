@@ -34,14 +34,6 @@ class MyHomePage extends StatelessWidget {
       child: Stack(
         children: [
 
-          Image.asset(
-              "/himmelbild.jpeg",
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            semanticLabel: "Hintergrundbild",
-          ),
-
 
           Column(
             //zentriert Buttons
