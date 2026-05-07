@@ -1,4 +1,4 @@
-package com.werewolf.uni.backend;
+package com.werewolf;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
@@ -9,7 +9,7 @@ public class BackendApplication {
 
 	public static void main(String[] args) {
 		Dotenv dotenv = Dotenv.configure()
-				.directory("./backend")
+				.directory("./")
 				.ignoreIfMissing()
 				.load();
 

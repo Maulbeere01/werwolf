@@ -1,13 +1,13 @@
-package com.werewolf.uni.backend.service;
+package com.werewolf.api.grpc;
 
-import com.uni.werewolf.grpc.UserServiceGrpc;
-import com.uni.werewolf.grpc.RegisterRequest;
-import com.uni.werewolf.grpc.LoginRequest;
-import com.uni.werewolf.grpc.LoginResponse;
-import com.uni.werewolf.grpc.UserProfile;
+import com.werewolf.grpc.UserServiceGrpc;
+import com.werewolf.grpc.RegisterRequest;
+import com.werewolf.grpc.LoginRequest;
+import com.werewolf.grpc.LoginResponse;
+import com.werewolf.grpc.UserProfile;
 import com.google.protobuf.Empty;
-import com.werewolf.uni.backend.entity.UserEntity;
-import com.werewolf.uni.backend.repository.UserRepository;
+import com.werewolf.persistence.entity.UserEntity;
+import com.werewolf.persistence.repository.UserRepository;
 import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
 import net.devh.boot.grpc.server.service.GrpcService;

@@ -1,4 +1,4 @@
-package com.werewolf.uni.backend.entity;
+package com.werewolf.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

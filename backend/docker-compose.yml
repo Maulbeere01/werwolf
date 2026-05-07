@@ -12,7 +12,7 @@ services:
       - "42069:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./werwolf.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./src/main/resources/db/werwolf.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   db_data:
