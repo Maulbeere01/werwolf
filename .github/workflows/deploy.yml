@@ -73,6 +73,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Copy deployment files to Hetzner
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER}}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: "backend/docker-compose.yml,backend/Caddyfile,backend/src/main/resources/db/werwolf.sql"
+          target: "~/werwolf"
+
       - name: Deploy on Hetzner
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -85,13 +94,10 @@ jobs:
           envs: GHCR_TOKEN,GHCR_USERNAME
           script: |
             set -e
-            cd ~/werwolf
-            git fetch --prune origin
-            git checkout -B "${{ github.ref_name }}" "${{ github.sha }}"
+            cd ~/werwolf/backend
             if [ -n "$GHCR_TOKEN" ]; then
               echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
             fi
-            cd backend
             export BACKEND_IMAGE="${{ steps.meta.outputs.sha_tag }}"
             docker compose pull backend
             docker compose up -d
