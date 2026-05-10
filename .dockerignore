@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+.vscode
+**/.dart_tool
+**/build
+**/target
+**/*.iml
+**/*.log
+**/.env
+frontend
+docs
+README.md

@@ -1,0 +1,11 @@
+services:
+  db:
+    ports:
+      - "42069:3306"
+
+  backend:
+    image: werwolf-backend:local
+    restart: "no"
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile

@@ -1,0 +1,3 @@
+werwolf.wehrberger.net {
+	reverse_proxy h2c://backend:9090
+}

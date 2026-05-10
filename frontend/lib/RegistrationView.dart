@@ -28,9 +28,14 @@ class _LoginViewState extends State<Registrationview> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleRegistration() async {
     if (_formKey.currentState!.validate()) {
-      print("Login-Versuch mit: ${_emailController.text}");
+      print("Registrierungs-Versuch mit: ${_emailController.text}");
+      await RegistrationViewController.registerUser(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
+      );
     }
   }
 
@@ -39,8 +44,8 @@ class _LoginViewState extends State<Registrationview> {
     return RegistrationBackgroundWrapper(
       child: DynamicAuthForm(
         formKey: _formKey,
-        submitButtonText: "Einloggen",
-        onSubmit: _handleLogin,
+        submitButtonText: "Registrieren",
+        onSubmit: _handleRegistration,
         fields: [
 
           //Username
