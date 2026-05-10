@@ -5,7 +5,7 @@ package werewolf;
 import "google/protobuf/empty.proto";
 
 option java_multiple_files = true;
-option java_package = "com.uni.werewolf.grpc";
+option java_package = "com.werewolf.grpc";
 
 /* * auth:
     - user_id is not sent in request messages
