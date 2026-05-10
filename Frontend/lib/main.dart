@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:werwolf/LoginView.dart';
-import 'RegistrationView.dart';
+import 'package:werwolf/RegistrationView.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,52 +14,69 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF00008B),
-            brightness: Brightness.light,
-          ),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00008B),
+          brightness: Brightness.light,
         ),
+      ),
       home: const MyHomePage(title: 'Werwolf Hauptmenü'),
     );
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
   final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+
+  late final AudioPlayer audioPlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    audioPlayer = AudioPlayer();
+
+    audioPlayer.setReleaseMode(ReleaseMode.loop);
+    audioPlayer.play(AssetSource('hintergrund.mp3'));
+  }
+
+  @override
+  void dispose() {
+    audioPlayer.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Material(
       child: Stack(
         children: [
-
-
           Column(
-            //zentriert Buttons
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-
-              // Spiel erstellen Button
-              Center( //Zentriert Buttons Horizontal
+              Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
                   ),
                   onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const RegistrationScreen(), // Hier die Zielklasse eintragen
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const Registrationview(),
                       ),
                     );
                   },
-                  child: const Text("Registrieren"), //Const benutzen sonst wird jedes mal neu erstellt
+                  child: const Text("Registrieren"),
                 ),
               ),
-
-              const SizedBox(height: 14), // Platz zwischen den Buttons
-
-              // Spiel erstellen Button
-              Center( //Zentriert Buttons Horizontal
+              const SizedBox(height: 14),
+              Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(200, 50),
@@ -69,16 +87,14 @@ class MyHomePage extends StatelessWidget {
                         builder: (context) => const LoginView(),
                       ),
                     );
-                  }, // Hier fehlte die schließende Klammer für onPressed
+                  },
                   child: const Text("Login"),
                 ),
-              )
+              ),
             ],
           ),
         ],
       ),
-
-
     );
   }
 }

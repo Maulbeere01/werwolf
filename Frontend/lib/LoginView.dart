@@ -1,155 +1,63 @@
 import 'package:flutter/material.dart';
-import 'package:werwolf/controller/RegistrationViewController.dart';
+import 'package:werwolf/controller/LoginViewController.dart';
+import 'widgets/RegistrationLoginBackgroundWrapper.dart';
+import 'widgets/DynamicAuthForm.dart';
+import 'widgets/AuthenticationFormField.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
   @override
-  State<LoginView> createState() => _RegistrationScreenState();
+  State<LoginView> createState() => _LoginViewState();
 }
 
-class _RegistrationScreenState extends State<LoginView> {
+class _LoginViewState extends State<LoginView> {
 
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _handleLogin() {
+    if (_formKey.currentState!.validate()) {
+      print("Login-Versuch mit: ${_emailController.text}");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-      appBar: AppBar(
-        title: Text("Login",
 
-        ),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: Color.fromRGBO(255, 255, 255, 1),
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(30),
-                    
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-
-                      //NameFeld
-                      Center(
-                        child: TextFormField(
-                          controller: null,
-                          decoration: const InputDecoration(
-                            labelText: "Email-Adresse",
-                            labelStyle: TextStyle(color: Colors.grey),
-                            hintText: "Gib deine E-Mail Adresse ein",
-                            hintStyle: TextStyle(color: Colors.grey),
-                            prefixIcon: Icon(Icons.email, color: Colors.grey),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                          ),
-                          validator: RegistrationViewController.validateUsername,
-                        ),
-                      ),
-
-                      //Hält die Border zwischen den Feldern
-                      Container(
-                        height: 10,
-                        decoration: BoxDecoration(
-                          border: Border (
-                            bottom: BorderSide(
-                              color: Colors.black,
-                            )
-                          )
-                        ),
-                      ),
-
-                      //MailAdresseFeld
-                      Center(
-                        child: TextFormField(
-                          controller: null,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: "Passwort",
-                            labelStyle: TextStyle(color: Colors.grey),
-                            hintText: "Bitte Passwort eingeben",
-                            hintStyle: TextStyle(color: Colors.grey),
-                            prefixIcon: Icon(Icons.password, color: Colors.grey),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                          ),
-                          validator: RegistrationViewController.validateMail,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(
-                  height: 10,
-                ),
-
-                TextButton(
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(200,60),
-                    foregroundColor: Colors.white,
-                    overlayColor: Colors.white,
-                  ),
-                    onPressed: (){},
-                    child: Text("Passwort vergessen")),
-
-                SizedBox(
-                  height: 40,
-                ),
-
-                //Registrieren Knopf
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 50),
-                  ),
-                  onPressed: (){
-
-                  },
-                  child: Text("Login"),
-
-                )
-
-
-              ],
-            ),
+    return RegistrationBackgroundWrapper(
+      child: DynamicAuthForm(
+        formKey: _formKey,
+        submitButtonText: "Einloggen",
+        onSubmit: _handleLogin,
+        fields: [
+          AuthenticationFormField(
+            controller: _emailController,
+            label: "Mail-Adresse",
+            hint: "Gib eine E-Mail Adresse ein",
+            icon: Icons.email,
+            validator: (value) => LoginViewController.validateMail(value)
           ),
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        color: Theme.of(context).colorScheme.onSecondaryContainer,
-        child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.copyright, color: Theme.of(context).colorScheme.onPrimary),
-                Text(
-                  " 2026",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary, // Passend zum Icon
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            )
-        ),
-      ),
 
+          // Passwort Feld
+          AuthenticationFormField(
+            controller: _passwordController,
+            label: "Passwort",
+            hint: "Dein Passwort",
+            icon: Icons.lock,
+            isPassword: true, // Verdeckt die Eingabe
+            validator: (value) => LoginViewController.validateMail(value)
+          ),
+        ],
+      ),
     );
   }
 }
