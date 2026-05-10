@@ -18,7 +18,8 @@ class LoginViewController  {
   }
 
   static Future<void> loginUser(String username, String password) async {
-    final grpc = GrpcHandler();
+    final grpc = await GrpcHandler.create();
+
     try {
       var request = LoginRequest();
       request.username = username;

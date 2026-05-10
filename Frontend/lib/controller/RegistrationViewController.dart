@@ -58,7 +58,8 @@ class RegistrationViewController {
   static Future<void> registerUser(String name, String email, String password) async {
 
     //Privaten Konstruktor machen (Singleton Prinzip)
-    final grpc = GrpcHandler();
+    final grpc = await GrpcHandler.create();
+
     try {
       var request = RegisterRequest();
       request.username = name;
