@@ -1,11 +1,9 @@
 package com.werewolf.api.grpc;
 
-import com.werewolf.grpc.UserServiceGrpc;
-import com.werewolf.grpc.RegisterRequest;
-import com.werewolf.grpc.LoginRequest;
-import com.werewolf.grpc.LoginResponse;
-import com.werewolf.grpc.UserProfile;
+import com.werewolf.grpc.*;
 import com.google.protobuf.Empty;
+import com.werewolf.logic.model.Lobby;
+import com.werewolf.logic.service.LobbyManager;
 import com.werewolf.persistence.entity.UserEntity;
 import com.werewolf.persistence.repository.UserRepository;
 import io.grpc.stub.StreamObserver;
