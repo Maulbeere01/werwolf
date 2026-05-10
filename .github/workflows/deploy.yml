@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - prod
-      - feature/WER-57-deployment-setup
   workflow_dispatch:
 
 permissions:
