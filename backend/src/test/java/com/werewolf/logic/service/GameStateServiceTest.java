@@ -22,13 +22,10 @@ class GameStateServiceTest {
     @Test
     void shouldSaveAndRetrieveGameState() {
 
-        // Testet:
         // Ob ein GameState korrekt gespeichert
         // und wieder abgerufen werden kann.
-
         GameState state = new GameState();
         state.lobbyCode = "ABCD";
-
         service.save(state);
 
         GameState loaded = service.get("ABCD");
@@ -40,9 +37,7 @@ class GameStateServiceTest {
     @Test
     void shouldReturnNullIfLobbyDoesNotExist() {
 
-        // Testet:
         // Ob bei unbekannter Lobby null zurückgegeben wird.
-
         GameState result = service.get("UNKNOWN");
 
         assertNull(result);

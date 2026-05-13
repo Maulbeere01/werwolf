@@ -31,11 +31,7 @@ class HunterAbilityTest {
     @Test
     void shouldAddTargetToDeadPlayers() {
 
-        // Testet:
-        // Ob das Ziel des Jägers
-        // zur Liste der toten Spieler hinzugefügt wird.
-
-        // GameState erstellen
+        // Ob das Ziel des Jägers zur Liste der toten Spieler hinzugefügt wird.
         GameState state = new GameState();
 
         // Mock-Verhalten definieren
@@ -45,8 +41,6 @@ class HunterAbilityTest {
         HunterAction action = HunterAction.newBuilder()
                 .setTargetId("player1")
                 .build();
-
-        // Fähigkeit ausführen
         hunterAbility.execute("ABCD", action);
 
         // Prüfen ob Spieler in deadPlayers enthalten ist

@@ -13,7 +13,6 @@ public class WerewolfAbility {
     }
 
     public void execute(String lobbyCode, VoteAction action) {
-
         GameState state = stateService.get(lobbyCode);
 
         // mark target for death (night kill)

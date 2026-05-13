@@ -12,9 +12,7 @@ public class HunterAbility {
     }
 
     public void execute(String lobbyCode, com.werewolf.grpc.HunterAction action) {
-
         GameState state = stateService.get(lobbyCode);
-
         state.deadPlayers.add(action.getTargetId());
     }
 }

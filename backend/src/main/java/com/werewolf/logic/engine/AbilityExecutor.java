@@ -35,8 +35,6 @@ public class AbilityExecutor {
 
             case SEER -> seer.execute(lobbyCode, action.getSeer());
 
-            case FOX -> {} // optional später
-
             case HUNTER -> hunter.execute(lobbyCode, action.getHunter());
 
             default -> throw new IllegalStateException("Unknown action");

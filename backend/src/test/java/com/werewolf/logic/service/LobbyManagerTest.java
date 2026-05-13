@@ -25,7 +25,7 @@ class LobbyManagerTest {
         // Mock für LobbyService
         lobbyService = mock(LobbyService.class);
 
-        // Verhalten: Service gibt Lobby zurück, die er bekommt
+        // Service gibt Lobby zurück, die er bekommt
         when(lobbyService.createLobby(any())).thenAnswer(i -> i.getArgument(0));
 
         lobbyManager = new LobbyManager(lobbyService);
@@ -34,14 +34,11 @@ class LobbyManagerTest {
     @Test
     void shouldCreateLobbyWithHost() {
 
-        // Testet:
         // Ob eine Lobby korrekt erstellt wird
         // inklusive Host und Settings
-
         LobbySettings settings = LobbySettings.newBuilder()
                 .setMaxPlayers(8)
                 .build();
-
         Lobby result = lobbyManager.createLobby(
                 "host123",
                 "Max",
@@ -70,9 +67,7 @@ class LobbyManagerTest {
     @Test
     void shouldCallLobbyService() {
 
-        // Testet:
         // Ob LobbyManager den LobbyService wirklich benutzt
-
         LobbySettings settings = LobbySettings.newBuilder()
                 .setMaxPlayers(5)
                 .build();

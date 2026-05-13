@@ -32,10 +32,7 @@ class WitchAbilityTest {
     @Test
     void shouldHealTargetByRemovingLastNightTarget() {
 
-        // Testet:
-        // Ob die Hexe einen Spieler heilen kann,
-        // indem "lastNightTarget" aus der Todesliste entfernt wird.
-
+        // Ob die Hexe einen Spieler heilen kann, indem "lastNightTarget" aus der Todesliste entfernt wird.
         GameState state = new GameState();
         state.deadPlayers.add("lastNightTarget");
 
@@ -45,7 +42,6 @@ class WitchAbilityTest {
                 .setHealTarget(true)
                 .setPoisonTargetId("")
                 .build();
-
         witchAbility.execute("ABCD", action);
 
         // Spieler wurde wieder entfernt (geheilt)
@@ -57,10 +53,7 @@ class WitchAbilityTest {
     @Test
     void shouldPoisonTarget() {
 
-        // Testet:
-        // Ob die Hexe einen Spieler vergiften kann,
-        // indem dieser zur deadPlayers Liste hinzugefügt wird.
-
+        // Ob die Hexe einen Spieler vergiften kann, indem dieser zur deadPlayers Liste hinzugefügt wird.
         GameState state = new GameState();
 
         when(stateService.get("ABCD")).thenReturn(state);
@@ -81,9 +74,7 @@ class WitchAbilityTest {
     @Test
     void shouldDoNothingWhenNoActionGiven() {
 
-        // Testet:
-        // Ob die Hexe nichts verändert,
-        // wenn weder Heal noch Poison gesetzt ist.
+        // Ob die Hexe nichts verändert, wenn weder Heal noch Poison gesetzt ist.
 
         GameState state = new GameState();
 

@@ -28,14 +28,9 @@ class GameEngineTest {
     @Test
     void shouldForwardActionToAbilityExecutor() {
 
-        // Testet:
-        // Ob handleAction die Action korrekt
-        // an den AbilityExecutor weiterleitet.
-
-        // Beispiel-Action erstellen
+        // Ob handleAction die Action korrekt an den AbilityExecutor weiterleitet.
         GameAction action = GameAction.newBuilder().build();
 
-        // Methode ausführen
         gameEngine.handleAction("ABCD", action);
 
         // Prüfen ob execute genau 1x aufgerufen wurde

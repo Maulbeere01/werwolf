@@ -31,11 +31,7 @@ class WerewolfAbilityTest {
     @Test
     void shouldAddTargetToDeadPlayers() {
 
-        // Testet:
-        // Ob die Werwolf-Fähigkeit den gewählten Spieler
-        // in die Liste der toten Spieler einträgt (Night Kill).
-
-        // GameState erstellen
+        // Ob die Werwolf-Fähigkeit den gewählten Spieler in die Liste der toten Spieler einträgt (Night Kill).
         GameState state = new GameState();
 
         // Mock Verhalten definieren
@@ -46,7 +42,6 @@ class WerewolfAbilityTest {
                 .setTargetId("player1")
                 .build();
 
-        // Methode ausführen
         werewolfAbility.execute("ABCD", action);
 
         // Prüfen ob Spieler als tot markiert wurde

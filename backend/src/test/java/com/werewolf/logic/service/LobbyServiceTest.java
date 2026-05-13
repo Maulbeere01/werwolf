@@ -22,9 +22,7 @@ class LobbyServiceTest {
     @Test
     void shouldSaveAndRetrieveLobby() {
 
-        // Testet:
         // Ob eine Lobby korrekt gespeichert und wieder geladen wird.
-
         Lobby lobby = new Lobby();
         lobby.lobbyCode = "ABC123";
 
@@ -39,20 +37,15 @@ class LobbyServiceTest {
     @Test
     void shouldReturnNullForUnknownLobby() {
 
-        // Testet:
         // Ob bei unbekanntem Code null zurückgegeben wird.
-
         Lobby result = lobbyService.getLobby("UNKNOWN");
-
         assertNull(result);
     }
 
     @Test
     void shouldOverwriteLobbyIfSameCode() {
 
-        // Testet:
         // Ob eine Lobby mit gleichem Code überschrieben wird.
-
         Lobby lobby1 = new Lobby();
         lobby1.lobbyCode = "ABC123";
 

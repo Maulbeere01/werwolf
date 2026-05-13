@@ -44,9 +44,7 @@ class AbilityExecutorTest {
     @Test
     void shouldExecuteSeerAbility() {
 
-        // Testet:
         // Ob bei einer Seher-Action die Seher-Fähigkeit ausgeführt wird.
-
         // GameAction mit Seher-Aktion bauen
         GameAction action = GameAction.newBuilder()
                 .setSeer(
@@ -56,7 +54,6 @@ class AbilityExecutorTest {
                 )
                 .build();
 
-        // Methode ausführen
         abilityExecutor.execute("ABCD", action);
 
         // Prüfen ob die Seher-Ability genau 1x ausgeführt wurde
@@ -67,9 +64,7 @@ class AbilityExecutorTest {
     @Test
     void shouldExecuteWitchAbility() {
 
-        // Testet:
         // Ob bei einer Hexen-Action die Hexen-Fähigkeit ausgeführt wird.
-
         GameAction action = GameAction.newBuilder()
                 .setWitch(
                         WitchAction.newBuilder()
@@ -78,7 +73,6 @@ class AbilityExecutorTest {
                 )
                 .build();
 
-        // Methode ausführen
         abilityExecutor.execute("ABCD", action);
 
         // Prüfen ob die Hexen-Ability genau 1x ausgeführt wurde
@@ -89,9 +83,7 @@ class AbilityExecutorTest {
     @Test
     void shouldExecuteHunterAbility() {
 
-        // Testet:
         // Ob bei einer Jäger-Action die Jäger-Fähigkeit ausgeführt wird.
-
         GameAction action = GameAction.newBuilder()
                 .setHunter(
                         HunterAction.newBuilder()
@@ -99,8 +91,6 @@ class AbilityExecutorTest {
                                 .build()
                 )
                 .build();
-
-        // Methode ausführen
         abilityExecutor.execute("ABCD", action);
 
         // Prüfen ob die Hunter-Ability genau 1x ausgeführt wurde
@@ -111,10 +101,8 @@ class AbilityExecutorTest {
     @Test
     void shouldThrowExceptionForUnknownAction() {
 
-        // Testet:
         // Ob eine Exception geworfen wird,
         // wenn keine gültige Action gesetzt wurde.
-
         // Leere Action -> ACTION_NOT_SET
         GameAction action = GameAction.newBuilder().build();
 

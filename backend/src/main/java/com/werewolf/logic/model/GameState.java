@@ -11,7 +11,5 @@ public class GameState {
 
     public Map<String, Player> players = new HashMap<>();
     public String lobbyCode;
-
     public List<String> deadPlayers = new ArrayList<>();
-
 }

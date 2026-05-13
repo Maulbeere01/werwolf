@@ -12,9 +12,7 @@ public class WitchAbility {
     }
 
     public void execute(String lobbyCode, com.werewolf.grpc.WitchAction action) {
-
         GameState state = stateService.get(lobbyCode);
-
         if (action.getHealTarget()) {
             state.deadPlayers.removeIf(id -> id.equals("lastNightTarget"));
         }
