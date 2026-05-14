@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:werwolf/controller/RegistrationViewController.dart';
-import 'widgets/RegistrationLoginBackgroundWrapper.dart';
-import 'widgets/DynamicAuthForm.dart';
-import 'widgets/AuthenticationFormField.dart';
+import '../../widgets/registration_login_background_wrapper.dart';
+import '../../widgets/dynamic_auth_form.dart';
+import '../../widgets/authentication_form_field.dart';
 
 class Registrationview extends StatefulWidget {
   const Registrationview({super.key});
