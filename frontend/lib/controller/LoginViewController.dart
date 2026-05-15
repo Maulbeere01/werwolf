@@ -1,4 +1,5 @@
-import 'package:werwolf/grpc_handler.dart';
+import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/controller/RegistrationViewController.dart';
 import '../generated/werwolf.pb.dart';
 
 class LoginViewController  {

@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'landing_page.dart';
+import 'package:werwolf/LoginView.dart';
+import 'package:werwolf/RegistrationView.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-
-//Bildschirmorientierung wird festgelegt
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]).then((_) {
-    runApp(const MyApp());
-  });
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -19,16 +13,88 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Werwolf',
+      title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF00008B),
           brightness: Brightness.light,
         ),
-        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Silent Village'),
+      home: const MyHomePage(title: 'Werwolf Hauptmenü'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+
+  late final AudioPlayer audioPlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    audioPlayer = AudioPlayer();
+
+    audioPlayer.setReleaseMode(ReleaseMode.loop);
+    audioPlayer.play(AssetSource('hintergrund.mp3'));
+  }
+
+  @override
+  void dispose() {
+    audioPlayer.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      child: Stack(
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(200, 50),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const Registrationview(),
+                      ),
+                    );
+                  },
+                  child: const Text("Registrieren"),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(200, 50),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const LoginView(),
+                      ),
+                    );
+                  },
+                  child: const Text("Login"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
