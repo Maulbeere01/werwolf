@@ -1,4 +1,4 @@
-import 'package:werwolf/grpc_handler.dart';
+import 'package:werwolf/GrpcHandler.dart';
 
 import '../generated/werwolf.pb.dart';
 
