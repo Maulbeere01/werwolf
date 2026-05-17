@@ -1,14 +1,52 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:grpc/grpc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 
-class QRCodeScreen extends StatelessWidget {
+class QRCodeScreen extends StatefulWidget {
   final String lobbyCode;
 
-  const QRCodeScreen({
-    super.key,
-    required this.lobbyCode,
-  });
+  const QRCodeScreen({super.key, required this.lobbyCode});
+
+  @override
+  State<QRCodeScreen> createState() => _QRCodeScreenState();
+}
+
+class _QRCodeScreenState extends State<QRCodeScreen> {
+  List<PlayerStatus> _players = [];
+  StreamSubscription<GameUpdate>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribe();
+  }
+
+  Future<void> _subscribe() async {
+    final grpc = await GrpcHandler.create();
+    final request = SubscribeRequest()..lobbyCode = widget.lobbyCode;
+    final stream = grpc.gameClient.subscribeToGame(request);
+
+    _subscription = stream.listen(
+      (update) {
+        if (mounted) {
+          setState(() => _players = update.players);
+        }
+      },
+      onError: (e) => print('[STREAM] Error: $e'),
+      onDone: () => print('[STREAM] Stream closed for lobby ${widget.lobbyCode}'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +109,7 @@ class QRCodeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: QrImageView(
-                        data: 'silentvillage://join?code=$lobbyCode',
+                        data: 'silentvillage://join?code=${widget.lobbyCode}',
                         version: QrVersions.auto,
                         size: 150,
                         backgroundColor: Colors.white,
@@ -81,7 +119,7 @@ class QRCodeScreen extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // GAME CODE
+                  // LOBBY CODE
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -92,7 +130,7 @@ class QRCodeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      lobbyCode,
+                      widget.lobbyCode,
                       style: TextStyle(
                         fontFamily: 'BagelFatOne',
                         color: Theme.of(context).colorScheme.onSecondaryContainer,
@@ -117,9 +155,9 @@ class QRCodeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Beigetretene Spieler",
-                            style: TextStyle(
+                          Text(
+                            "Beigetretene Spieler (${_players.length})",
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
@@ -127,13 +165,26 @@ class QRCodeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                           Expanded(
-                            child: ListView(
-                              children: const [
-                                _PlayerTile(name: "Max"),
-                                _PlayerTile(name: "Anna"),
-                                _PlayerTile(name: "Tom"),
-                              ],
-                            ),
+                            child: _players.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      "Warte auf Spieler...",
+                                      style: TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    itemCount: _players.length,
+                                    itemBuilder: (context, index) {
+                                      final player = _players[index];
+                                      return _PlayerTile(
+                                        name: player.name,
+                                        isHost: player.isHost,
+                                      );
+                                    },
+                                  ),
                           ),
                         ],
                       ),
@@ -178,8 +229,9 @@ class QRCodeScreen extends StatelessWidget {
 
 class _PlayerTile extends StatelessWidget {
   final String name;
+  final bool isHost;
 
-  const _PlayerTile({required this.name});
+  const _PlayerTile({required this.name, required this.isHost});
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +248,7 @@ class _PlayerTile extends StatelessWidget {
             radius: 18,
             backgroundColor: Colors.white24,
             child: Text(
-              name[0],
+              name[0].toUpperCase(),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -204,10 +256,14 @@ class _PlayerTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          Text(
-            name,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
           ),
+          if (isHost)
+            const Icon(Icons.star, color: Colors.amber, size: 18),
         ],
       ),
     );

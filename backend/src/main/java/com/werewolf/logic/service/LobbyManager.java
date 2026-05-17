@@ -50,6 +50,10 @@ public class LobbyManager {
         return lobby;
     }
 
+    public Lobby getLobby(String code) {
+        return lobbyService.getLobby(code);
+    }
+
     private String generateCode() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
