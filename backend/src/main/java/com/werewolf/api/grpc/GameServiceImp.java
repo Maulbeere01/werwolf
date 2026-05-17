@@ -4,7 +4,9 @@ import com.werewolf.auth.AuthContext;
 import com.werewolf.grpc.CreateLobbyRequest;
 import com.werewolf.grpc.GameServiceGrpc;
 import com.werewolf.grpc.LobbyInfo;
+import com.werewolf.grpc.PlayerStatus;
 import com.werewolf.logic.model.Lobby;
+import com.werewolf.logic.model.Player;
 import com.werewolf.logic.service.LobbyManager;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +31,22 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                 request.getSettings()
         );
 
-        LobbyInfo response = LobbyInfo.newBuilder()
+        LobbyInfo.Builder responseBuilder = LobbyInfo.newBuilder()
                 .setLobbyCode(lobby.lobbyCode)
                 .setHostId(lobby.hostId)
                 .setCanStart(false)
-                .setSettings(lobby.settings)
-                .build();
+                .setSettings(lobby.settings);
 
-        responseObserver.onNext(response);
+        for (Player p : lobby.players) {
+            responseBuilder.addPlayers(PlayerStatus.newBuilder()
+                    .setId(p.id)
+                    .setName(p.name)
+                    .setIsAlive(p.alive)
+                    .setIsHost(p.id.equals(lobby.hostId))
+                    .build());
+        }
+
+        responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
     }
 }
