@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:werwolf/Rules.dart';
 import 'package:werwolf/CreateGame.dart';
 import 'package:werwolf/QRCodeScreen.dart';
+import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controller/GameViewController.dart';
 
 class Homescreen extends StatefulWidget {
@@ -14,6 +15,25 @@ class Homescreen extends StatefulWidget {
 
 class _HomescreenState extends State<Homescreen> {
   final _codeController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final code = AuthState.lobbyCode;
+    if (code != null) {
+      // Navigate after the first frame so the widget tree is fully built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => QRCodeScreen(lobbyCode: code),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {

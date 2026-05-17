@@ -14,8 +14,9 @@ class LoginViewController  {
 
       final response = await grpc.userClient.login(request);
       AuthState.token = response.token;
+      AuthState.userId = response.profile.userId;
 
-      print('[LOGIN] Success — userId=${response.profile.userId}, username=${response.profile.username}');
+      print('[LOGIN] Success userId=${response.profile.userId}, username=${response.profile.username}');
       print('[LOGIN] Token: ${response.token.substring(0, 20)}...');
       return true;
     } catch (e) {

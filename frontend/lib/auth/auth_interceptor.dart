@@ -23,7 +23,7 @@ class AuthInterceptor implements ClientInterceptor {
   CallOptions _withToken(CallOptions options) {
     final token = AuthState.token;
     if (token == null) {
-      print('[AUTH] No token — sending unauthenticated request');
+      print('[AUTH] No token: sending unauthenticated request');
       return options;
     }
     print('[AUTH] Attaching token to request');

@@ -6,6 +6,7 @@ import 'package:grpc/grpc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:werwolf/GameScreen.dart';
 import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 
 class QRCodeScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class QRCodeScreen extends StatefulWidget {
 class _QRCodeScreenState extends State<QRCodeScreen> {
   List<PlayerStatus> _players = [];
   StreamSubscription<GameUpdate>? _subscription;
+  bool _isHost = false;
 
   @override
   void initState() {
@@ -34,8 +36,10 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
     _subscription = stream.listen(
       (update) {
+        debugPrint('[LOBBY STREAM] Update received phase: ${update.currentPhase.name}, players: ${update.players.length} lobby ${widget.lobbyCode}');
         if (!mounted) return;
         if (update.currentPhase != Phase.LOBBY) {
+          debugPrint('[LOBBY STREAM] Game started, navigating to GameScreen');
           _subscription?.cancel();
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -47,11 +51,28 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
           );
           return;
         }
-        setState(() => _players = update.players);
+        setState(() {
+          _players = update.players;
+          _isHost = update.players.any(
+            (p) => p.id == AuthState.userId && p.isHost,
+          );
+        });
       },
       onError: (e) => print('[STREAM] Error: $e'),
       onDone: () => print('[STREAM] Stream closed for lobby ${widget.lobbyCode}'),
     );
+  }
+
+  Future<void> _startGame() async {
+    debugPrint('[INPUT] Start button pressed: lobby ${widget.lobbyCode}');
+    try {
+      final grpc = await GrpcHandler.create();
+      final request = StartGameRequest()..lobbyCode = widget.lobbyCode;
+      await grpc.gameClient.startGame(request);
+      debugPrint('[INPUT] startGame request sent successfully');
+    } catch (e) {
+      debugPrint('[START GAME] Error: $e');
+    }
   }
 
   @override
@@ -209,7 +230,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                   SizedBox(
                     width: 220,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _isHost ? _startGame : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.9),
                         foregroundColor: Colors.black,
