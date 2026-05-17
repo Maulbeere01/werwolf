@@ -2,13 +2,114 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:werwolf/Rules.dart';
 import 'package:werwolf/CreateGame.dart';
+import 'package:werwolf/QRCodeScreen.dart';
+import 'package:werwolf/controller/GameViewController.dart';
 
-class Homescreen extends StatelessWidget {
+class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<Homescreen> createState() => _HomescreenState();
+}
 
+class _HomescreenState extends State<Homescreen> {
+  final _codeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showJoinDialog() async {
+    _codeController.clear();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        String? errorText;
+        bool loading = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Spiel beitreten'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: _codeController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.characters,
+                    maxLength: 6,
+                    decoration: InputDecoration(
+                      labelText: 'Lobby-Code',
+                      hintText: 'z. B. A1B2C3',
+                      errorText: errorText,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: loading ? null : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Abbrechen'),
+                ),
+                FilledButton(
+                  onPressed: loading
+                      ? null
+                      : () async {
+                          final code = _codeController.text.trim().toUpperCase();
+                          if (code.length != 6) {
+                            setDialogState(() => errorText = 'Der Code muss 6 Zeichen lang sein.');
+                            return;
+                          }
+
+                          setDialogState(() {
+                            loading = true;
+                            errorText = null;
+                          });
+
+                          final lobbyCode = await GameViewController.joinLobby(code);
+
+                          if (!context.mounted) return;
+
+                          if (lobbyCode != null) {
+                            Navigator.of(dialogContext).pop();
+                            if (!mounted) return;
+                            Navigator.of(context).push(
+                              PageRouteBuilder(
+                                pageBuilder: (_, __, ___) => QRCodeScreen(lobbyCode: lobbyCode),
+                                transitionDuration: Duration.zero,
+                                reverseTransitionDuration: Duration.zero,
+                              ),
+                            );
+                          } else {
+                            setDialogState(() {
+                              loading = false;
+                              errorText = 'Lobby nicht gefunden. Bitte Code prüfen.';
+                            });
+                          }
+                        },
+                  child: loading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Beitreten'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
 
@@ -66,7 +167,6 @@ class Homescreen extends StatelessWidget {
 
       body: Stack(
         children: [
-          // Hintergrundbild
           SizedBox.expand(
             child: Image.asset(
               'assets/BG/day.png',
@@ -74,11 +174,9 @@ class Homescreen extends StatelessWidget {
             ),
           ),
 
-          // Inhalt
           SafeArea(
             child: Column(
               children: [
-                // 1. Titel Bereich
                 const SizedBox(height: 40),
                 Text(
                   "Silent Village",
@@ -96,11 +194,8 @@ class Homescreen extends StatelessWidget {
                   ),
                 ),
 
-                // 2. Flexibler Platzhalter, der alles nach unten drückt
-                // Ersetze Spacer() durch SizedBox(height: 200), wenn du eine feste Position willst
-                SizedBox(height: 380),
+                const SizedBox(height: 380),
 
-                // 3. Button Bereich
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 30),
                   child: Row(
@@ -132,7 +227,7 @@ class Homescreen extends StatelessWidget {
 
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: _showJoinDialog,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white.withOpacity(0.9),
                             foregroundColor: Colors.black,
@@ -151,14 +246,13 @@ class Homescreen extends StatelessWidget {
                 const SizedBox(height: 25),
 
                 GestureDetector(
-                  //onTap: () {},
                   onTap: () {
                     Navigator.of(context).push(
                       PageRouteBuilder(
                         pageBuilder: (_, __, ___) => const Rules(),
                         transitionDuration: Duration.zero,
                         reverseTransitionDuration: Duration.zero,
-                        ),
+                      ),
                     );
                   },
                   child: Text(
@@ -166,8 +260,7 @@ class Homescreen extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 16,
-                      //decoration: TextDecoration.underline,
-                     fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
                           color: Colors.black.withOpacity(0.7),
@@ -179,7 +272,6 @@ class Homescreen extends StatelessWidget {
                   ),
                 ),
 
-                // Abstand zum ganz unteren Rand
                 const SizedBox(height: 50),
               ],
             ),
@@ -187,6 +279,5 @@ class Homescreen extends StatelessWidget {
         ],
       ),
     );
-
   }
 }

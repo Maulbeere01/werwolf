@@ -14,4 +14,17 @@ class GameViewController {
       return null;
     }
   }
+
+  static Future<String?> joinLobby(String lobbyCode) async {
+    final grpc = await GrpcHandler.create();
+    try {
+      final request = JoinRequest()..lobbyCode = lobbyCode;
+      final response = await grpc.gameClient.joinLobby(request);
+      print('[LOBBY] Joined lobby with code: ${response.lobbyCode}');
+      return response.lobbyCode;
+    } catch (e) {
+      print('[LOBBY] Error joining lobby: $e');
+      return null;
+    }
+  }
 }
