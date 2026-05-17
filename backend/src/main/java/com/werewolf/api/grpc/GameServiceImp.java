@@ -6,6 +6,8 @@ import com.werewolf.grpc.*;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.model.Player;
+import com.werewolf.logic.engine.AbilityExecutor;
+import com.werewolf.logic.service.GameLoopService;
 import com.werewolf.logic.service.GameStateService;
 import com.werewolf.logic.service.LobbyManager;
 import com.werewolf.logic.service.LobbySubscriptionService;
@@ -18,6 +20,7 @@ import net.devh.boot.grpc.server.service.GrpcService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -26,6 +29,18 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
     private final LobbyManager lobbyManager;
     private final LobbySubscriptionService lobbySubscriptionService;
     private final GameStateService gameStateService;
+    private final GameLoopService gameLoopService;
+    private final AbilityExecutor abilityExecutor;
+
+    //  defines which action type is legal in which phase. Phases absent from this map (NIGHT_START, DAY_DISCUSSION) accept no player actions at all. any performAction call during those phases is rejected.
+    private static final Map<Phase, GameAction.ActionCase> PHASE_ACTION_MAP = Map.of(
+            Phase.NIGHT_WEREWOLVES, GameAction.ActionCase.VOTE,
+            Phase.NIGHT_SEER,       GameAction.ActionCase.SEER,
+            Phase.NIGHT_WITCH,      GameAction.ActionCase.WITCH,
+            Phase.NIGHT_FOX,        GameAction.ActionCase.FOX,
+            Phase.DAY_VOTING,       GameAction.ActionCase.VOTE,
+            Phase.HUNTER_REVENGE,   GameAction.ActionCase.HUNTER
+    );
 
     @Override
     public void createLobby(CreateLobbyRequest request,
@@ -54,6 +69,10 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
             responseObserver.onCompleted();
         } catch (IllegalArgumentException e) {
             responseObserver.onError(Status.NOT_FOUND
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
+        } catch (IllegalStateException e) {
+            responseObserver.onError(Status.FAILED_PRECONDITION
                     .withDescription(e.getMessage())
                     .asRuntimeException());
         }
@@ -95,6 +114,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         lobby.started = true;
 
         lobbySubscriptionService.broadcast(lobbyCode, toGameUpdate(state, lobby));
+        gameLoopService.start(lobbyCode);
 
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
@@ -112,11 +132,16 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
             return;
         }
 
-        state.phase = nextPhase(state.phase);
-        gameStateService.save(state);
+        GameAction.ActionCase expected = PHASE_ACTION_MAP.get(state.phase);
+        if (expected == null || expected != request.getActionCase()) {
+            responseObserver.onError(Status.FAILED_PRECONDITION
+                    .withDescription("Action " + request.getActionCase() + " not valid in phase " + state.phase)
+                    .asRuntimeException());
+            return;
+        }
 
-        Lobby lobby = lobbyManager.getLobby(lobbyCode);
-        lobbySubscriptionService.broadcast(lobbyCode, toGameUpdate(state, lobby));
+        abilityExecutor.execute(lobbyCode, request, state.phase);
+        gameStateService.save(state);
 
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
@@ -126,14 +151,15 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
     public void subscribeToGame(SubscribeRequest request,
                                 StreamObserver<GameUpdate> responseObserver) {
 
+        String userId = AuthContext.USER_ID_KEY.get();
         String lobbyCode = request.getLobbyCode();
 
         if (responseObserver instanceof ServerCallStreamObserver<GameUpdate> serverObserver) {
             serverObserver.setOnCancelHandler(() ->
-                    lobbySubscriptionService.unsubscribe(lobbyCode, responseObserver));
+                    lobbySubscriptionService.unsubscribe(lobbyCode, userId));
         }
 
-        lobbySubscriptionService.subscribe(lobbyCode, responseObserver);
+        lobbySubscriptionService.subscribe(lobbyCode, userId, responseObserver);
 
         Lobby lobby = lobbyManager.getLobby(lobbyCode);
         if (lobby != null) {
@@ -190,25 +216,6 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                 .build();
     }
 
-    private static final List<Phase> PHASE_SEQUENCE = List.of(
-            Phase.NIGHT_START,
-            Phase.NIGHT_WEREWOLVES,
-            Phase.NIGHT_SEER,
-            Phase.NIGHT_WITCH,
-            Phase.NIGHT_FOX,
-            Phase.DAY_RESULT,
-            Phase.DAY_DISCUSSION,
-            Phase.DAY_VOTING,
-            Phase.HUNTER_REVENGE,
-            Phase.GAME_END
-    );
-
-
-    private Phase nextPhase(Phase current) {
-        int idx = PHASE_SEQUENCE.indexOf(current);
-        if (idx < 0 || idx >= PHASE_SEQUENCE.size() - 1) return Phase.GAME_END;
-        return PHASE_SEQUENCE.get(idx + 1);
-    }
 
     private List<Role> buildRolePool(LobbySettings settings, int playerCount) {
         List<Role> pool = new ArrayList<>();

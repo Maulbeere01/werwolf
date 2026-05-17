@@ -5,40 +5,60 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 @Service
 public class LobbySubscriptionService {
 
-    private final ConcurrentHashMap<String, List<StreamObserver<GameUpdate>>> subscribers =
+    // lobbyCode → userId → observer
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, StreamObserver<GameUpdate>>> subscribers =
             new ConcurrentHashMap<>();
 
-    public void subscribe(String lobbyCode, StreamObserver<GameUpdate> observer) {
-        subscribers.computeIfAbsent(lobbyCode, k -> new CopyOnWriteArrayList<>()).add(observer);
-        log.info("[STREAM] Client subscribed to lobby {}", lobbyCode);
+    public void subscribe(String lobbyCode, String userId, StreamObserver<GameUpdate> observer) {
+        subscribers.computeIfAbsent(lobbyCode, k -> new ConcurrentHashMap<>()).put(userId, observer);
+        log.info("[STREAM] {} subscribed to lobby {}", userId, lobbyCode);
     }
 
-    public void unsubscribe(String lobbyCode, StreamObserver<GameUpdate> observer) {
-        List<StreamObserver<GameUpdate>> list = subscribers.get(lobbyCode);
-        if (list != null) list.remove(observer);
-        log.info("[STREAM] Client unsubscribed from lobby {}", lobbyCode);
+    public void unsubscribe(String lobbyCode, String userId) {
+        Map<String, StreamObserver<GameUpdate>> lobby = subscribers.get(lobbyCode);
+        if (lobby != null) lobby.remove(userId);
+        log.info("[STREAM] {} unsubscribed from lobby {}", userId, lobbyCode);
     }
 
     public void broadcast(String lobbyCode, GameUpdate update) {
-        List<StreamObserver<GameUpdate>> list = subscribers.get(lobbyCode);
-        if (list == null || list.isEmpty()) return;
-        log.info("[STREAM] Broadcasting to {} subscriber(s) in lobby {}", list.size(), lobbyCode);
-        for (StreamObserver<GameUpdate> observer : list) {
-            try {
-                synchronized (observer) {
-                    observer.onNext(update);
-                }
-            } catch (Exception e) {
-                log.warn("[STREAM] Failed to send update to subscriber in lobby {}: {}", lobbyCode, e.getMessage());
+        Map<String, StreamObserver<GameUpdate>> lobby = subscribers.get(lobbyCode);
+        if (lobby == null || lobby.isEmpty()) return;
+        log.info("[STREAM] Broadcasting to {} subscriber(s) in lobby {}", lobby.size(), lobbyCode);
+        for (StreamObserver<GameUpdate> observer : lobby.values()) {
+            send(observer, update, lobbyCode);
+        }
+    }
+
+    // Use sendTo() for role-specific private info (seer results, werewolf teammate list,
+    // witch prompts). Use broadcast() for public state changes visible to all players.
+    public void sendTo(String lobbyCode, String userId, GameUpdate update) {
+        Map<String, StreamObserver<GameUpdate>> lobby = subscribers.get(lobbyCode);
+        if (lobby == null) return;
+        StreamObserver<GameUpdate> observer = lobby.get(userId);
+        if (observer == null) {
+            log.warn("[STREAM] No subscriber found for user {} in lobby {}", userId, lobbyCode);
+            return;
+        }
+        log.info("[STREAM] Sending private update to {} in lobby {}", userId, lobbyCode);
+        send(observer, update, lobbyCode);
+    }
+
+    private void send(StreamObserver<GameUpdate> observer, GameUpdate update, String lobbyCode) {
+        try {
+            // gRPC StreamObservers are not thread-safe; synchronize per observer
+            // since broadcast() and sendTo() can be called from the scheduler thread
+            synchronized (observer) {
+                observer.onNext(update);
             }
+        } catch (Exception e) {
+            log.warn("[STREAM] Failed to send update in lobby {}: {}", lobbyCode, e.getMessage());
         }
     }
 }
