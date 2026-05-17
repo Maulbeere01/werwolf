@@ -1,5 +1,6 @@
 package com.werewolf.logic.model;
 
+import com.werewolf.grpc.Phase;
 import com.werewolf.grpc.Role;
 import java.util.*;
 
@@ -11,5 +12,6 @@ public class GameState {
 
     public Map<String, Player> players = new HashMap<>();
     public String lobbyCode;
+    public Phase phase = Phase.LOBBY;
     public List<String> deadPlayers = new ArrayList<>();
 }
