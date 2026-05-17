@@ -55,7 +55,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
     public void login(LoginRequest request, StreamObserver<LoginResponse> responseObserver) {
         var userOpt = userRepository.findByUsername(request.getUsername());
 
-        if (userOpt.isPresent() && userOpt.get().getPasswordHash().equals(request.getPassword())) {
+        if (userOpt.isPresent() && passwordEncoder.matches(request.getPassword(), userOpt.get().getPasswordHash())) {
             UserEntity user = userOpt.get();
 
             // build profile
