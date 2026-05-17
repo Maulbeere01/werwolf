@@ -3,16 +3,15 @@ package com.werewolf.logic.service;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.model.Player;
 import com.werewolf.grpc.LobbySettings;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import java.util.UUID;
 
-
+@Service
+@RequiredArgsConstructor
 public class LobbyManager {
 
     private final LobbyService lobbyService;
-
-    public LobbyManager(LobbyService lobbyService) {
-        this.lobbyService = lobbyService;
-    }
 
     public Lobby createLobby(String hostId, String hostName, LobbySettings settings) {
 

@@ -1,29 +1,31 @@
 package com.werewolf.api.grpc;
 
+import com.werewolf.auth.AuthContext;
 import com.werewolf.grpc.CreateLobbyRequest;
 import com.werewolf.grpc.GameServiceGrpc;
 import com.werewolf.grpc.LobbyInfo;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.service.LobbyManager;
 import io.grpc.stub.StreamObserver;
+import lombok.RequiredArgsConstructor;
+import net.devh.boot.grpc.server.service.GrpcService;
 
-
-
-public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase{
+@GrpcService
+@RequiredArgsConstructor
+public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
     private final LobbyManager lobbyManager;
-
-    public GameServiceImp(LobbyManager lobbyManager) {
-        this.lobbyManager = lobbyManager;
-    }
 
     @Override
     public void createLobby(CreateLobbyRequest request,
                             StreamObserver<LobbyInfo> responseObserver) {
 
+        String hostId = AuthContext.USER_ID_KEY.get();
+        String hostName = AuthContext.USERNAME_KEY.get();
+
         Lobby lobby = lobbyManager.createLobby(
-                "host-id", // später aus token
-                "host-name",
+                hostId,
+                hostName,
                 request.getSettings()
         );
 
