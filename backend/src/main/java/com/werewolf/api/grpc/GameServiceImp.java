@@ -137,7 +137,9 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
         Lobby lobby = lobbyManager.getLobby(lobbyCode);
         if (lobby != null) {
-            responseObserver.onNext(toGameUpdate(lobby));
+            GameState state = gameStateService.get(lobbyCode);
+            GameUpdate initial = state != null ? toGameUpdate(state, lobby) : toGameUpdate(lobby);
+            responseObserver.onNext(initial);
         }
     }
 
@@ -188,9 +190,24 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                 .build();
     }
 
+    private static final List<Phase> PHASE_SEQUENCE = List.of(
+            Phase.NIGHT_START,
+            Phase.NIGHT_WEREWOLVES,
+            Phase.NIGHT_SEER,
+            Phase.NIGHT_WITCH,
+            Phase.NIGHT_FOX,
+            Phase.DAY_RESULT,
+            Phase.DAY_DISCUSSION,
+            Phase.DAY_VOTING,
+            Phase.HUNTER_REVENGE,
+            Phase.GAME_END
+    );
+
+
     private Phase nextPhase(Phase current) {
-        Phase next = Phase.forNumber(current.getNumber() + 1);
-        return next != null ? next : Phase.GAME_END;
+        int idx = PHASE_SEQUENCE.indexOf(current);
+        if (idx < 0 || idx >= PHASE_SEQUENCE.size() - 1) return Phase.GAME_END;
+        return PHASE_SEQUENCE.get(idx + 1);
     }
 
     private List<Role> buildRolePool(LobbySettings settings, int playerCount) {
