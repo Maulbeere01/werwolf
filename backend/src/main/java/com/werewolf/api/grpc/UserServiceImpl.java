@@ -12,12 +12,14 @@ import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
 import net.devh.boot.grpc.server.service.GrpcService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @GrpcService
 @RequiredArgsConstructor
 public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
     @Override
     public void register(RegisterRequest request, StreamObserver<Empty> responseObserver) {
@@ -41,8 +43,8 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
         UserEntity newUser = new UserEntity();
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
-        // todo: add bcrypt
-        newUser.setPasswordHash(request.getPassword());
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+        newUser.setPasswordHash(hashedPassword);
 
         userRepository.save(newUser);
 
