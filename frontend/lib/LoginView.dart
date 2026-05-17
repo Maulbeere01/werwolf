@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:werwolf/controller/LoginViewController.dart';
-import 'package:werwolf/Homescreen.dart';
+import 'package:werwolf/HomeScreen.dart';
 
 import 'widgets/RegistrationLoginBackgroundWrapper.dart';
 import 'widgets/DynamicAuthForm.dart';
