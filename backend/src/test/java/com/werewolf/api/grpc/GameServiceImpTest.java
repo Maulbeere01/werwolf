@@ -5,6 +5,7 @@ import com.werewolf.grpc.LobbyInfo;
 import com.werewolf.grpc.LobbySettings;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.service.LobbyManager;
+import com.werewolf.logic.service.LobbySubscriptionService;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.Test;
 
@@ -20,14 +21,16 @@ class GameServiceImpTest {
     void shouldReturnLobbyInfo() {
 
         LobbyManager manager = mock(LobbyManager.class);
+        LobbySubscriptionService subscriptionService = mock(LobbySubscriptionService.class);
 
         Lobby lobby = new Lobby();
         lobby.lobbyCode = "ABCD";
         lobby.hostId = "host1";
+        lobby.settings = LobbySettings.newBuilder().build();
 
         when(manager.createLobby(any(), any(), any())).thenReturn(lobby);
 
-        GameServiceImp service = new GameServiceImp(manager);
+        GameServiceImp service = new GameServiceImp(manager, subscriptionService);
 
         StreamObserver<LobbyInfo> observer = mock(StreamObserver.class);
 
