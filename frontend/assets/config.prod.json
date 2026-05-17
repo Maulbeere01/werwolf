@@ -1,0 +1,5 @@
+{
+  "server_ip": "werwolf.wehrberger.net",
+  "server_port": 443,
+  "use_tls": true
+}
