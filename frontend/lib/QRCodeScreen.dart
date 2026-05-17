@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:grpc/grpc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:werwolf/GameScreen.dart';
 import 'package:werwolf/GrpcHandler.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 
@@ -33,9 +34,20 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
     _subscription = stream.listen(
       (update) {
-        if (mounted) {
-          setState(() => _players = update.players);
+        if (!mounted) return;
+        if (update.currentPhase != Phase.LOBBY) {
+          _subscription?.cancel();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => GameScreen(
+                lobbyCode: widget.lobbyCode,
+                initialUpdate: update,
+              ),
+            ),
+          );
+          return;
         }
+        setState(() => _players = update.players);
       },
       onError: (e) => print('[STREAM] Error: $e'),
       onDone: () => print('[STREAM] Stream closed for lobby ${widget.lobbyCode}'),
