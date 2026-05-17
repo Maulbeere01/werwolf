@@ -3,11 +3,13 @@ package com.werewolf.api.grpc;
 import com.werewolf.auth.AuthContext;
 import com.werewolf.grpc.CreateLobbyRequest;
 import com.werewolf.grpc.GameServiceGrpc;
+import com.werewolf.grpc.JoinRequest;
 import com.werewolf.grpc.LobbyInfo;
 import com.werewolf.grpc.PlayerStatus;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.model.Player;
 import com.werewolf.logic.service.LobbyManager;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -25,20 +27,39 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         String hostId = AuthContext.USER_ID_KEY.get();
         String hostName = AuthContext.USERNAME_KEY.get();
 
-        Lobby lobby = lobbyManager.createLobby(
-                hostId,
-                hostName,
-                request.getSettings()
-        );
+        Lobby lobby = lobbyManager.createLobby(hostId, hostName, request.getSettings());
 
-        LobbyInfo.Builder responseBuilder = LobbyInfo.newBuilder()
+        responseObserver.onNext(toLobbyInfo(lobby));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void joinLobby(JoinRequest request,
+                          StreamObserver<LobbyInfo> responseObserver) {
+
+        String userId = AuthContext.USER_ID_KEY.get();
+        String username = AuthContext.USERNAME_KEY.get();
+
+        try {
+            Lobby lobby = lobbyManager.joinLobby(userId, username, request.getLobbyCode());
+            responseObserver.onNext(toLobbyInfo(lobby));
+            responseObserver.onCompleted();
+        } catch (IllegalArgumentException e) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
+    }
+
+    private LobbyInfo toLobbyInfo(Lobby lobby) {
+        LobbyInfo.Builder builder = LobbyInfo.newBuilder()
                 .setLobbyCode(lobby.lobbyCode)
                 .setHostId(lobby.hostId)
                 .setCanStart(false)
                 .setSettings(lobby.settings);
 
         for (Player p : lobby.players) {
-            responseBuilder.addPlayers(PlayerStatus.newBuilder()
+            builder.addPlayers(PlayerStatus.newBuilder()
                     .setId(p.id)
                     .setName(p.name)
                     .setIsAlive(p.alive)
@@ -46,7 +67,6 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                     .build());
         }
 
-        responseObserver.onNext(responseBuilder.build());
-        responseObserver.onCompleted();
+        return builder.build();
     }
 }

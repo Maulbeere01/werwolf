@@ -30,6 +30,26 @@ public class LobbyManager {
         return lobbyService.createLobby(lobby);
     }
 
+    public Lobby joinLobby(String userId, String username, String lobbyCode) {
+
+        Lobby lobby = lobbyService.getLobby(lobbyCode);
+        if (lobby == null) {
+            throw new IllegalArgumentException("Lobby not found: " + lobbyCode);
+        }
+
+        boolean alreadyIn = lobby.players.stream().anyMatch(p -> p.id.equals(userId));
+        if (alreadyIn) {
+            return lobby;
+        }
+
+        Player player = new Player();
+        player.id = userId;
+        player.name = username;
+
+        lobby.players.add(player);
+        return lobby;
+    }
+
     private String generateCode() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
     }
