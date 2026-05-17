@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:werwolf/controller/GameViewController.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 import 'QRCodeScreen.dart';
 
 class CreateGame extends StatefulWidget {
@@ -107,17 +109,38 @@ class _CreateGameState extends State<CreateGame> {
                     child: SizedBox(
                       width: 160,
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            PageRouteBuilder(
-                              pageBuilder: (_, __, ___) => QRCodeScreen(
-                                maxPlayers: numberOfWolfs.toInt(),
-                                numberOfPlayers: _numberOfPlayers.toInt(),
+                        onPressed: () async {
+                          final settings = LobbySettings()
+                            ..maxPlayers = _numberOfPlayers.toInt()
+                            ..discussionTimeSeconds = _discussionLength
+                            ..roles.addAll([
+                              RoleCount()
+                                ..role = Role.WEREWOLF
+                                ..count = numberOfWolfs.toInt(),
+                              RoleCount()
+                                ..role = Role.SEER
+                                ..count = numberOfRole.toInt(),
+                            ]);
+
+                          final lobbyCode = await GameViewController.createLobby(settings);
+
+                          if (!mounted) return;
+
+                          if (lobbyCode != null) {
+                            Navigator.of(context).push(
+                              PageRouteBuilder(
+                                pageBuilder: (_, __, ___) => QRCodeScreen(lobbyCode: lobbyCode),
+                                transitionDuration: Duration.zero,
+                                reverseTransitionDuration: Duration.zero,
                               ),
-                              transitionDuration: Duration.zero,
-                              reverseTransitionDuration: Duration.zero,
-                            ),
-                          );
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to create lobby. Please try again.'),
+                              ),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white.withOpacity(0.9),
