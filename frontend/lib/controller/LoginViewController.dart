@@ -1,4 +1,5 @@
 import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/auth/auth_state.dart';
 import '../generated/werwolf.pb.dart';
 
 class LoginViewController  {
@@ -11,12 +12,14 @@ class LoginViewController  {
       request.username = username;
       request.password = password;
 
-      await grpc.userClient.login(request);
+      final response = await grpc.userClient.login(request);
+      AuthState.token = response.token;
 
-      print("Erfolg");
+      print('[LOGIN] Success — userId=${response.profile.userId}, username=${response.profile.username}');
+      print('[LOGIN] Token: ${response.token.substring(0, 20)}...');
       return true;
     } catch (e) {
-      print("Fehler: $e");
+      print('[LOGIN] Error: $e');
       return false;
     }
   }
