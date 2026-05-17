@@ -28,7 +28,7 @@ cd backend
 **Windows PowerShell:**
 ```powershell
 cd backend
-.\mvnw clean compile
+./mvnw clean compile
 ```
 **Windows CMD:**
 ```cmd

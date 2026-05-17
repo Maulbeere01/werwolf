@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROTO_DIR="./proto"
-OUT_DIR="./Frontend/lib/generated"
+OUT_DIR="./frontend/lib/generated"
 
 mkdir -p $OUT_DIR
 
