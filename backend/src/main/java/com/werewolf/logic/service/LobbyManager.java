@@ -3,16 +3,15 @@ package com.werewolf.logic.service;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.model.Player;
 import com.werewolf.grpc.LobbySettings;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import java.util.UUID;
 
-
+@Service
+@RequiredArgsConstructor
 public class LobbyManager {
 
     private final LobbyService lobbyService;
-
-    public LobbyManager(LobbyService lobbyService) {
-        this.lobbyService = lobbyService;
-    }
 
     public Lobby createLobby(String hostId, String hostName, LobbySettings settings) {
 
@@ -29,6 +28,30 @@ public class LobbyManager {
         lobby.players.add(host);
 
         return lobbyService.createLobby(lobby);
+    }
+
+    public Lobby joinLobby(String userId, String username, String lobbyCode) {
+
+        Lobby lobby = lobbyService.getLobby(lobbyCode);
+        if (lobby == null) {
+            throw new IllegalArgumentException("Lobby not found: " + lobbyCode);
+        }
+
+        boolean alreadyIn = lobby.players.stream().anyMatch(p -> p.id.equals(userId));
+        if (alreadyIn) {
+            return lobby;
+        }
+
+        Player player = new Player();
+        player.id = userId;
+        player.name = username;
+
+        lobby.players.add(player);
+        return lobby;
+    }
+
+    public Lobby getLobby(String code) {
+        return lobbyService.getLobby(code);
     }
 
     private String generateCode() {
