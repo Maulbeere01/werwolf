@@ -12,6 +12,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    //TODO debugShowCheckedModeBanner entfernen
+    debugShowCheckedModeBanner: false;
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
@@ -20,6 +23,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
       ),
+      debugShowCheckedModeBanner: false,
       home: const MyHomePage(title: 'Werwolf Hauptmenü'),
     );
   }
