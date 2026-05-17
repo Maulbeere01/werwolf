@@ -17,12 +17,12 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
 
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -30,19 +30,27 @@ class _LoginViewState extends State<LoginView> {
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
 
-      await LoginViewController.loginUser(
-        _emailController.text,
+      final success = await LoginViewController.loginUser(
+        _usernameController.text,
         _passwordController.text,
       );
 
       if (!mounted) return;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>  Homescreen(),
-        ),
-      );
+      if (success) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Homescreen(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.'),
+          ),
+        );
+      }
     }
   }
 
@@ -58,12 +66,12 @@ class _LoginViewState extends State<LoginView> {
             onSubmit: _handleLogin,
             fields: [
               AuthenticationFormField(
-                controller: _emailController,
-                label: "Mail-Adresse",
-                hint: "Gib eine E-Mail Adresse ein",
-                icon: Icons.email,
+                controller: _usernameController,
+                label: "Benutzername",
+                hint: "Gib deinen Benutzernamen ein",
+                icon: Icons.person,
                 validator: (value) =>
-                    LoginViewController.validateMail(value),
+                    value == null || value.isEmpty ? "Bitte gib deinen Benutzernamen ein" : null,
               ),
 
               AuthenticationFormField(
@@ -72,8 +80,6 @@ class _LoginViewState extends State<LoginView> {
                 hint: "Dein Passwort",
                 icon: Icons.lock,
                 isPassword: true,
-                validator: (value) =>
-                    LoginViewController.validateMail(value),
               ),
             ],
           ),
