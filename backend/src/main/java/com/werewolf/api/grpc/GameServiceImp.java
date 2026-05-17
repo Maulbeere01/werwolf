@@ -101,6 +101,28 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
     }
 
     @Override
+    public void performAction(GameAction request, StreamObserver<Empty> responseObserver) {
+        String lobbyCode = request.getLobbyCode();
+
+        GameState state = gameStateService.get(lobbyCode);
+        if (state == null) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("No active game for lobby: " + lobbyCode)
+                    .asRuntimeException());
+            return;
+        }
+
+        state.phase = nextPhase(state.phase);
+        gameStateService.save(state);
+
+        Lobby lobby = lobbyManager.getLobby(lobbyCode);
+        lobbySubscriptionService.broadcast(lobbyCode, toGameUpdate(state, lobby));
+
+        responseObserver.onNext(Empty.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public void subscribeToGame(SubscribeRequest request,
                                 StreamObserver<GameUpdate> responseObserver) {
 
@@ -164,6 +186,11 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                 .setIsAlive(p.alive)
                 .setIsHost(p.id.equals(hostId))
                 .build();
+    }
+
+    private Phase nextPhase(Phase current) {
+        Phase next = Phase.forNumber(current.getNumber() + 1);
+        return next != null ? next : Phase.GAME_END;
     }
 
     private List<Role> buildRolePool(LobbySettings settings, int playerCount) {
