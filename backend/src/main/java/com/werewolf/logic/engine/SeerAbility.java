@@ -1,11 +1,11 @@
 package com.werewolf.logic.engine;
 
-import com.werewolf.grpc.GameUpdate;
 import com.werewolf.grpc.Role;
 import com.werewolf.grpc.SeerAction;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Player;
 import com.werewolf.logic.service.GameStateService;
+import com.werewolf.logic.service.GameUpdateFactory;
 import com.werewolf.logic.service.LobbySubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,11 +31,8 @@ public class SeerAbility {
 
         if (seerId == null || target == null) return;
 
-        GameUpdate result = GameUpdate.newBuilder()
-                .setCurrentPhase(state.phase)
-                .setPrivateInfo("Der Spieler " + target.name + " ist: " + target.role.name())
-                .build();
-
-        subscriptionService.sendTo(lobbyCode, seerId, result);
+        subscriptionService.sendTo(lobbyCode, seerId,
+                GameUpdateFactory.privateInfo(state.phase,
+                        "Der Spieler " + target.name + " ist: " + target.role.name()));
     }
 }

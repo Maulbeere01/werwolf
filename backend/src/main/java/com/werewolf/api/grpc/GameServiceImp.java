@@ -9,6 +9,7 @@ import com.werewolf.logic.model.Player;
 import com.werewolf.logic.engine.AbilityExecutor;
 import com.werewolf.logic.service.GameLoopService;
 import com.werewolf.logic.service.GameStateService;
+import com.werewolf.logic.service.GameUpdateFactory;
 import com.werewolf.logic.service.LobbyManager;
 import com.werewolf.logic.service.LobbySubscriptionService;
 import io.grpc.Status;
@@ -64,7 +65,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
         try {
             Lobby lobby = lobbyManager.joinLobby(userId, username, request.getLobbyCode());
-            lobbySubscriptionService.broadcast(request.getLobbyCode(), toGameUpdate(lobby));
+            lobbySubscriptionService.broadcast(request.getLobbyCode(), GameUpdateFactory.forLobby(lobby));
             responseObserver.onNext(toLobbyInfo(lobby));
             responseObserver.onCompleted();
         } catch (IllegalArgumentException e) {
@@ -113,7 +114,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         gameStateService.save(state);
         lobby.started = true;
 
-        lobbySubscriptionService.broadcast(lobbyCode, toGameUpdate(state, lobby));
+        lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby, "Das Spiel beginnt. Die Nacht bricht herein."));
         gameLoopService.start(lobbyCode);
 
         responseObserver.onNext(Empty.getDefaultInstance());
@@ -178,7 +179,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         lobbySubscriptionService.subscribe(lobbyCode, userId, responseObserver);
 
         GameState state = gameStateService.get(lobbyCode);
-        GameUpdate initial = state != null ? toGameUpdate(state, lobby) : toGameUpdate(lobby);
+        GameUpdate initial = state != null ? GameUpdateFactory.forPhase(state, lobby) : GameUpdateFactory.forLobby(lobby);
         responseObserver.onNext(initial);
     }
 
@@ -190,43 +191,15 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                 .setSettings(lobby.settings);
 
         for (Player p : lobby.players) {
-            builder.addPlayers(toPlayerStatus(p, lobby.hostId));
+            builder.addPlayers(PlayerStatus.newBuilder()
+                    .setId(p.id)
+                    .setName(p.name)
+                    .setIsAlive(p.alive)
+                    .setIsHost(p.id.equals(lobby.hostId))
+                    .build());
         }
 
         return builder.build();
-    }
-
-    private GameUpdate toGameUpdate(Lobby lobby) {
-        GameUpdate.Builder builder = GameUpdate.newBuilder()
-                .setCurrentPhase(Phase.LOBBY);
-
-        for (Player p : lobby.players) {
-            builder.addPlayers(toPlayerStatus(p, lobby.hostId));
-        }
-
-        return builder.build();
-    }
-
-    private GameUpdate toGameUpdate(GameState state, Lobby lobby) {
-        GameUpdate.Builder builder = GameUpdate.newBuilder()
-                .setCurrentPhase(state.phase)
-                .setDisplayText("Das Spiel beginnt. Die Nacht bricht herein.");
-
-        for (Player p : lobby.players) {
-            // role is masked in the shared broadcast; private role info is delivered per-player later
-            builder.addPlayers(toPlayerStatus(p, lobby.hostId));
-        }
-
-        return builder.build();
-    }
-
-    private PlayerStatus toPlayerStatus(Player p, String hostId) {
-        return PlayerStatus.newBuilder()
-                .setId(p.id)
-                .setName(p.name)
-                .setIsAlive(p.alive)
-                .setIsHost(p.id.equals(hostId))
-                .build();
     }
 
 

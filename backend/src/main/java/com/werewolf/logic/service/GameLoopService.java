@@ -1,9 +1,10 @@
 package com.werewolf.logic.service;
 
-import com.werewolf.grpc.*;
+import com.werewolf.grpc.GameUpdate;
+import com.werewolf.grpc.Phase;
+import com.werewolf.grpc.Role;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
-import com.werewolf.logic.model.Player;
 
 import java.util.List;
 import jakarta.annotation.PreDestroy;
@@ -79,7 +80,7 @@ public class GameLoopService {
 
             Lobby lobby = lobbyManager.getLobby(lobbyCode);
             if (lobby != null) {
-                lobbySubscriptionService.broadcast(lobbyCode, buildUpdate(state, lobby));
+                lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby));
                 onEnter(state, lobby);
             }
 
@@ -119,27 +120,9 @@ public class GameLoopService {
                 .forEach(p -> {
                     // ability_active=true tells the frontend to render the role-specific
                     // action UI (target picker for werewolf, potion buttons for witch, etc)
-                    GameUpdate update = GameUpdate.newBuilder()
-                            .setCurrentPhase(state.phase)
-                            .setPrivateInfo(message)
-                            .setAbilityActive(true)
-                            .build();
+                    GameUpdate update = GameUpdateFactory.privatePrompt(state.phase, message);
                     lobbySubscriptionService.sendTo(lobby.lobbyCode, p.id, update);
                 });
-    }
-
-    private GameUpdate buildUpdate(GameState state, Lobby lobby) {
-        GameUpdate.Builder builder = GameUpdate.newBuilder()
-                .setCurrentPhase(state.phase);
-        for (Player p : lobby.players) {
-            builder.addPlayers(PlayerStatus.newBuilder()
-                    .setId(p.id)
-                    .setName(p.name)
-                    .setIsAlive(p.alive)
-                    .setIsHost(p.id.equals(lobby.hostId))
-                    .build());
-        }
-        return builder.build();
     }
 
     @PreDestroy
