@@ -154,6 +154,22 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         String userId = AuthContext.USER_ID_KEY.get();
         String lobbyCode = request.getLobbyCode();
 
+        Lobby lobby = lobbyManager.getLobby(lobbyCode);
+        if (lobby == null) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("Lobby not found: " + lobbyCode)
+                    .asRuntimeException());
+            return;
+        }
+
+        boolean isMember = lobby.players.stream().anyMatch(p -> p.id.equals(userId));
+        if (!isMember) {
+            responseObserver.onError(Status.PERMISSION_DENIED
+                    .withDescription("You are not a member of this lobby")
+                    .asRuntimeException());
+            return;
+        }
+
         if (responseObserver instanceof ServerCallStreamObserver<GameUpdate> serverObserver) {
             serverObserver.setOnCancelHandler(() ->
                     lobbySubscriptionService.unsubscribe(lobbyCode, userId));
@@ -161,12 +177,9 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
         lobbySubscriptionService.subscribe(lobbyCode, userId, responseObserver);
 
-        Lobby lobby = lobbyManager.getLobby(lobbyCode);
-        if (lobby != null) {
-            GameState state = gameStateService.get(lobbyCode);
-            GameUpdate initial = state != null ? toGameUpdate(state, lobby) : toGameUpdate(lobby);
-            responseObserver.onNext(initial);
-        }
+        GameState state = gameStateService.get(lobbyCode);
+        GameUpdate initial = state != null ? toGameUpdate(state, lobby) : toGameUpdate(lobby);
+        responseObserver.onNext(initial);
     }
 
     private LobbyInfo toLobbyInfo(Lobby lobby) {

@@ -37,13 +37,13 @@ public class LobbyManager {
             throw new IllegalArgumentException("Lobby not found: " + lobbyCode);
         }
 
-        if (lobby.started) {
-            throw new IllegalStateException("Cannot join a game that has already started");
-        }
-
         boolean alreadyIn = lobby.players.stream().anyMatch(p -> p.id.equals(userId));
         if (alreadyIn) {
             return lobby;
+        }
+
+        if (lobby.started) {
+            throw new IllegalStateException("Cannot join a game that has already started");
         }
 
         Player player = new Player();
