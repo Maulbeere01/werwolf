@@ -21,10 +21,11 @@ public class LobbySubscriptionService {
         log.info("[STREAM] {} subscribed to lobby {}", userId, lobbyCode);
     }
 
-    public void unsubscribe(String lobbyCode, String userId) {
-        Map<String, StreamObserver<GameUpdate>> lobby = subscribers.get(lobbyCode);
-        if (lobby != null) lobby.remove(userId);
-        log.info("[STREAM] {} unsubscribed from lobby {}", userId, lobbyCode);
+    public void unsubscribe(String lobbyCode, String userId, StreamObserver<GameUpdate> observer) {
+        ConcurrentHashMap<String, StreamObserver<GameUpdate>> lobby = subscribers.get(lobbyCode);
+        if (lobby != null && lobby.remove(userId, observer)) {
+            log.info("[STREAM] {} unsubscribed from lobby {}", userId, lobbyCode);
+        }
     }
 
     public void broadcast(String lobbyCode, GameUpdate update) {

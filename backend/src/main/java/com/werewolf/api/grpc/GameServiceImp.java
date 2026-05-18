@@ -113,9 +113,14 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
         gameStateService.save(state);
         lobby.started = true;
+        gameLoopService.start(lobbyCode); // sets phaseEndsAt and persists
 
-        lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby));
-        gameLoopService.start(lobbyCode);
+        GameState started = gameStateService.get(lobbyCode);
+        if (started != null) {
+            lobby.players.forEach(p ->
+                    lobbySubscriptionService.sendTo(lobbyCode, p.id,
+                            GameUpdateFactory.snapshot(started, lobby, p.id)));
+        }
 
         responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
@@ -173,7 +178,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
         if (responseObserver instanceof ServerCallStreamObserver<GameUpdate> serverObserver) {
             serverObserver.setOnCancelHandler(() ->
-                    lobbySubscriptionService.unsubscribe(lobbyCode, userId));
+                    lobbySubscriptionService.unsubscribe(lobbyCode, userId, responseObserver));
         }
 
         lobbySubscriptionService.subscribe(lobbyCode, userId, responseObserver);

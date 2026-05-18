@@ -16,12 +16,6 @@ public final class GameUpdateFactory {
         return b.build();
     }
 
-    public static GameUpdate forPhase(GameState state, Lobby lobby) {
-        GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(state.phase);
-        lobby.players.forEach(p -> b.addPlayers(playerStatus(p, lobby.hostId)));
-        return b.build();
-    }
-
     // Full personalised snapshot sent as the first message on (re)subscribe
     public static GameUpdate snapshot(GameState state, Lobby lobby, String userId) {
         GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(state.phase);

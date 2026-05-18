@@ -108,13 +108,15 @@ public class GameLoopService {
                 activeLoops.put(lobbyCode, next);
             }
 
-            gameStateService.save(state);
-
             Lobby lobby = lobbyManager.getLobby(lobbyCode);
             if (lobby != null) {
-                lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby));
                 onEnter(state, lobby);
-                gameStateService.save(state); // persist prompts stored by onEnter
+                gameStateService.save(state);
+                lobby.players.forEach(p ->
+                        lobbySubscriptionService.sendTo(lobbyCode, p.id,
+                                GameUpdateFactory.snapshot(state, lobby, p.id)));
+            } else {
+                gameStateService.save(state);
             }
 
             log.info("[LOOP] Lobby {} advanced to phase {}", lobbyCode, state.phase);
