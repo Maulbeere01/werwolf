@@ -1,5 +1,6 @@
 package com.werewolf.logic.service;
 
+import com.google.protobuf.Timestamp;
 import com.werewolf.grpc.*;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
@@ -18,6 +19,35 @@ public final class GameUpdateFactory {
     public static GameUpdate forPhase(GameState state, Lobby lobby) {
         GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(state.phase);
         lobby.players.forEach(p -> b.addPlayers(playerStatus(p, lobby.hostId)));
+        return b.build();
+    }
+
+    // Full personalised snapshot sent as the first message on (re)subscribe
+    public static GameUpdate snapshot(GameState state, Lobby lobby, String userId) {
+        GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(state.phase);
+        lobby.players.forEach(p -> b.addPlayers(playerStatus(p, lobby.hostId)));
+
+        Player caller = state.players.get(userId);
+        if (caller != null && caller.role != null) {
+            b.setYourRole(caller.role);
+        }
+
+        ActionPrompt prompt = state.pendingPrompts.get(userId);
+        if (prompt != null) {
+            b.setOpenPrompt(prompt);
+        }
+
+        if (state.lastAnnouncement != null) {
+            b.setAnnouncement(state.lastAnnouncement);
+        }
+
+        if (state.phaseEndsAt != null) {
+            b.setPhaseEndsAt(Timestamp.newBuilder()
+                    .setSeconds(state.phaseEndsAt.getEpochSecond())
+                    .setNanos(state.phaseEndsAt.getNano())
+                    .build());
+        }
+
         return b.build();
     }
 

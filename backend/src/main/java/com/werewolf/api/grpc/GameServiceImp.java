@@ -179,7 +179,9 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         lobbySubscriptionService.subscribe(lobbyCode, userId, responseObserver);
 
         GameState state = gameStateService.get(lobbyCode);
-        GameUpdate initial = state != null ? GameUpdateFactory.forPhase(state, lobby) : GameUpdateFactory.forLobby(lobby);
+        GameUpdate initial = state != null
+                ? GameUpdateFactory.snapshot(state, lobby, userId)
+                : GameUpdateFactory.forLobby(lobby);
         responseObserver.onNext(initial);
     }
 

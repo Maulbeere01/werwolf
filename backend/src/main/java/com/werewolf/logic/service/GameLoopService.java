@@ -4,7 +4,9 @@ import com.werewolf.grpc.*;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,11 +44,31 @@ public class GameLoopService {
             Phase.GAME_END
     );
 
+    // placeholder durations (seconds)
+    static final Map<Phase, Long> PHASE_DURATIONS = Map.ofEntries(
+            Map.entry(Phase.NIGHT_START,      10L),
+            Map.entry(Phase.NIGHT_WEREWOLVES, 10L),
+            Map.entry(Phase.NIGHT_SEER,       10L),
+            Map.entry(Phase.NIGHT_WITCH,      10L),
+            Map.entry(Phase.NIGHT_FOX,        10L),
+            Map.entry(Phase.DAY_RESULT,       10L),
+            Map.entry(Phase.DAY_DISCUSSION,   10L),
+            Map.entry(Phase.DAY_VOTING,       10L),
+            Map.entry(Phase.HUNTER_REVENGE,   10L)
+    );
+
+    private static long durationOf(Phase phase) {
+        return PHASE_DURATIONS.getOrDefault(phase, 10L);
+    }
+
     public void start(String lobbyCode) {
-        // 10 second interval is a placeholder for testing. Replace with per-phase timers
-        // once ability handlers signal completion via stop() + immediate re-advance.
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
-                () -> tick(lobbyCode), 10, 10, TimeUnit.SECONDS);
+        GameState state = gameStateService.get(lobbyCode);
+        if (state != null) {
+            state.phaseEndsAt = Instant.now().plusSeconds(durationOf(state.phase));
+            gameStateService.save(state);
+        }
+        long firstDelay = state != null ? durationOf(state.phase) : 10L;
+        ScheduledFuture<?> future = scheduler.schedule(() -> tickLoop(lobbyCode), firstDelay, TimeUnit.SECONDS);
         activeLoops.put(lobbyCode, future);
         log.info("[LOOP] Started phase loop for lobby {}", lobbyCode);
     }
@@ -65,7 +87,7 @@ public class GameLoopService {
         }
     }
 
-    private void tick(String lobbyCode) {
+    private void tickLoop(String lobbyCode) {
         try {
             GameState state = gameStateService.get(lobbyCode);
             if (state == null || state.phase == Phase.GAME_END) {
@@ -73,13 +95,26 @@ public class GameLoopService {
                 return;
             }
 
+            state.pendingPrompts.clear();
+            state.lastAnnouncement = null;
             state.phase = nextPhase(state.phase);
+
+            if (state.phase == Phase.GAME_END) {
+                state.phaseEndsAt = null;
+            } else {
+                long duration = durationOf(state.phase);
+                state.phaseEndsAt = Instant.now().plusSeconds(duration);
+                ScheduledFuture<?> next = scheduler.schedule(() -> tickLoop(lobbyCode), duration, TimeUnit.SECONDS);
+                activeLoops.put(lobbyCode, next);
+            }
+
             gameStateService.save(state);
 
             Lobby lobby = lobbyManager.getLobby(lobbyCode);
             if (lobby != null) {
                 lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby));
                 onEnter(state, lobby);
+                gameStateService.save(state); // persist prompts stored by onEnter
             }
 
             log.info("[LOOP] Lobby {} advanced to phase {}", lobbyCode, state.phase);
@@ -115,8 +150,11 @@ public class GameLoopService {
     private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {
         state.players.values().stream()
                 .filter(p -> p.role == role && p.alive)
-                .forEach(p -> lobbySubscriptionService.sendTo(lobby.lobbyCode, p.id,
-                        GameUpdateFactory.privatePrompt(state.phase, prompt)));
+                .forEach(p -> {
+                    state.pendingPrompts.put(p.id, prompt);
+                    lobbySubscriptionService.sendTo(lobby.lobbyCode, p.id,
+                            GameUpdateFactory.privatePrompt(state.phase, prompt));
+                });
     }
 
     @PreDestroy
