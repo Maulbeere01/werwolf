@@ -31,6 +31,13 @@ class GrpcHandler {
         credentials: useTls
             ? const ChannelCredentials.secure()
             : const ChannelCredentials.insecure(),
+        // ping server every 60 s; drop the connection after 20 s without a reply
+        // mirrors server keepalive so both ends detect silent failures
+        keepAlive: const ClientKeepAliveOptions(
+          pingInterval: Duration(seconds: 60),
+          timeout: Duration(seconds: 20),
+          permitWithoutCalls: true,
+        ),
       ),
     );
 
