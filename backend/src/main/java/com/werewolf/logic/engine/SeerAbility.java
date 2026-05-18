@@ -1,7 +1,6 @@
 package com.werewolf.logic.engine;
 
-import com.werewolf.grpc.Role;
-import com.werewolf.grpc.SeerAction;
+import com.werewolf.grpc.*;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Player;
 import com.werewolf.logic.service.GameStateService;
@@ -31,8 +30,13 @@ public class SeerAbility {
 
         if (seerId == null || target == null) return;
 
+        ActionResult result = ActionResult.newBuilder()
+                .setSeerReveal(SeerReveal.newBuilder()
+                        .setTargetId(target.id)
+                        .setIsWerewolf(target.role == Role.WEREWOLF)
+                        .build())
+                .build();
         subscriptionService.sendTo(lobbyCode, seerId,
-                GameUpdateFactory.privateInfo(state.phase,
-                        "Der Spieler " + target.name + " ist: " + target.role.name()));
+                GameUpdateFactory.privateResult(state.phase, result));
     }
 }

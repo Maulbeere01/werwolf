@@ -114,7 +114,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         gameStateService.save(state);
         lobby.started = true;
 
-        lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby, "Das Spiel beginnt. Die Nacht bricht herein."));
+        lobbySubscriptionService.broadcast(lobbyCode, GameUpdateFactory.forPhase(state, lobby));
         gameLoopService.start(lobbyCode);
 
         responseObserver.onNext(Empty.getDefaultInstance());

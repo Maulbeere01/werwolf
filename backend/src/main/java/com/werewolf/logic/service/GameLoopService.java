@@ -1,8 +1,6 @@
 package com.werewolf.logic.service;
 
-import com.werewolf.grpc.GameUpdate;
-import com.werewolf.grpc.Phase;
-import com.werewolf.grpc.Role;
+import com.werewolf.grpc.*;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
@@ -101,28 +99,24 @@ public class GameLoopService {
     private void onEnter(GameState state, Lobby lobby) {
         switch (state.phase) {
             case NIGHT_WEREWOLVES -> notifyByRole(state, lobby, Role.WEREWOLF,
-                    "Die Werwölfe erwachen. Wählt euer Opfer.");
+                    ActionPrompt.newBuilder().setWerewolf(WerewolfPrompt.newBuilder().build()).build());
             case NIGHT_SEER -> notifyByRole(state, lobby, Role.SEER,
-                    "Der Seher erwacht. Wähle einen Spieler, um seine Rolle zu erfahren.");
+                    ActionPrompt.newBuilder().setSeer(SeerPrompt.newBuilder().build()).build());
             case NIGHT_WITCH -> notifyByRole(state, lobby, Role.WITCH,
-                    "Die Hexe erwacht. Entscheide, ob du heilen oder vergiften möchtest.");
+                    ActionPrompt.newBuilder().setWitch(WitchPrompt.newBuilder().build()).build());
             case NIGHT_FOX -> notifyByRole(state, lobby, Role.FOX,
-                    "Wähle eine Gruppe von drei Spielern.");
+                    ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder().build()).build());
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
-                    " Wähle einen Spieler, den du mit in den Tod nimmst.");
+                    ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
             default -> {}
         }
     }
 
-    private void notifyByRole(GameState state, Lobby lobby, Role role, String message) {
+    private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {
         state.players.values().stream()
                 .filter(p -> p.role == role && p.alive)
-                .forEach(p -> {
-                    // ability_active=true tells the frontend to render the role-specific
-                    // action UI (target picker for werewolf, potion buttons for witch, etc)
-                    GameUpdate update = GameUpdateFactory.privatePrompt(state.phase, message);
-                    lobbySubscriptionService.sendTo(lobby.lobbyCode, p.id, update);
-                });
+                .forEach(p -> lobbySubscriptionService.sendTo(lobby.lobbyCode, p.id,
+                        GameUpdateFactory.privatePrompt(state.phase, prompt)));
     }
 
     @PreDestroy
