@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:werwolf/LoginView.dart';
 import 'package:werwolf/RegistrationView.dart';
+import 'package:werwolf/HomeScreen.dart';
+import 'package:werwolf/auth/auth_state.dart';
+import 'package:werwolf/auth/session_store.dart';
 import 'package:audioplayers/audioplayers.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SessionStore.load();
   runApp(const MyApp());
 }
 
@@ -24,7 +29,9 @@ class MyApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(title: 'Werwolf Hauptmenü'),
+      home: AuthState.token != null
+          ? const Homescreen()
+          : const MyHomePage(title: 'Werwolf Hauptmenü'),
     );
   }
 }
