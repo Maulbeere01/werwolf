@@ -5,6 +5,8 @@ import 'package:werwolf/CreateGame.dart';
 import 'package:werwolf/QRCodeScreen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controller/GameViewController.dart';
+import 'package:werwolf/controller/LoginViewController.dart';
+import 'package:werwolf/main.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -39,6 +41,39 @@ class _HomescreenState extends State<Homescreen> {
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Abmelden'),
+        content: const Text('Möchtest du dich wirklich abmelden?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Abmelden'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await LoginViewController.logout();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const MyHomePage(title: 'Werwolf Hauptmenü'),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+        (_) => false,
+      );
+    }
   }
 
   Future<void> _showJoinDialog() async {
@@ -143,18 +178,21 @@ class _HomescreenState extends State<Homescreen> {
 
         leading: Align(
           alignment: Alignment.center,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Colors.white60,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: SvgPicture.asset(
-                'assets/icons/back.svg',
-                width: 20,
-                height: 20,
+          child: GestureDetector(
+            onTap: _confirmLogout,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Colors.white60,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: SvgPicture.asset(
+                  'assets/icons/back.svg',
+                  width: 20,
+                  height: 20,
+                ),
               ),
             ),
           ),

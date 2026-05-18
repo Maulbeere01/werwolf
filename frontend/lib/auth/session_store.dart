@@ -48,6 +48,11 @@ class SessionStore {
     }
   }
 
+  static Future<void> clearLobbyCode() async {
+    AuthState.lobbyCode = null;
+    await save();
+  }
+
   static Future<void> clearAll() async {
     try {
       await _storage.deleteAll();

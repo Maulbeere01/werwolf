@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 
 class GameScreen extends StatefulWidget {
@@ -37,6 +38,9 @@ class _GameScreenState extends State<GameScreen> {
     _subscription = stream.listen(
       (update) {
         debugPrint('[GAME STREAM] Phase update: ${update.currentPhase.name} lobby ${widget.lobbyCode}');
+        if (update.currentPhase == Phase.GAME_END) {
+          SessionStore.clearLobbyCode();
+        }
         if (mounted) setState(() => _currentUpdate = update);
       },
       onError: (e) => debugPrint('[GAME STREAM] Error: $e'),

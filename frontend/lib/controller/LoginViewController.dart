@@ -26,4 +26,8 @@ class LoginViewController  {
       return false;
     }
   }
+
+  static Future<void> logout() async {
+    await SessionStore.clearAll();
+  }
 }
