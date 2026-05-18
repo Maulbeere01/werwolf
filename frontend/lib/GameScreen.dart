@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:werwolf/GrpcHandler.dart';
-import 'package:werwolf/auth/session_store.dart';
+import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 
 class GameScreen extends StatefulWidget {
@@ -19,159 +16,56 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
-  // stream / reconnect statea
-
-  StreamSubscription<GameUpdate>? _subscription;
-  late GameUpdate _currentUpdate;
-
-  bool _disposed = false;
-  int _retryCount = 0;
-  bool _skipDelay = false;
-
-  bool _showReconnecting = false;
-  Timer? _feedbackTimer;
-
-  Completer<void>? _streamCompleter;
-  Completer<void>? _wakeUpCompleter;
+class _GameScreenState extends State<GameScreen> {
+  late final GameStreamController _controller;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _currentUpdate = widget.initialUpdate;
-    _subscribeLoop();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _triggerReconnect();
-    }
-  }
-
-  void _triggerReconnect() {
-    _skipDelay = true;
-    _retryCount = 0;
-    _feedbackTimer?.cancel();
-    if (_showReconnecting && mounted) {
-      setState(() => _showReconnecting = false);
-    } else {
-      _showReconnecting = false;
-    }
-    _subscription?.cancel();
-    _subscription = null;
-    if (!(_streamCompleter?.isCompleted ?? true)) _streamCompleter!.complete();
-    if (!(_wakeUpCompleter?.isCompleted ?? true)) _wakeUpCompleter!.complete();
-  }
-
-  Future<void> _connect() async {
-    final completer = Completer<void>();
-    _streamCompleter = completer;
-
-    final grpc = await GrpcHandler.create();
-    if (_disposed || completer.isCompleted) return;
-
-    final request = SubscribeRequest()..lobbyCode = widget.lobbyCode;
-    _subscription = grpc.gameClient.subscribeToGame(request).listen(
-      (update) {
-        _onConnected();
-        debugPrint('[GAME STREAM] ${update.currentPhase.name} lobby ${widget.lobbyCode}');
-        if (update.currentPhase == Phase.GAME_END) {
-          SessionStore.clearLobbyCode();
-        }
-        if (mounted) setState(() => _currentUpdate = update);
-      },
-      onError: (Object e) {
-        debugPrint('[GAME STREAM] Error: $e');
-        if (!completer.isCompleted) completer.completeError(e);
-      },
-      onDone: () {
-        debugPrint('[GAME STREAM] Stream closed lobby ${widget.lobbyCode}');
-        if (!completer.isCompleted) completer.complete();
-      },
-      cancelOnError: true,
+    _controller = GameStreamController(
+      lobbyCode: widget.lobbyCode,
+      seed: widget.initialUpdate,
     );
-
-    return completer.future;
-  }
-
-  Future<void> _subscribeLoop() async {
-    while (!_disposed) {
-      try {
-        await _connect();
-      } catch (_) {
-      } finally {
-        _subscription?.cancel();
-        _subscription = null;
-        _streamCompleter = null;
-      }
-
-      if (_disposed) break;
-      if (_currentUpdate.currentPhase == Phase.GAME_END) break;
-
-      _retryCount++;
-      final delay = Duration(seconds: (1 << (_retryCount - 1)).clamp(1, 30));
-      debugPrint('[GAME STREAM] Retry $_retryCount in ${delay.inSeconds}s');
-
-      _feedbackTimer?.cancel();
-      _feedbackTimer = Timer(const Duration(seconds: 3), () {
-        if (mounted) setState(() => _showReconnecting = true);
-      });
-
-      _wakeUpCompleter = Completer<void>();
-      await Future.any([Future.delayed(delay), _wakeUpCompleter!.future]);
-      _wakeUpCompleter = null;
-      _feedbackTimer?.cancel();
-    }
-  }
-
-  void _onConnected() {
-    if (_retryCount == 0 && !_showReconnecting) return;
-    _retryCount = 0;
-    _feedbackTimer?.cancel();
-    if (_showReconnecting && mounted) {
-      setState(() => _showReconnecting = false);
-    } else {
-      _showReconnecting = false;
-    }
   }
 
   @override
   void dispose() {
-    _disposed = true;
-    WidgetsBinding.instance.removeObserver(this);
-    _feedbackTimer?.cancel();
-    _subscription?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
-  //rendering
+  // build
+
   @override
   Widget build(BuildContext context) {
-    final update = _currentUpdate;
-    final interactive = !_showReconnecting;
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) {
+        final update = _controller.currentUpdate;
+        final interactive = !_controller.isReconnecting;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildHeader(update),
-                if (update.hasAnnouncement()) _buildAnnouncement(update),
-                if (update.hasPause() && update.pause.isPaused)
-                  _buildPauseBanner(update.pause),
-                Expanded(child: _buildPlayerList(update)),
-                if (update.hasOpenPrompt()) _buildPrompt(update, interactive),
-              ],
-            ),
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+          body: Stack(
+            children: [
+              SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHeader(update),
+                    if (update.hasAnnouncement()) _buildAnnouncement(update),
+                    if (update.hasPause() && update.pause.isPaused)
+                      _buildPauseBanner(update.pause),
+                    Expanded(child: _buildPlayerList(update)),
+                    if (update.hasOpenPrompt()) _buildPrompt(update, interactive),
+                  ],
+                ),
+              ),
+              if (_controller.isReconnecting) _buildReconnectBadge(context),
+            ],
           ),
-          if (_showReconnecting) _buildReconnectBadge(context),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -213,7 +107,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
-  // Yellow card for night deaths, vote results, etc.
   Widget _buildAnnouncement(GameUpdate update) {
     final text = _announcementText(update.announcement);
     if (text.isEmpty) return const SizedBox.shrink();
@@ -310,8 +203,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
-  // Action card shown when the server sends an openPrompt for this player.
-  // Each branch is a stub — add target-selection UI here per phase.
+  // Action card shown when the server sends an openPrompt for this player
+  // add target selection UI inside each switch branch as phases are implemented
   Widget _buildPrompt(GameUpdate update, bool interactive) {
     final prompt = update.openPrompt;
     final (title, hint) = switch (prompt.whichPrompt()) {
@@ -334,15 +227,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (hint.isNotEmpty) ...[
-            Text(
-              hint,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
+            Text(hint, style: const TextStyle(color: Colors.white70, fontSize: 14)),
             const SizedBox(height: 12),
           ],
           SizedBox(
             width: double.infinity,
             child: FilledButton(
+              // TODO: wire up phase-specific target selection and PerformAction RPC
               onPressed: interactive ? () {} : null,
               child: Text(title),
             ),
@@ -371,18 +262,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white70),
             ),
             SizedBox(width: 6),
-            Text(
-              'Verbindung...',
-              style: TextStyle(color: Colors.white70, fontSize: 11),
-            ),
+            Text('Verbindung...', style: TextStyle(color: Colors.white70, fontSize: 11)),
           ],
         ),
       ),
     );
   }
 
-  // ── helpers ─────────────────────────────────────────────────────────────────
-
+  // helpers
   String _phaseLabel(Phase phase) => switch (phase) {
     Phase.LOBBY            => 'Warte auf Spielstart...',
     Phase.NIGHT_START      => 'Nacht beginnt',
@@ -399,14 +286,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   };
 
   String _roleLabel(Role role) => switch (role) {
-    Role.WEREWOLF       => 'Werwolf',
-    Role.VILLAGER       => 'Dorfbewohner',
-    Role.SEER           => 'Seher',
-    Role.WITCH          => 'Hexe',
-    Role.FOX            => 'Fuchs',
-    Role.VILLAGE_IDIOT  => 'Dorftrottel',
-    Role.HUNTER         => 'Jäger',
-    _                   => 'Unbekannt',
+    Role.WEREWOLF      => 'Werwolf',
+    Role.VILLAGER      => 'Dorfbewohner',
+    Role.SEER          => 'Seher',
+    Role.WITCH         => 'Hexe',
+    Role.FOX           => 'Fuchs',
+    Role.VILLAGE_IDIOT => 'Dorftrottel',
+    Role.HUNTER        => 'Jäger',
+    _                  => 'Unbekannt',
   };
 
   String _announcementText(PublicAnnouncement a) {
@@ -423,7 +310,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
     if (a.hasNoDeath()) return 'Heute Nacht ist niemand gestorben.';
     if (a.hasVoteResult()) {
-      if (a.voteResult.tied) return 'Unentschieden niemand scheidet aus.';
+      if (a.voteResult.tied) return 'Unentschieden — niemand scheidet aus.';
       return '${_playerName(a.voteResult.eliminatedPlayerId)} scheidet aus.';
     }
     if (a.hasHunterShot()) {
@@ -439,7 +326,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   String _playerName(String id) {
-    for (final p in _currentUpdate.players) {
+    for (final p in _controller.currentUpdate.players) {
       if (p.id == id) return p.name;
     }
     return id;
