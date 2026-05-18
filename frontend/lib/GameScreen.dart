@@ -19,30 +19,68 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   StreamSubscription<GameUpdate>? _subscription;
   late GameUpdate _currentUpdate;
 
   bool _disposed = false;
   int _retryCount = 0;
+  // set by _triggerReconnect so the next loop iteration skips the backoff
+  bool _skipDelay = false;
 
   bool _showReconnecting = false;
   Timer? _feedbackTimer;
 
+  // lets _triggerReconnect interrupt either waiting point in the loop:
+  // the live stream (_streamCompleter) or the backoff sleep (_wakeUpCompleter)
+  Completer<void>? _streamCompleter;
+  Completer<void>? _wakeUpCompleter;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentUpdate = widget.initialUpdate;
     _subscribeLoop();
   }
 
-  // connects and drives the stream to completion (normal close or error)
-  // The completer bridges the callback based listener to the async loop
-  Future<void> _connect() async {
-    final grpc = await GrpcHandler.create();
-    final request = SubscribeRequest()..lobbyCode = widget.lobbyCode;
-    final completer = Completer<void>();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _triggerReconnect();
+    }
+  }
 
+  // called on foreground resume. Cancels the current stream (or backoff sleep),
+  // resets retry state, and lets the loop reconnect immediately
+  void _triggerReconnect() {
+    _skipDelay = true;
+    _retryCount = 0;
+    _feedbackTimer?.cancel();
+    if (_showReconnecting && mounted) {
+      setState(() => _showReconnecting = false);
+    } else {
+      _showReconnecting = false;
+    }
+
+    // Cancel the active subscription; its onDone/onError will complete
+    // _streamCompleter, or we complete it ourselves if the sub isn't up yet.
+    _subscription?.cancel();
+    _subscription = null;
+    if (!(_streamCompleter?.isCompleted ?? true)) _streamCompleter!.complete();
+
+    // also wake the loop if it is sleeping in the backoff delay.
+    if (!(_wakeUpCompleter?.isCompleted ?? true)) _wakeUpCompleter!.complete();
+  }
+
+  Future<void> _connect() async {
+    final completer = Completer<void>();
+    _streamCompleter = completer;
+
+    final grpc = await GrpcHandler.create();
+    if (_disposed || completer.isCompleted) return;
+
+    final request = SubscribeRequest()..lobbyCode = widget.lobbyCode;
     _subscription = grpc.gameClient.subscribeToGame(request).listen(
       (update) {
         _onConnected();
@@ -70,11 +108,11 @@ class _GameScreenState extends State<GameScreen> {
     while (!_disposed) {
       try {
         await _connect();
-      } catch (e) {
-        // logged in onError above
+      } catch (_) {
       } finally {
         _subscription?.cancel();
         _subscription = null;
+        _streamCompleter = null;
       }
 
       if (_disposed) break;
@@ -91,7 +129,9 @@ class _GameScreenState extends State<GameScreen> {
         if (mounted) setState(() => _showReconnecting = true);
       });
 
-      await Future.delayed(delay);
+      _wakeUpCompleter = Completer<void>();
+      await Future.any([Future.delayed(delay), _wakeUpCompleter!.future]);
+      _wakeUpCompleter = null;
       _feedbackTimer?.cancel();
     }
   }
@@ -111,6 +151,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     _disposed = true;
+    WidgetsBinding.instance.removeObserver(this);
     _feedbackTimer?.cancel();
     _subscription?.cancel();
     super.dispose();
