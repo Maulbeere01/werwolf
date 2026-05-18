@@ -3,6 +3,7 @@ syntax = "proto3";
 package werewolf;
 
 import "google/protobuf/empty.proto";
+ import "google/protobuf/timestamp.proto";
 
 option java_multiple_files = true;
 option java_package = "com.werewolf.grpc";
@@ -34,6 +35,8 @@ service GameService {
   
   rpc SubscribeToGame (SubscribeRequest) returns (stream GameUpdate);
   rpc PerformAction (GameAction) returns (google.protobuf.Empty);
+  rpc RequestPause (PauseRequest) returns (google.protobuf.Empty);
+  rpc ResumeGame (PauseRequest) returns (google.protobuf.Empty);
 }
 
 enum Role {
@@ -60,6 +63,14 @@ enum Phase {
   DAY_VOTING = 9;
   HUNTER_REVENGE = 10;
   GAME_END = 11;
+}
+
+enum EliminationCause {
+  CAUSE_UNSPECIFIED = 0;
+  KILLED_BY_WEREWOLVES = 1;
+  KILLED_BY_WITCH = 2;
+  VOTED_OUT = 3;
+  CAUSE_HUNTER_REVENGE = 4;
 }
 
 // user
@@ -99,7 +110,7 @@ message RoleCount {
 
 message LobbySettings {
   int32 max_players = 1;
-  repeated RoleCount roles = 2; 
+  repeated RoleCount roles = 2;
   int32 discussion_time_seconds = 3;
 }
 
@@ -131,12 +142,17 @@ message SubscribeRequest {
 
 message GameUpdate {
   Phase current_phase = 1;
-  string display_text = 2;       
-  string tts_text = 3;  
+  reserved 2, 3, 5, 6;
   repeated PlayerStatus players = 4;
-  string private_info = 5;  
-  bool ability_active = 6;  
-  Role winning_team = 7; 
+  Role winning_team = 7;
+
+  // empty in shared broadcasts, populated in personalised snapshots
+  Role your_role = 8;
+  ActionPrompt open_prompt = 9;       // set when the recipient must act this phase
+  ActionResult your_results = 10;     // private outcome of the last action (seer reveal, fox result)
+  PublicAnnouncement announcement = 11;
+  google.protobuf.Timestamp phase_ends_at = 12;
+  PauseState pause = 13;
 }
 
 message PlayerStatus {
@@ -145,12 +161,12 @@ message PlayerStatus {
   bool is_alive = 3;
   bool has_voted = 4;
   string voted_for_target_id = 5; // masked by backend
-  Role role = 6; // masked by backend
+  Role role = 6;                  // masked by backend
   bool is_host = 7;
 }
 
 message GameAction {
-  string lobby_code = 1; 
+  string lobby_code = 1;
   oneof action {
     VoteAction vote = 2;
     WitchAction witch = 3;
@@ -179,4 +195,103 @@ message FoxAction {
 
 message HunterAction {
   string target_id = 1;
+}
+
+// action prompts: tell the client to render a role specific action
+
+message ActionPrompt {
+  oneof prompt {
+    WerewolfPrompt werewolf = 1;
+    SeerPrompt     seer     = 2;
+    WitchPrompt    witch    = 3;
+    FoxPrompt      fox      = 4;
+    HunterPrompt   hunter   = 5;
+  }
+}
+
+message WerewolfPrompt {
+  repeated string candidate_ids = 1;
+}
+
+message SeerPrompt {
+  repeated string candidate_ids = 1;
+}
+
+message WitchPrompt {
+  string attacked_player_id = 1;
+  bool has_heal_potion = 2;
+  bool has_poison_potion = 3;
+}
+
+message FoxPrompt {
+  repeated string candidate_ids = 1;
+}
+
+message HunterPrompt {
+  repeated string candidate_ids = 1;
+}
+
+// action results
+
+message ActionResult {
+  oneof result {
+    SeerReveal seer_reveal = 1;
+    FoxReveal  fox_reveal  = 2;
+  }
+}
+
+message SeerReveal {
+  string target_id = 1;
+  bool is_werewolf = 2;
+}
+
+message FoxReveal {
+  bool any_werewolf_found = 1;
+}
+
+// public announcements
+
+message PublicAnnouncement {
+  oneof event {
+    NightDeathEvent  night_death  = 1;
+    NoDeathEvent     no_death     = 2;
+    VoteResultEvent  vote_result  = 3;
+    HunterShotEvent  hunter_shot  = 4;
+    GameEndEvent     game_end     = 5;
+  }
+}
+
+message NightDeathEvent {
+  string player_id = 1;
+  EliminationCause cause = 2;
+}
+
+message NoDeathEvent {}
+
+message VoteResultEvent {
+  string eliminated_player_id = 1; // empty when tied
+  bool tied = 2;
+}
+
+message HunterShotEvent {
+  string shooter_id = 1;
+  string target_id = 2;
+}
+
+message GameEndEvent {
+  Role winning_team = 1;
+}
+
+// pause
+
+message PauseRequest {
+  string lobby_code = 1;
+}
+
+message PauseState {
+  bool is_paused = 1;
+  int32 vote_count = 2;
+  int32 votes_needed = 3;
+  bool you_voted = 4;
+  google.protobuf.Timestamp paused_until = 5;
 }
