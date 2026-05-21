@@ -1,9 +1,6 @@
 package com.werewolf.logic.engine;
 
-import com.werewolf.grpc.GameAction;
-import com.werewolf.grpc.HunterAction;
-import com.werewolf.grpc.SeerAction;
-import com.werewolf.grpc.WitchAction;
+import com.werewolf.grpc.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,91 +22,55 @@ class AbilityExecutorTest {
 
     @BeforeEach
     void setUp() {
-
-        // Mock-Objekte erstellen
         werewolfAbility = mock(WerewolfAbility.class);
         seerAbility = mock(SeerAbility.class);
         witchAbility = mock(WitchAbility.class);
         hunterAbility = mock(HunterAbility.class);
 
-        // AbilityExecutor mit den Mock-Abilities erstellen
-        abilityExecutor = new AbilityExecutor(
-                werewolfAbility,
-                seerAbility,
-                witchAbility,
-                hunterAbility
-        );
+        abilityExecutor = new AbilityExecutor(werewolfAbility, seerAbility, witchAbility, hunterAbility);
     }
 
     @Test
     void shouldExecuteSeerAbility() {
-
-        // Ob bei einer Seher-Action die Seher-Fähigkeit ausgeführt wird.
-        // GameAction mit Seher-Aktion bauen
         GameAction action = GameAction.newBuilder()
-                .setSeer(
-                        SeerAction.newBuilder()
-                                .setTargetId("player1")
-                                .build()
-                )
+                .setSeer(SeerAction.newBuilder().setTargetId("player1").build())
                 .build();
 
-        abilityExecutor.execute("ABCD", action);
+        abilityExecutor.execute("ABCD", action, Phase.NIGHT_SEER);
 
-        // Prüfen ob die Seher-Ability genau 1x ausgeführt wurde
-        verify(seerAbility, times(1))
-                .execute(eq("ABCD"), any(SeerAction.class));
+        verify(seerAbility, times(1)).execute(eq("ABCD"), any(SeerAction.class));
     }
 
     @Test
     void shouldExecuteWitchAbility() {
-
-        // Ob bei einer Hexen-Action die Hexen-Fähigkeit ausgeführt wird.
         GameAction action = GameAction.newBuilder()
-                .setWitch(
-                        WitchAction.newBuilder()
-                                .setHealTarget(true)
-                                .build()
-                )
+                .setWitch(WitchAction.newBuilder().setHealTarget(true).build())
                 .build();
 
-        abilityExecutor.execute("ABCD", action);
+        abilityExecutor.execute("ABCD", action, Phase.NIGHT_WITCH);
 
-        // Prüfen ob die Hexen-Ability genau 1x ausgeführt wurde
-        verify(witchAbility, times(1))
-                .execute(eq("ABCD"), any(WitchAction.class));
+        verify(witchAbility, times(1)).execute(eq("ABCD"), any(WitchAction.class));
     }
 
     @Test
     void shouldExecuteHunterAbility() {
-
-        // Ob bei einer Jäger-Action die Jäger-Fähigkeit ausgeführt wird.
         GameAction action = GameAction.newBuilder()
-                .setHunter(
-                        HunterAction.newBuilder()
-                                .setTargetId("player2")
-                                .build()
-                )
+                .setHunter(HunterAction.newBuilder().setTargetId("player2").build())
                 .build();
-        abilityExecutor.execute("ABCD", action);
 
-        // Prüfen ob die Hunter-Ability genau 1x ausgeführt wurde
-        verify(hunterAbility, times(1))
-                .execute(eq("ABCD"), any(HunterAction.class));
+        abilityExecutor.execute("ABCD", action, Phase.HUNTER_REVENGE);
+
+        verify(hunterAbility, times(1)).execute(eq("ABCD"), any(HunterAction.class));
     }
 
     @Test
     void shouldThrowExceptionForUnknownAction() {
-
-        // Ob eine Exception geworfen wird,
-        // wenn keine gültige Action gesetzt wurde.
-        // Leere Action -> ACTION_NOT_SET
+        // ACTION_NOT_SET hits the default branch
         GameAction action = GameAction.newBuilder().build();
 
-        // Prüfen ob IllegalStateException geworfen wird
         assertThrows(
-                IllegalStateException.class,
-                () -> abilityExecutor.execute("ABCD", action)
+                IllegalArgumentException.class,
+                () -> abilityExecutor.execute("ABCD", action, Phase.NIGHT_WEREWOLVES)
         );
     }
 }

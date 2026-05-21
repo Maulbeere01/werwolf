@@ -42,6 +42,10 @@ public class LobbyManager {
             return lobby;
         }
 
+        if (lobby.started) {
+            throw new IllegalStateException("Cannot join a game that has already started");
+        }
+
         Player player = new Player();
         player.id = userId;
         player.name = username;

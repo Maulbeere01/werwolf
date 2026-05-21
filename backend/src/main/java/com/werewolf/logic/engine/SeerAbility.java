@@ -1,22 +1,42 @@
 package com.werewolf.logic.engine;
 
+import com.werewolf.grpc.*;
 import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Player;
 import com.werewolf.logic.service.GameStateService;
+import com.werewolf.logic.service.GameUpdateFactory;
+import com.werewolf.logic.service.LobbySubscriptionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+@Service
+@RequiredArgsConstructor
 public class SeerAbility {
 
     private final GameStateService stateService;
+    private final LobbySubscriptionService subscriptionService;
 
-    public SeerAbility(GameStateService stateService) {
-        this.stateService = stateService;
-    }
-
-    public void execute(String lobbyCode, com.werewolf.grpc.SeerAction action) {
+    public void execute(String lobbyCode, SeerAction action) {
         GameState state = stateService.get(lobbyCode);
         Player target = state.players.get(action.getTargetId());
 
-        // reveal role ONLY to seer (later via gRPC stream)
-        System.out.println("SEER sees: " + target.role);
+        // AuthContext is only available on the gRPC thread, not here. Look up the seer's
+        // userId from GameState so sendTo() can target the right subscriber
+        String seerId = state.players.values().stream()
+                .filter(p -> p.role == Role.SEER)
+                .map(p -> p.id)
+                .findFirst()
+                .orElse(null);
+
+        if (seerId == null || target == null) return;
+
+        ActionResult result = ActionResult.newBuilder()
+                .setSeerReveal(SeerReveal.newBuilder()
+                        .setTargetId(target.id)
+                        .setIsWerewolf(target.role == Role.WEREWOLF)
+                        .build())
+                .build();
+        subscriptionService.sendTo(lobbyCode, seerId,
+                GameUpdateFactory.privateResult(state.phase, result));
     }
 }

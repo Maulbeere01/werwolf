@@ -1,10 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:grpc/grpc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:werwolf/GameScreen.dart';
 import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/HomeScreen.dart';
+import 'package:werwolf/auth/auth_state.dart';
+import 'package:werwolf/auth/session_store.dart';
+import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 
 class QRCodeScreen extends StatefulWidget {
@@ -17,82 +19,118 @@ class QRCodeScreen extends StatefulWidget {
 }
 
 class _QRCodeScreenState extends State<QRCodeScreen> {
-  List<PlayerStatus> _players = [];
-  StreamSubscription<GameUpdate>? _subscription;
+  late final GameStreamController _controller;
 
   @override
   void initState() {
     super.initState();
-    _subscribe();
+    _controller = GameStreamController(lobbyCode: widget.lobbyCode);
+    _controller.addListener(_onUpdate);
   }
 
-  Future<void> _subscribe() async {
-    final grpc = await GrpcHandler.create();
-    final request = SubscribeRequest()..lobbyCode = widget.lobbyCode;
-    final stream = grpc.gameClient.subscribeToGame(request);
+  // navigate to GameScreen as soon as the server signals the game has started
+  void _onUpdate() {
+    final phase = _controller.currentUpdate.currentPhase;
+    if (phase == Phase.PHASE_UNSPECIFIED || phase == Phase.LOBBY) return;
 
-    _subscription = stream.listen(
-      (update) {
-        if (mounted) {
-          setState(() => _players = update.players);
-        }
-      },
-      onError: (e) => print('[STREAM] Error: $e'),
-      onDone: () => print('[STREAM] Stream closed for lobby ${widget.lobbyCode}'),
+    _controller.removeListener(_onUpdate);
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => GameScreen(
+          lobbyCode: widget.lobbyCode,
+          initialUpdate: _controller.currentUpdate,
+        ),
+      ),
     );
+  }
+
+  Future<void> _leaveLobby() async {
+    await SessionStore.clearLobbyCode();
+    if (!mounted) return;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const Homescreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    }
+  }
+
+  Future<void> _startGame() async {
+    debugPrint('[INPUT] Start button pressed: lobby ${widget.lobbyCode}');
+    try {
+      final grpc = await GrpcHandler.create();
+      final request = StartGameRequest()..lobbyCode = widget.lobbyCode;
+      await grpc.gameClient.startGame(request);
+      debugPrint('[INPUT] startGame request sent successfully');
+    } catch (e) {
+      debugPrint('[START GAME] Error: $e');
+    }
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text(
-          "Spiel erstellen",
-          style: TextStyle(
-            fontFamily: 'BagelFatOne',
-            fontSize: 28,
-            color: Colors.white,
-          ),
-        ),
-        toolbarHeight: 80,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leadingWidth: 80,
-        leading: Align(
-          alignment: Alignment.center,
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Colors.white60,
-                shape: BoxShape.circle,
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) {
+        final players = _controller.currentUpdate.players;
+        final isHost = players.any(
+          (p) => p.id == AuthState.userId && p.isHost,
+        );
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            centerTitle: true,
+            title: const Text(
+              'Spiel erstellen',
+              style: TextStyle(
+                fontFamily: 'BagelFatOne',
+                fontSize: 28,
+                color: Colors.white,
               ),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/icons/back.svg',
-                  width: 20,
-                  height: 20,
+            ),
+            toolbarHeight: 80,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leadingWidth: 80,
+            leading: Align(
+              alignment: Alignment.center,
+              child: GestureDetector(
+                onTap: _leaveLobby,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Colors.white60,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icons/back.svg',
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-      body: Stack(
-        children: [
-          SafeArea(
+          body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Column(
@@ -101,19 +139,17 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                   const SizedBox(height: 20),
 
                   // QR CODE
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: QrImageView(
-                        data: 'silentvillage://join?code=${widget.lobbyCode}',
-                        version: QrVersions.auto,
-                        size: 150,
-                        backgroundColor: Colors.white,
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: QrImageView(
+                      data: 'silentvillage://join?code=${widget.lobbyCode}',
+                      version: QrVersions.auto,
+                      size: 150,
+                      backgroundColor: Colors.white,
                     ),
                   ),
 
@@ -121,10 +157,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
                   // LOBBY CODE
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 10,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -156,7 +189,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Beigetretene Spieler (${_players.length})",
+                            "Beigetretene Spieler (${players.length})",
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -165,7 +198,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                           ),
                           const SizedBox(height: 20),
                           Expanded(
-                            child: _players.isEmpty
+                            child: players.isEmpty
                                 ? const Center(
                                     child: Text(
                                       "Warte auf Spieler...",
@@ -176,14 +209,11 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                                     ),
                                   )
                                 : ListView.builder(
-                                    itemCount: _players.length,
-                                    itemBuilder: (context, index) {
-                                      final player = _players[index];
-                                      return _PlayerTile(
-                                        name: player.name,
-                                        isHost: player.isHost,
-                                      );
-                                    },
+                                    itemCount: players.length,
+                                    itemBuilder: (_, i) => _PlayerTile(
+                                      name: players[i].name,
+                                      isHost: players[i].isHost,
+                                    ),
                                   ),
                           ),
                         ],
@@ -197,7 +227,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                   SizedBox(
                     width: 220,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: isHost ? _startGame : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.9),
                         foregroundColor: Colors.black,
@@ -208,10 +238,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                       ),
                       child: const Text(
                         "Spiel starten",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -221,8 +248,8 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
               ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -262,8 +289,7 @@ class _PlayerTile extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
-          if (isHost)
-            const Icon(Icons.star, color: Colors.amber, size: 18),
+          if (isHost) const Icon(Icons.star, color: Colors.amber, size: 18),
         ],
       ),
     );

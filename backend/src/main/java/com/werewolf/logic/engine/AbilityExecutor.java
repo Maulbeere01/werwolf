@@ -1,11 +1,12 @@
 package com.werewolf.logic.engine;
 
 import com.werewolf.grpc.GameAction;
+import com.werewolf.grpc.Phase;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
-/**
- * Führt alle Rollen-Fähigkeiten aus (Werwolf, Seher, Hexe, etc.).
- * Entscheidet anhand der Rolle, welche Spielaktion ausgeführt wird.
- */
+@Service
+@RequiredArgsConstructor
 public class AbilityExecutor {
 
     private final WerewolfAbility werewolf;
@@ -13,31 +14,20 @@ public class AbilityExecutor {
     private final WitchAbility witch;
     private final HunterAbility hunter;
 
-    public AbilityExecutor(
-            WerewolfAbility werewolf,
-            SeerAbility seer,
-            WitchAbility witch,
-            HunterAbility hunter
-    ) {
-        this.werewolf = werewolf;
-        this.seer = seer;
-        this.witch = witch;
-        this.hunter = hunter;
-    }
-
-    public void execute(String lobbyCode, GameAction action) {
-
+    public void execute(String lobbyCode, GameAction action, Phase currentPhase) {
         switch (action.getActionCase()) {
-
-            case VOTE -> {} // später Day logic
-
-            case WITCH -> witch.execute(lobbyCode, action.getWitch());
-
-            case SEER -> seer.execute(lobbyCode, action.getSeer());
-
-            case HUNTER -> hunter.execute(lobbyCode, action.getHunter());
-
-            default -> throw new IllegalStateException("Unknown action");
+            // VOTE is reused by both werewolves (night kill) and the village (day elimination). currentPhase determines which handler to call.
+            case VOTE -> {
+                if (currentPhase == Phase.NIGHT_WEREWOLVES) {
+                    werewolf.execute(lobbyCode, action.getVote());
+                }
+                // DAY_VOTING added later
+            }
+            case SEER    -> seer.execute(lobbyCode, action.getSeer());
+            case WITCH   -> witch.execute(lobbyCode, action.getWitch());
+            case HUNTER  -> hunter.execute(lobbyCode, action.getHunter());
+            case FOX     -> {}
+            default      -> throw new IllegalArgumentException("Unhandled action type: " + action.getActionCase());
         }
     }
 }

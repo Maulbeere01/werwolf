@@ -10,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
+
 /**
  * Testet den LobbyManager.
  * Prüft Erstellung einer Lobby inkl. Host und Weitergabe an Service.
@@ -75,5 +77,36 @@ class LobbyManagerTest {
         lobbyManager.createLobby("host1", "Tom", settings);
 
         verify(lobbyService, times(1)).createLobby(any(Lobby.class));
+    }
+
+    @Test
+    void shouldAllowReturningPlayerToRejoinStartedGame() {
+        Lobby lobby = new Lobby();
+        lobby.lobbyCode = "AAAA11";
+        lobby.started = true;
+        Player existing = new Player();
+        existing.id = "player1";
+        lobby.players = new ArrayList<>();
+        lobby.players.add(existing);
+
+        when(lobbyService.getLobby("AAAA11")).thenReturn(lobby);
+
+        Lobby result = lobbyManager.joinLobby("player1", "Anna", "AAAA11");
+
+        assertSame(lobby, result);
+        assertEquals(1, result.players.size());
+    }
+
+    @Test
+    void shouldRejectStrangerFromStartedGame() {
+        Lobby lobby = new Lobby();
+        lobby.lobbyCode = "BBBB22";
+        lobby.started = true;
+        lobby.players = new ArrayList<>();
+
+        when(lobbyService.getLobby("BBBB22")).thenReturn(lobby);
+
+        assertThrows(IllegalStateException.class,
+                () -> lobbyManager.joinLobby("stranger", "Bobb", "BBBB22"));
     }
 }
