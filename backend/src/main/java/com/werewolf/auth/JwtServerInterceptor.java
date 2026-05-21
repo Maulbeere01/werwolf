@@ -37,7 +37,7 @@ public class JwtServerInterceptor implements ServerInterceptor {
 
         String authHeader = headers.get(AUTH_KEY);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("[AUTH] Rejected — no token for: {}", method);
+            log.warn("[AUTH] Rejected: no token for: {}", method);
             call.close(Status.UNAUTHENTICATED.withDescription("missing token"), new Metadata());
             return new ServerCall.Listener<>() {};
         }
@@ -46,13 +46,13 @@ public class JwtServerInterceptor implements ServerInterceptor {
             String token = authHeader.substring(7);
             String userId = jwtService.extractUserId(token);
             String username = jwtService.extractUsername(token);
-            log.info("[AUTH] Accepted — userId={} username='{}' calling: {}", userId, username, method);
+            log.info("[AUTH] Accepted: userId={} username='{}' calling: {}", userId, username, method);
             Context ctx = Context.current()
                     .withValue(AuthContext.USER_ID_KEY, userId)
                     .withValue(AuthContext.USERNAME_KEY, username);
             return Contexts.interceptCall(ctx, call, headers, next);
         } catch (Exception e) {
-            log.warn("[AUTH] Rejected — invalid token for: {}", method);
+            log.warn("[AUTH] Rejected: invalid token for: {}", method);
             call.close(Status.UNAUTHENTICATED.withDescription("invalid token"), new Metadata());
             return new ServerCall.Listener<>() {};
         }

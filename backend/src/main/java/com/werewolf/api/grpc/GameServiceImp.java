@@ -47,6 +47,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
     public void createLobby(CreateLobbyRequest request,
                             StreamObserver<LobbyInfo> responseObserver) {
 
+        // AuthContext comes from the Interceptor Context
         String hostId = AuthContext.USER_ID_KEY.get();
         String hostName = AuthContext.USERNAME_KEY.get();
 
@@ -84,13 +85,8 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         String userId = AuthContext.USER_ID_KEY.get();
         String lobbyCode = request.getLobbyCode();
 
-        Lobby lobby = lobbyManager.getLobby(lobbyCode);
-        if (lobby == null) {
-            responseObserver.onError(Status.NOT_FOUND
-                    .withDescription("Lobby not found: " + lobbyCode)
-                    .asRuntimeException());
-            return;
-        }
+        Lobby lobby = getLobbyOrError(lobbyCode, responseObserver);
+        if (lobby == null) return;
 
         if (!lobby.hostId.equals(userId)) {
             responseObserver.onError(Status.PERMISSION_DENIED
@@ -160,13 +156,8 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
         String userId = AuthContext.USER_ID_KEY.get();
         String lobbyCode = request.getLobbyCode();
 
-        Lobby lobby = lobbyManager.getLobby(lobbyCode);
-        if (lobby == null) {
-            responseObserver.onError(Status.NOT_FOUND
-                    .withDescription("Lobby not found: " + lobbyCode)
-                    .asRuntimeException());
-            return;
-        }
+        Lobby lobby = getLobbyOrError(lobbyCode, responseObserver);
+        if (lobby == null) return;
 
         boolean isMember = lobby.players.stream().anyMatch(p -> p.id.equals(userId));
         if (!isMember) {
@@ -188,6 +179,16 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                 ? GameUpdateFactory.snapshot(state, lobby, userId)
                 : GameUpdateFactory.forLobby(lobby);
         responseObserver.onNext(initial);
+    }
+
+    private Lobby getLobbyOrError(String lobbyCode, StreamObserver<?> responseObserver) {
+        Lobby lobby = lobbyManager.getLobby(lobbyCode);
+        if (lobby == null) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("Lobby not found: " + lobbyCode)
+                    .asRuntimeException());
+        }
+        return lobby;
     }
 
     private LobbyInfo toLobbyInfo(Lobby lobby) {

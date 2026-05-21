@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+/**
+//  manages all active gRPC streaming connections
+*/
 @Slf4j
 @Service
 public class LobbySubscriptionService {
