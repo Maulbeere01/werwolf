@@ -4,7 +4,7 @@
 
 In einem weit entfernten Dorf herrschte einst Frieden.
 Doch seit einiger Zeit wird das Dorf von einem Rudel Werwölfe heimgesucht.
-Jede Nacht versperrt ihr Türen und Fenster, doch die Werwölfe haben großen Hunger.
+Nachts versperrt ihr Türen und Fenster, doch die Werwölfe haben großen Hunger.
 
 Jede Nacht fällt ihnen ein neuer Dorfbewohner zum Opfer. 
 Misstrauen breitet sich aus. Angst erfüllt die Straßen.
@@ -37,7 +37,7 @@ Schließt eure Augen.
 
 - Hexe, erwache und entscheide, ob du deine Kräfte einsetzen möchtest.
 
-- Fuchs, wache auf und teile deine Vermutungen, wer die Wölfe sein könnten.
+- Fuchs, wache auf und stelle deine Vermutungen, wer die Wölfe sein könnten.
 
 - Sabateur, erwache und wähle jemanden, den du zum Schweigen bringen möchtest.
 
@@ -49,7 +49,7 @@ Schließt eure Augen.
 
 - In der Nacht gab es drei Opfer.
 
-- In der Nacht gab es keine Opfer.
+- Alle haben die Nacht überlebt.
 
 - Der Tod eines Liebenden war zu schwer zu ertragen. Das Liebespaar ist gemeinsam gestorben.
 
