@@ -22,6 +22,16 @@ public class AbilityExecutor {
                     werewolf.execute(lobbyCode, action.getVote());
                 }
                 // DAY_VOTING added later
+
+                //DAY_DISCUSSION  ( before DAY_VOTING )
+                if( currentPhase == Phase.DAY_DISCUSSION ) {
+                    //execute discussion
+                }
+
+                //DAY_VOTING
+                if (currentPhase == Phase.DAY_VOTING) {
+                    //execute voting with discussion outcome
+                }
             }
             case SEER    -> seer.execute(lobbyCode, action.getSeer());
             case WITCH   -> witch.execute(lobbyCode, action.getWitch());
