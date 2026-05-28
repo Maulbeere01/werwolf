@@ -55,6 +55,10 @@ Schließt eure Augen.
 
 - Der Jäger wurde in der Nacht von den Wölfen überfallen, aber konnte Einen mit sich in den Tod reißen.
 
+- Ihr seid euch unklar wer oder was für diese Tragödie verantwortlich ist. 
+
+- Diskutiert, was das Dorf jetzt unternehmen wird.
+
 ## Ende des Spieles
 
 - Ihr habt überlebt. Die Werwölfe wurden vertrieben und das Dorf ist gerettet.
