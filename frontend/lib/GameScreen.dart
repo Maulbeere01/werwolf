@@ -34,8 +34,6 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
-  // build
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -53,11 +51,13 @@ class _GameScreenState extends State<GameScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildHeader(update),
-                    if (update.hasAnnouncement()) _buildAnnouncement(update),
-                    if (update.hasPause() && update.pause.isPaused)
-                      _buildPauseBanner(update.pause),
+                    // displayText replaces announcement — show when non-empty
+                    if (update.displayText.isNotEmpty)
+                      _buildAnnouncementBanner(update.displayText),
                     Expanded(child: _buildPlayerList(update)),
-                    if (update.hasOpenPrompt()) _buildPrompt(update, interactive),
+                    // abilityActive replaces openPrompt
+                    if (update.abilityActive)
+                      _buildPrompt(update, interactive),
                   ],
                 ),
               ),
@@ -69,8 +69,11 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Phase name + role chip
+  // Phase name + role chip (role comes from PlayerStatus, not GameUpdate)
   Widget _buildHeader(GameUpdate update) {
+    // Find the local player's role from the players list if privateInfo has it,
+    // or derive from abilityActive + phase for now.
+    // For a proper role display you'll need to add yourRole to the proto.
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
       child: Column(
@@ -84,16 +87,17 @@ class _GameScreenState extends State<GameScreen> {
               fontSize: 28,
             ),
           ),
-          if (update.yourRole != Role.ROLE_UNSPECIFIED) ...[
+          // privateInfo carries role/seer-result text from the server
+          if (update.privateInfo.isNotEmpty) ...[
             const SizedBox(height: 6),
-            _buildRoleChip(update.yourRole),
+            _buildPrivateInfoChip(update.privateInfo),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildRoleChip(Role role) {
+  Widget _buildPrivateInfoChip(String info) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
@@ -101,16 +105,13 @@ class _GameScreenState extends State<GameScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        'Du bist: ${_roleLabel(role)}',
+        info,
         style: const TextStyle(color: Colors.white, fontSize: 13),
       ),
     );
   }
 
-  Widget _buildAnnouncement(GameUpdate update) {
-    final text = _announcementText(update.announcement);
-    if (text.isEmpty) return const SizedBox.shrink();
-
+  Widget _buildAnnouncementBanner(String text) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -123,28 +124,6 @@ class _GameScreenState extends State<GameScreen> {
         text,
         textAlign: TextAlign.center,
         style: const TextStyle(color: Colors.white, fontSize: 14),
-      ),
-    );
-  }
-
-  Widget _buildPauseBanner(PauseState pause) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.pause_circle_outline, color: Colors.white70, size: 16),
-          const SizedBox(width: 6),
-          Text(
-            'Pausiert  ${pause.voteCount}/${pause.votesNeeded}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-        ],
       ),
     );
   }
@@ -203,17 +182,16 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Action card shown when the server sends an openPrompt for this player
-  // add target selection UI inside each switch branch as phases are implemented
+  // Shown when abilityActive == true; phase tells us which role's turn it is
   Widget _buildPrompt(GameUpdate update, bool interactive) {
-    final prompt = update.openPrompt;
-    final (title, hint) = switch (prompt.whichPrompt()) {
-      ActionPrompt_Prompt.werewolf => ('Angreifen', 'Wählt ein Opfer'),
-      ActionPrompt_Prompt.seer     => ('Untersuchen', 'Wählt einen Spieler'),
-      ActionPrompt_Prompt.witch    => ('Zaubern', 'Heile oder vergifte'),
-      ActionPrompt_Prompt.fox      => ('Spüren', 'Prüft drei Spieler'),
-      ActionPrompt_Prompt.hunter   => ('Rächen', 'Erschiesst einen Spieler'),
-      _                            => ('Aktion', ''),
+    final (title, hint) = switch (update.currentPhase) {
+      Phase.NIGHT_WEREWOLVES => ('Angreifen', 'Wählt ein Opfer'),
+      Phase.NIGHT_SEER       => ('Untersuchen', 'Wählt einen Spieler'),
+      Phase.NIGHT_WITCH      => ('Zaubern', 'Heile oder vergifte'),
+      Phase.NIGHT_FOX        => ('Spüren', 'Prüft drei Spieler'),
+      Phase.HUNTER_REVENGE   => ('Rächen', 'Erschiesst einen Spieler'),
+      Phase.DAY_VOTING       => ('Abstimmen', 'Wählt einen Spieler aus'),
+      _                      => ('Aktion', ''),
     };
 
     return Container(
@@ -233,7 +211,7 @@ class _GameScreenState extends State<GameScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              // TODO: wire up phase-specific target selection and PerformAction RPC
+              // TODO: wire up phase-specific target selection and GameAction RPC
               onPressed: interactive ? () {} : null,
               child: Text(title),
             ),
@@ -269,7 +247,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // helpers
   String _phaseLabel(Phase phase) => switch (phase) {
     Phase.LOBBY            => 'Warte auf Spielstart...',
     Phase.NIGHT_START      => 'Nacht beginnt',
@@ -284,46 +261,6 @@ class _GameScreenState extends State<GameScreen> {
     Phase.GAME_END         => 'Spiel vorbei',
     _                      => 'Unbekannte Phase',
   };
-
-  String _roleLabel(Role role) => switch (role) {
-    Role.WEREWOLF      => 'Werwolf',
-    Role.VILLAGER      => 'Dorfbewohner',
-    Role.SEER          => 'Seher',
-    Role.WITCH         => 'Hexe',
-    Role.FOX           => 'Fuchs',
-    Role.VILLAGE_IDIOT => 'Dorftrottel',
-    Role.HUNTER        => 'Jäger',
-    _                  => 'Unbekannt',
-  };
-
-  String _announcementText(PublicAnnouncement a) {
-    if (a.hasNightDeath()) {
-      final name = _playerName(a.nightDeath.playerId);
-      final cause = switch (a.nightDeath.cause) {
-        EliminationCause.KILLED_BY_WEREWOLVES => 'von den Werwölfen getötet',
-        EliminationCause.KILLED_BY_WITCH      => 'von der Hexe vergiftet',
-        EliminationCause.VOTED_OUT            => 'rausgewählt',
-        EliminationCause.CAUSE_HUNTER_REVENGE => 'vom Jäger erschossen',
-        _                                     => 'ausgeschieden',
-      };
-      return '$name wurde $cause.';
-    }
-    if (a.hasNoDeath()) return 'Heute Nacht ist niemand gestorben.';
-    if (a.hasVoteResult()) {
-      if (a.voteResult.tied) return 'Unentschieden — niemand scheidet aus.';
-      return '${_playerName(a.voteResult.eliminatedPlayerId)} scheidet aus.';
-    }
-    if (a.hasHunterShot()) {
-      return '${_playerName(a.hunterShot.shooterId)} '
-          'erschiesst ${_playerName(a.hunterShot.targetId)}.';
-    }
-    if (a.hasGameEnd()) {
-      return a.gameEnd.winningTeam == Role.WEREWOLF
-          ? 'Die Werwölfe gewinnen!'
-          : 'Das Dorf gewinnt!';
-    }
-    return '';
-  }
 
   String _playerName(String id) {
     for (final p in _controller.currentUpdate.players) {
