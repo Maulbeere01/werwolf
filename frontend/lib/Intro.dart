@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:werwolf/Rules.dart';
 
 class Intro extends StatelessWidget {
   const Intro({super.key});
@@ -7,16 +8,13 @@ class Intro extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
-        backgroundColor: const Color.fromARGB(0, 148, 22, 22),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-
         leadingWidth: 80,
-
         leading: Align(
           alignment: Alignment.center,
           child: GestureDetector(
@@ -38,7 +36,6 @@ class Intro extends StatelessWidget {
             ),
           ),
         ),
-
         actions: [
           Align(
             alignment: Alignment.center,
@@ -66,59 +63,75 @@ class Intro extends StatelessWidget {
 
       body: Stack(
         children: [
-          
-          // Inhalt
+
+          Container(color: Colors.black),
+
+          Positioned(
+      // Tweak these values to match the hole's position
+            top: MediaQuery.of(context).size.height * 0.0,
+            left: MediaQuery.of(context).size.width * 0.00 - (MediaQuery.of(context).size.width * 2) / 2,
+            child: Image.asset(
+              'assets/BG/Sky Spin.png',
+              width: MediaQuery.of(context).size.width * 3,   // tweak this
+              height: MediaQuery.of(context).size.width * 3,  // keep equal to width (circle)
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          // 1. Background image fills the entire screen
+          SizedBox.expand(
+            child: Image.asset(
+              'assets/BG/day FG.png',
+              fit: BoxFit.cover,
+            )
+          ),
+
+          // 2. Content on top
           SafeArea(
-
-            
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                const SizedBox(height: 150),
 
-              SizedBox.expand(
-                          child: Image.asset(
-                            'assets/BG/day.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-
-                const SizedBox(height: 40),
-                Text(
-                  "Intro",
+                const Text(
+                  "In einem weit entfernten Dorf...",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'BagelFatOne',
-                    fontSize: 56,
-                    color: Colors.white,
-              
+                    fontSize: 40,
+                    color: Color.fromARGB(255, 51, 50, 94),
                   ),
                 ),
-                
-                const SizedBox(height: 20),
 
-                // PLATZHALTER FÜR REGELTEXT
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-                    padding: const EdgeInsets.all(20),
-                    
-                    child: SingleChildScrollView( // Macht den Text scrollbar
-                      child: Text(
-                        "Hier stehen die Regeln von Silent Village:\n\n"
-                        "1. Jeder Spieler erhält eine geheime Rolle.\n"
-                        "2. Nachts wachen die Werwölfe auf und wählen ein Opfer.\n"
-                        "3. Tagsüber diskutiert das Dorf, wer ein Werwolf sein könnte.\n"
-                        "4. Ziel der Dorfbewohner: Alle Werwölfe eliminieren.\n"
-                        "5. Ziel der Werwölfe: Das Dorf übernehmen.\n\n"
-                        "Viel Erfolg beim Überleben!",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 18,
-                          height: 1.5,
-                        ),
+                const SizedBox(height: 300),
+
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      PageRouteBuilder(
+                        pageBuilder: (_, __, ___) => const Rules(),
+                        transitionDuration: Duration.zero,
+                        reverseTransitionDuration: Duration.zero,
                       ),
+                    );
+                  },
+                  child: Text(
+                    "Regeln ansehen",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.7),
+                          offset: const Offset(1, 1),
+                          blurRadius: 3,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 30),
               ],
             ),
