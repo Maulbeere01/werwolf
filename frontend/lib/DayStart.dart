@@ -4,15 +4,16 @@ import 'package:werwolf/Rules.dart';
 
 class DayStart extends StatefulWidget {
   const DayStart({super.key});
-  static const double halfTurn = 3.1415926535;
 
   @override
   State<DayStart> createState() => _DayStartState();
 }
 
 class _DayStartState extends State<DayStart>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
+  late final AnimationController _timerController;
+  static const double halfTurn = 3.1415926535;
 
   @override
   void initState() {
@@ -22,12 +23,19 @@ class _DayStartState extends State<DayStart>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..forward();
+
+
+    _timerController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 40),
+    )..forward();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+    _timerController.dispose();
   }
 
   @override
@@ -99,7 +107,7 @@ class _DayStartState extends State<DayStart>
               builder: (context, child) {
                 return Transform.rotate(
                   // 180° = pi radians
-                  angle: DayStart.halfTurn + _controller.value * DayStart.halfTurn,
+                  angle: halfTurn + _controller.value * halfTurn,
                   child: child,
                 );
               },
@@ -138,27 +146,79 @@ class _DayStartState extends State<DayStart>
             child: SizedBox(
               width: double.infinity,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  FadeTransition(
-                    opacity: Tween<double>(
-                      begin: 1.0,
-                      end: 0.0,
-                    ).animate(_controller),
-                    child: const Text(
-                      "Die Nacht bricht ein",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'BagelFatOne',
-                        fontSize: 40,
-                        color: Color.fromARGB(255, 51, 50, 94),
-                      ),
+                  const SizedBox(height: 80),
+
+                  
+                  const Text(
+                    "Der Tag beginnt",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'BagelFatOne',
+                      fontSize: 40,
+                      color: Color.fromARGB(255, 61, 72, 99),
                     ),
                   ),
 
-                  const SizedBox(height: 350),
+                  
+                  const Spacer(flex: 2),
 
+                  // TIMER SECTION (Sekunden übrig...)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 50),
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: SizedBox(
+                            height: 30,
+                            child: AnimatedBuilder(
+                              animation: _timerController,
+                              builder: (context, child) {
+                                return LinearProgressIndicator(
+                                  value: 1.0 - _timerController.value,
+                                  backgroundColor: Colors.white.withOpacity(0.3),
+                                  valueColor: const AlwaysStoppedAnimation(
+                                    Color.fromARGB(255, 61, 72, 99),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        AnimatedBuilder(
+                          animation: _timerController,
+                          builder: (context, child) {
+                            final secondsLeft =
+                                ((1 - _timerController.value) * 40).ceil();
+
+                            return Text(
+                              "$secondsLeft Sekunden übrig...",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.7),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 3,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Spacer(flex: 2),
+
+                  // BOTTOM ACTION (Rules stays independent)
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context).push(
@@ -186,7 +246,7 @@ class _DayStartState extends State<DayStart>
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
