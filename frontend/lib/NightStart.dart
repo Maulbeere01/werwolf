@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:werwolf/Card.dart' as card_overlay;
 import 'package:werwolf/Rules.dart';
 
 class NightStart extends StatefulWidget {
@@ -12,6 +13,7 @@ class NightStart extends StatefulWidget {
 class _NightStartState extends State<NightStart>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  bool _cardIsOverDropZone = false;
 
   @override
   void initState() {
@@ -91,7 +93,8 @@ class _NightStartState extends State<NightStart>
 
           Positioned(
             top: MediaQuery.of(context).size.height * 0.0,
-            left: MediaQuery.of(context).size.width * 0.00 -
+            left:
+                MediaQuery.of(context).size.width * 0.00 -
                 (MediaQuery.of(context).size.width * 2) / 2,
             child: AnimatedBuilder(
               animation: _controller,
@@ -112,82 +115,198 @@ class _NightStartState extends State<NightStart>
           ),
 
           SizedBox.expand(
-            child: Image.asset(
-              'assets/BG/day FG.png',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/BG/day FG.png', fit: BoxFit.cover),
           ),
 
           FadeTransition(
             opacity: _controller,
             child: SizedBox.expand(
-              child: Image.asset(
-                'assets/BG/night FG.png',
-                fit: BoxFit.cover,
-              ),
+              child: Image.asset('assets/BG/night FG.png', fit: BoxFit.cover),
             ),
           ),
 
           // 2. Content on top
           SafeArea(
-            child: SizedBox(
-              width: double.infinity,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  FadeTransition(
-                    opacity: Tween<double>(
-                      begin: 1.0,
-                      end: 0.0,
-                    ).animate(_controller),
-                    child: const Text(
-                      "Die Nacht bricht ein",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'BagelFatOne',
-                        fontSize: 40,
-                        color: Color.fromARGB(255, 51, 50, 94),
+            child: Stack(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      FadeTransition(
+                        opacity: Tween<double>(
+                          begin: 1.0,
+                          end: 0.0,
+                        ).animate(_controller),
+                        child: const Text(
+                          "Die Nacht bricht ein",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'BagelFatOne',
+                            fontSize: 40,
+                            color: Color.fromARGB(255, 51, 50, 94),
+                          ),
+                        ),
                       ),
-                    ),
+
+                      const SizedBox(height: 350),
+
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              pageBuilder: (_, __, ___) => const Rules(),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "Regeln ansehen",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.7),
+                                offset: const Offset(1, 1),
+                                blurRadius: 3,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+                    ],
                   ),
+                ),
+                Positioned(
+                  left: 16,
+                  bottom: 86,
+                  child: Draggable<String>(
+                    data: 'open-card',
+                    feedback: _buildCardPreview(),
+                    childWhenDragging: const SizedBox.shrink(),
+                    onDragStarted: () =>
+                        setState(() => _cardIsOverDropZone = false),
+                    child: _buildCardCorner(),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 140,
+                  bottom: 140,
+                  child: DragTarget<String>(
+                    builder: (context, candidateData, rejectedData) {
+                      final isActive =
+                          candidateData.isNotEmpty || _cardIsOverDropZone;
 
-                  const SizedBox(height: 350),
-
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          pageBuilder: (_, __, ___) => const Rules(),
-                          transitionDuration: Duration.zero,
-                          reverseTransitionDuration: Duration.zero,
+                      return Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 160,
+                          height: 220,
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? Colors.white.withOpacity(0.18)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: isActive
+                                  ? Colors.white70
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              isActive
+                                  ? 'Karte ablegen'
+                                  : 'Ziehe die Karte hierhin',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.6),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 3,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     },
-                    child: Text(
-                      "Regeln ansehen",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.7),
-                            offset: const Offset(1, 1),
-                            blurRadius: 3,
-                          ),
-                        ],
-                      ),
-                    ),
+                    onWillAcceptWithDetails: (details) {
+                      setState(() => _cardIsOverDropZone = true);
+                      return details.data == 'open-card';
+                    },
+                    onLeave: (_) => setState(() => _cardIsOverDropZone = false),
+                    onAcceptWithDetails: (_) {
+                      setState(() => _cardIsOverDropZone = false);
+                      showDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (dialogContext) => const card_overlay.Card(),
+                      );
+                    },
                   ),
-
-                  const SizedBox(height: 30),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildCardCorner() {
+    // Use the same size and border radius as the full card overlay
+    const double cardWidth = 340;
+    const double cardHeight = 500;
+    const double borderRadius = 28;
+    return Material(
+      color: Colors.transparent,
+      child: SizedBox(
+        width: cardWidth / 2.2,
+        height: cardHeight / 2.2,
+        child: Stack(
+          children: [
+            Positioned(
+              left: -(cardWidth / 2.2) + 40,
+              top: -(cardHeight / 2.2) + 40,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(borderRadius),
+                child: Container(
+                  width: cardWidth,
+                  height: cardHeight,
+                  color: Colors.white,
+                  // You can add a placeholder image here later
+                  // child: Image.asset('assets/PNGs/card_back.png'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardPreview() {
+    return Material(
+      color: Colors.transparent,
+      child: Transform.rotate(angle: -0.12, child: _buildCardCorner()),
+    );
+  }
 }
+
+
