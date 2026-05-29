@@ -13,7 +13,7 @@
 ### 2. Datenbank mit Docker starten
 Wir nutzen Docker Compose fuer die Datenbank-Umgebung.
 1. Starte die Datenbank im `backend/`-Ordner:
-   `docker-compose up -d`
+   `docker-compose -f docker-compose.yml -f docker-compose.dev.yml up db -d`
 2. Die Datei werwolf.sql (liegt unter src/main/resources/db/) wird beim ersten Start automatisch importiert.
 3. Die DB ist unter Port 42069 erreichbar.
 
@@ -28,7 +28,7 @@ cd backend
 **Windows PowerShell:**
 ```powershell
 cd backend
-.\mvnw clean compile
+./mvnw clean compile
 ```
 **Windows CMD:**
 ```cmd
@@ -69,8 +69,8 @@ Es wird `spring.jpa.hibernate.ddl-auto=validate` genutzt.
 * Aenderungen an Java-Entities muessen manuell im SQL-Schema nachgezogen werden.
 * Um das Schema komplett neu aufzubauen (Volume loeschen):
 ```bash
-  docker-compose down -v
-  docker-compose up -d
+  docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
+  docker-compose -f docker-compose.yml -f docker-compose.dev.yml up db -d
 ```
 
 ### Tests ausfuehren

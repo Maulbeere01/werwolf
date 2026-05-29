@@ -16,7 +16,7 @@ public class SeerAbility {
         GameState state = stateService.get(lobbyCode);
         Player target = state.players.get(action.getTargetId());
 
-        // reveal role ONLY to seer
+        // reveal role ONLY to seer (later via gRPC stream)
         System.out.println("SEER sees: " + target.role);
     }
 }
