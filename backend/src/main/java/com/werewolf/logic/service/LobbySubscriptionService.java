@@ -30,6 +30,7 @@ public class LobbySubscriptionService {
         }
     }
 
+    // Use broadcast() for public state changes visible to all players
     public void broadcast(String lobbyCode, GameUpdate update) {
         Map<String, StreamObserver<GameUpdate>> lobby = subscribers.get(lobbyCode);
         if (lobby == null || lobby.isEmpty()) return;

@@ -5,8 +5,11 @@ import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import com.werewolf.logic.model.Player;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -145,6 +148,34 @@ public class GameLoopService {
                     ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder().build()).build());
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
                     ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
+
+            case DAY_RESULT -> {    // reveal who was killed to all player
+                List<String> died = new ArrayList<>(state.deadPlayers);
+                died.forEach(id -> {
+                    Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
+                    if (p != null) p.alive = false;
+                });
+                state.deadPlayers.clear();
+
+                PublicAnnouncement announcement;
+                if (died.isEmpty()) {
+                    announcement = PublicAnnouncement.newBuilder()
+                            .setNoDeath(NoDeathEvent.newBuilder().build())
+                            .build();
+                } else {
+                    // Für mehrere Tote: entweder nur den ersten ankündigen oder mehrere Broadcasts
+                    announcement = PublicAnnouncement.newBuilder()
+                            .setNightDeath(NightDeathEvent.newBuilder()
+                                    .setPlayerId(died.get(0))
+                                    .setCause(EliminationCause.KILLED_BY_WEREWOLVES)
+                                    .build())
+                            .build();
+                }
+                    lobbySubscriptionService.broadcast(lobby.lobbyCode,
+                            GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
+            }
+
+            //case DAY_VOTING -> // announce vote results to all players
             default -> {}
         }
     }
