@@ -270,7 +270,7 @@ class _NightStartState extends State<NightStart>
   }
 
   Widget _buildCardCorner() {
-    // Use the same size and border radius as the full card overlay
+    
     const double cardWidth = 340;
     const double cardHeight = 500;
     const double borderRadius = 28;
@@ -290,7 +290,7 @@ class _NightStartState extends State<NightStart>
                   width: cardWidth,
                   height: cardHeight,
                   color: Colors.white,
-                  // You can add a placeholder image here later
+                  // TODO add a placeholder image here later
                   // child: Image.asset('assets/PNGs/card_back.png'),
                 ),
               ),
