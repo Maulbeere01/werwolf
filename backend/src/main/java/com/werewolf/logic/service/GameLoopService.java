@@ -175,7 +175,33 @@ public class GameLoopService {
                             GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
             }
 
-            //case DAY_VOTING -> // announce vote results to all players
+            case DAY_VOTING -> {    // announce vote results to all players
+
+                // wird hier der Ablauf von DAY_VOTING selbst implementiert, oder nur der
+                // outcome bzw. der GameState verarbeitet
+
+                // in the end: announce the results to all players
+                List<String> died = new ArrayList<>(state.deadPlayers);
+                died.forEach(id -> {
+                    Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
+                    if (p != null) p.alive = false;
+                });
+
+                state.deadPlayers.clear();
+
+                PublicAnnouncement announcement = PublicAnnouncement.newBuilder()
+                        .setNightDeath(NightDeathEvent.newBuilder()
+                                .setPlayerId(died.get(0))
+                                .setCause(EliminationCause.VOTED_OUT)
+                                .build())
+                        .build();
+
+                lobbySubscriptionService.broadcast(lobby.lobbyCode,
+                        GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
+            }
+
+
+
             default -> {}
         }
     }
