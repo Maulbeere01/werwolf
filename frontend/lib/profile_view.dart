@@ -112,12 +112,12 @@ class _ProfilViewState extends State<ProfilView> {
               SpieleProgressBar(aktuelleSpielNummer: 1, gesamtSpiele: 3, starteAnimation: false),
               const SizedBox(height: 20),
 
-              // Die 4 Quadrate
+              //Erfolge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(4, (index) {
                   return Container(
-                    width: 65, // Minimal verkleinert, damit es auf jedem Gerät passt
+                    width: 65, 
                     height: 65,
                     decoration: BoxDecoration(
                       color: cardColor,
