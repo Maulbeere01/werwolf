@@ -149,58 +149,9 @@ public class GameLoopService {
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
                     ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
 
-            case DAY_RESULT -> {    // reveal who was killed to all player
-                List<String> died = new ArrayList<>(state.deadPlayers);
-                died.forEach(id -> {
-                    Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
-                    if (p != null) p.alive = false;
-                });
-                state.deadPlayers.clear();
+            case DAY_RESULT -> notifyAllPlayersDayResult(state, lobby);  // reveal who was killed to all players
 
-                PublicAnnouncement announcement;
-                if (died.isEmpty()) {
-                    announcement = PublicAnnouncement.newBuilder()
-                            .setNoDeath(NoDeathEvent.newBuilder().build())
-                            .build();
-                } else {
-                    // Für mehrere Tote: entweder nur den ersten ankündigen oder mehrere Broadcasts
-                    announcement = PublicAnnouncement.newBuilder()
-                            .setNightDeath(NightDeathEvent.newBuilder()
-                                    .setPlayerId(died.get(0))
-                                    .setCause(EliminationCause.KILLED_BY_WEREWOLVES)
-                                    .build())
-                            .build();
-                }
-                    lobbySubscriptionService.broadcast(lobby.lobbyCode,
-                            GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
-            }
-
-            case DAY_VOTING -> {    // announce vote results to all players
-
-                // wird hier der Ablauf von DAY_VOTING selbst implementiert, oder nur der
-                // outcome bzw. der GameState verarbeitet
-
-                // in the end: announce the results to all players
-                List<String> died = new ArrayList<>(state.deadPlayers);
-                died.forEach(id -> {
-                    Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
-                    if (p != null) p.alive = false;
-                });
-
-                state.deadPlayers.clear();
-
-                PublicAnnouncement announcement = PublicAnnouncement.newBuilder()
-                        .setNightDeath(NightDeathEvent.newBuilder()
-                                .setPlayerId(died.get(0))
-                                .setCause(EliminationCause.VOTED_OUT)
-                                .build())
-                        .build();
-
-                lobbySubscriptionService.broadcast(lobby.lobbyCode,
-                        GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
-            }
-
-
+            case DAY_VOTING -> notifyAllPlayersDayVotingResult( state, lobby); // announce vote results to all players -> noifyAll() aufrufen
 
             default -> {}
         }
@@ -215,6 +166,64 @@ public class GameLoopService {
                             GameUpdateFactory.privatePrompt(state.phase, prompt));
                 });
     }
+
+    //notyfyAllPlayers() für DAY_RESULT
+    private void notifyAllPlayersDayResult(GameState state, Lobby lobby){
+
+        List<String> died = new ArrayList<>(state.deadPlayers);
+        died.forEach(id -> {
+            Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
+            if (p != null) p.alive = false;
+        });
+        state.deadPlayers.clear();
+
+        PublicAnnouncement announcement;
+
+        if (died.isEmpty()) {
+            announcement = PublicAnnouncement.newBuilder()
+                    .setNoDeath(NoDeathEvent.newBuilder().build())
+                    .build();
+        } else {
+            // Für mehrere Tote: entweder nur den ersten ankündigen oder mehrere Broadcasts
+            announcement = PublicAnnouncement.newBuilder()
+                    .setNightDeath(NightDeathEvent.newBuilder()
+                            .setPlayerId(died.get(0))
+                            .setCause(EliminationCause.KILLED_BY_WEREWOLVES)
+                            .build())
+                    .build();
+        }
+        lobbySubscriptionService.broadcast(lobby.lobbyCode,
+                GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
+
+    }
+
+    // notifyAllPlayers() für DAY_VOTING
+    private void notifyAllPlayersDayVotingResult(GameState state, Lobby lobby){
+        // wird hier der Ablauf von DAY_VOTING selbst implementiert, oder nur der
+        // outcome bzw. der GameState verarbeitet
+
+        // in the end: announce the results to all players
+        List<String> died = new ArrayList<>(state.deadPlayers);
+        died.forEach(id -> {
+            Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
+            if (p != null) p.alive = false;
+        });
+
+        state.deadPlayers.clear();
+
+        PublicAnnouncement announcement = PublicAnnouncement.newBuilder()
+                .setNightDeath(NightDeathEvent.newBuilder()
+                        .setPlayerId(died.get(0))
+                        .setCause(EliminationCause.VOTED_OUT)
+                        .build())
+                .build();
+
+        lobbySubscriptionService.broadcast(lobby.lobbyCode,
+                GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
+
+    }
+
+
 
     @PreDestroy
     public void shutdown() {
