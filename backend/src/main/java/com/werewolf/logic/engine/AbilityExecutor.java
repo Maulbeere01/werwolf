@@ -13,6 +13,7 @@ public class AbilityExecutor {
     private final SeerAbility seer;
     private final WitchAbility witch;
     private final HunterAbility hunter;
+    DayVotingAbility dayVoting;
 
     public void execute(String lobbyCode, GameAction action, Phase currentPhase) {
         switch (action.getActionCase()) {
@@ -22,6 +23,16 @@ public class AbilityExecutor {
                     werewolf.execute(lobbyCode, action.getVote());
                 }
                 // DAY_VOTING added later
+
+                // DAY_DISCUSSION  ( before DAY_VOTING )
+                if(currentPhase == Phase.DAY_DISCUSSION) {
+                    // timer (30 sek.) in der alle diskutieren können
+                }
+
+                // DAY_VOTING -> erneuter timer muss laufen bis alle / 50% der Spieler eine Person gewählt haben.
+                if (currentPhase == Phase.DAY_VOTING) {
+                    dayVoting.execute(lobbyCode, action.getVote());
+                }
             }
             case SEER    -> seer.execute(lobbyCode, action.getSeer());
             case WITCH   -> witch.execute(lobbyCode, action.getWitch());

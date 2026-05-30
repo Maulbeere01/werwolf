@@ -69,4 +69,12 @@ public final class GameUpdateFactory {
                 .setIsHost(p.id.equals(hostId))
                 .build();
     }
+
+    // build GameUpdate for DAY_RESULT
+    public static GameUpdate announcement(Phase phase, PublicAnnouncement announcement) {
+        return GameUpdate.newBuilder()
+                .setCurrentPhase(phase)
+                .setAnnouncement(announcement)
+                .build();
+    }
 }

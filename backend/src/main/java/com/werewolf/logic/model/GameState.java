@@ -24,4 +24,7 @@ public class GameState {
 
     // The last public announcement broadcast this phase; cleared on each phase transition
     public PublicAnnouncement lastAnnouncement;
+
+    //safe votings from DAY_VOTING
+    public Map<String, String> votes = new HashMap<>();
 }
