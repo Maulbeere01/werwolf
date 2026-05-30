@@ -91,7 +91,7 @@ class Intro extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 150),
+                const SizedBox(height: 120),
 
                 const Text(
                   "In einem weit entfernten Dorf...",
@@ -103,7 +103,7 @@ class Intro extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 300),
+                const SizedBox(height: 320),
 
                 GestureDetector(
                   onTap: () {
