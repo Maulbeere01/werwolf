@@ -145,7 +145,7 @@ class _NightStartState extends State<NightStart>
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'BagelFatOne',
-                            fontSize: 40,
+                            fontSize: 36,
                             color: Color.fromARGB(255, 51, 50, 94),
                           ),
                         ),
@@ -180,20 +180,26 @@ class _NightStartState extends State<NightStart>
                         ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
                 Positioned(
                   left: 16,
-                  bottom: 86,
+                  bottom: 16,
                   child: Draggable<String>(
                     data: 'open-card',
                     feedback: _buildCardPreview(),
                     childWhenDragging: const SizedBox.shrink(),
                     onDragStarted: () =>
                         setState(() => _cardIsOverDropZone = false),
-                    child: _buildCardCorner(),
+                    child: Transform.translate(
+                      offset: const Offset(-80, 100),
+                      child: Transform.rotate(
+                        angle: 0.1,
+                        child: _buildCardCorner(),
+                      ),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -227,7 +233,7 @@ class _NightStartState extends State<NightStart>
                             child: Text(
                               isActive
                                   ? 'Karte ablegen'
-                                  : 'Ziehe die Karte hierhin',
+                                  : '',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
@@ -269,33 +275,35 @@ class _NightStartState extends State<NightStart>
     );
   }
 
-  Widget _buildCardCorner() {
-    
+  Widget _buildCardCorner({
+    double scale = 1 / 2.2,
+    double angle = 0,
+    Offset offset = Offset.zero,
+  }) {
     const double cardWidth = 340;
     const double cardHeight = 500;
     const double borderRadius = 28;
     return Material(
       color: Colors.transparent,
-      child: SizedBox(
-        width: cardWidth / 2.2,
-        height: cardHeight / 2.2,
-        child: Stack(
-          children: [
-            Positioned(
-              left: -(cardWidth / 2.2) + 40,
-              top: -(cardHeight / 2.2) + 40,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(borderRadius),
-                child: Container(
-                  width: cardWidth,
-                  height: cardHeight,
-                  color: Colors.white,
-                  // TODO add a placeholder image here later
-                  // child: Image.asset('assets/PNGs/card_back.png'),
+      child: Transform.translate(
+        offset: offset,
+        child: Transform.rotate(
+          angle: angle,
+          child: Container(
+            width: cardWidth * scale,
+            height: cardHeight * scale,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  offset: const Offset(0, 6),
+                  blurRadius: 20,
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -304,7 +312,11 @@ class _NightStartState extends State<NightStart>
   Widget _buildCardPreview() {
     return Material(
       color: Colors.transparent,
-      child: Transform.rotate(angle: -0.12, child: _buildCardCorner()),
+      child: _buildCardCorner(
+        scale: 0.45,
+        angle: 0.01,
+        offset: const Offset(-80, 100),
+      ),
     );
   }
 }

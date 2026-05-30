@@ -245,14 +245,20 @@ class _DayStartState extends State<DayStart> with TickerProviderStateMixin {
                 ),
                 Positioned(
                   left: 16,
-                  bottom: 86,
+                  bottom: 16,
                   child: Draggable<String>(
                     data: 'open-card',
                     feedback: _buildCardPreview(),
                     childWhenDragging: const SizedBox.shrink(),
                     onDragStarted: () =>
                         setState(() => _cardIsOverDropZone = false),
-                    child: _buildCardCorner(),
+                    child: Transform.translate(
+                      offset: const Offset(-80, 100),
+                      child: Transform.rotate(
+                        angle: 0.1,
+                        child: _buildCardCorner(),
+                      ),
+                    ),
                   ),
                 ),
                 Positioned(
@@ -282,6 +288,26 @@ class _DayStartState extends State<DayStart> with TickerProviderStateMixin {
                               width: 2,
                             ),
                           ),
+                          child: Center(
+                            child: Text(
+                              isActive
+                                  ? 'Karte ablegen'
+                                  : '',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.6),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 3,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     },
@@ -308,34 +334,35 @@ class _DayStartState extends State<DayStart> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildCardCorner() {
-    // Use the same size and border radius as the full card overlay
+  Widget _buildCardCorner({
+    double scale = 1 / 2.2,
+    double angle = 0,
+    Offset offset = Offset.zero,
+  }) {
     const double cardWidth = 340;
     const double cardHeight = 500;
     const double borderRadius = 28;
     return Material(
       color: Colors.transparent,
-      child: SizedBox(
-        width: cardWidth / 2.2,
-        height: cardHeight / 2.2,
-        child: Stack(
-          children: [
-            Positioned(
-              left: -(cardWidth / 2.2) + 40,
-              top: -(cardHeight / 2.2) + 40,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  width: cardWidth,
-                  height: cardHeight,
-                  color: Colors.white,
-                  
-                  // You can add a placeholder image here later
-                  // child: Image.asset('assets/PNGs/card_back.png'),
+      child: Transform.translate(
+        offset: offset,
+        child: Transform.rotate(
+          angle: angle,
+          child: Container(
+            width: cardWidth * scale,
+            height: cardHeight * scale,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  offset: const Offset(0, 6),
+                  blurRadius: 20,
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -344,7 +371,11 @@ class _DayStartState extends State<DayStart> with TickerProviderStateMixin {
   Widget _buildCardPreview() {
     return Material(
       color: Colors.transparent,
-      child: Transform.rotate(angle: -0.12, child: _buildCardCorner()),
+      child: _buildCardCorner(
+        scale: 0.45,
+        angle: 0.01,
+        offset: const Offset(-80, 100),
+      ),
     );
   }
 }
