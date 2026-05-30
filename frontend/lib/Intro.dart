@@ -1,10 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:werwolf/NightStart.dart';
 import 'package:werwolf/Rules.dart';
+import 'package:werwolf/controller/game_stream_controller.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/settings_veiw.dart';
 
-class Intro extends StatelessWidget {
-  const Intro({super.key});
+class Intro extends StatefulWidget {
+  final String lobbyCode;
+  final GameUpdate initialUpdate;
+
+  const Intro({
+    super.key,
+    required this.lobbyCode,
+    required this.initialUpdate,
+  });
+
+  @override
+  State<Intro> createState() => _IntroState();
+}
+
+class _IntroState extends State<Intro> {
+  late final GameStreamController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = GameStreamController(
+      lobbyCode: widget.lobbyCode,
+      seed: widget.initialUpdate,
+    );
+    _controller.addListener(_onUpdate);
+  }
+
+  // The game starts in NIGHT_START (the intro). Once the backend advances the
+  // phase (after ~10s), the night has begun -> switch to the night screen.
+  void _onUpdate() {
+    final phase = _controller.currentUpdate.currentPhase;
+    if (phase == Phase.PHASE_UNSPECIFIED ||
+        phase == Phase.LOBBY ||
+        phase == Phase.NIGHT_START) {
+      return;
+    }
+
+    _controller.removeListener(_onUpdate);
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const NightStart(),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:werwolf/GameScreen.dart';
+import 'package:werwolf/Intro.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
@@ -24,7 +24,9 @@ class _WarteraumState extends State<Warteraum> {
     _controller.addListener(_onUpdate);
   }
 
-  // navigate to GameScreen as soon as the server signals the game has started
+  // navigate to the intro as soon as the server signals the game has started.
+  // TODO: the intro currently stays forever; once the intro timer exists and
+  // the backend waits for it, advance from here to the GameScreen.
   void _onUpdate() {
     final phase = _controller.currentUpdate.currentPhase;
     if (phase == Phase.PHASE_UNSPECIFIED || phase == Phase.LOBBY) return;
@@ -34,7 +36,7 @@ class _WarteraumState extends State<Warteraum> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => GameScreen(
+        builder: (_) => Intro(
           lobbyCode: widget.lobbyCode,
           initialUpdate: _controller.currentUpdate,
         ),

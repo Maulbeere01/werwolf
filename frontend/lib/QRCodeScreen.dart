@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:werwolf/GameScreen.dart';
+import 'package:werwolf/Intro.dart';
 import 'package:werwolf/GrpcHandler.dart';
 import 'package:werwolf/HomeScreen.dart';
 import 'package:werwolf/auth/auth_state.dart';
@@ -28,7 +28,9 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
     _controller.addListener(_onUpdate);
   }
 
-  // navigate to GameScreen as soon as the server signals the game has started
+  // navigate to the intro as soon as the server signals the game has started.
+  // TODO: the intro currently stays forever; once the intro timer exists and
+  // the backend waits for it, advance from here to the GameScreen.
   void _onUpdate() {
     final phase = _controller.currentUpdate.currentPhase;
     if (phase == Phase.PHASE_UNSPECIFIED || phase == Phase.LOBBY) return;
@@ -38,7 +40,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => GameScreen(
+        builder: (_) => Intro(
           lobbyCode: widget.lobbyCode,
           initialUpdate: _controller.currentUpdate,
         ),
