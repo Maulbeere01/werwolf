@@ -5,6 +5,7 @@ import 'package:werwolf/CreateGame.dart';
 import 'package:werwolf/QRCodeScreen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controller/GameViewController.dart';
+import 'package:werwolf/lobby/Warteraum.dart';
 import 'package:werwolf/profile_view.dart';
 import 'package:werwolf/settings_veiw.dart';
 
@@ -102,7 +103,7 @@ class _HomescreenState extends State<Homescreen> {
                             if (!mounted) return;
                             Navigator.of(context).push(
                               PageRouteBuilder(
-                                pageBuilder: (_, __, ___) => QRCodeScreen(lobbyCode: lobbyCode),
+                                pageBuilder: (_, __, ___) => Warteraum(lobbyCode: lobbyCode),
                                 transitionDuration: Duration.zero,
                                 reverseTransitionDuration: Duration.zero,
                               ),

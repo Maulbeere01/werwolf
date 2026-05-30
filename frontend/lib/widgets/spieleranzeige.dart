@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
 
 class Spieleranzeige extends StatefulWidget {
-  const Spieleranzeige({super.key});
+  /// Names of the players currently in the lobby.
+  final List<String> players;
+
+  const Spieleranzeige({super.key, this.players = const []});
 
   @override
   State<Spieleranzeige> createState() => _SpieleranzeigeState();
 }
 
 class _SpieleranzeigeState extends State<Spieleranzeige> {
-  final List<String> _players = ['Host_User', 'Spieler_2', 'Spieler_3', 'Spieler_4', 'Spieler_5', 'Spieler_6'];
   int _selectedIndex = -1;
-
-  void addPlayer(String name) {
-    setState(() {
-      _players.add(name);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+    final List<String> _players = widget.players;
     // Padding sorgt für den Abstand nach links und rechts, den der Container vorher hatte
     return Padding(
       padding: const EdgeInsets.only(left: 40, right: 40),

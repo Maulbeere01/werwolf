@@ -77,7 +77,16 @@ class GameLobby extends StatelessWidget {
 
             const Expanded(
               child: SingleChildScrollView(
-                child: Spieleranzeige(),
+                child: Spieleranzeige(
+                  players: [
+                    'Host_User',
+                    'Spieler_2',
+                    'Spieler_3',
+                    'Spieler_4',
+                    'Spieler_5',
+                    'Spieler_6',
+                  ],
+                ),
               ),
             ),
 
