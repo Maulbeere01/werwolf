@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:werwolf/settings_veiw.dart';
 
 class Rules extends StatelessWidget {
   const Rules({super.key});
@@ -44,18 +45,27 @@ class Rules extends StatelessWidget {
             alignment: Alignment.center,
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: Colors.white60,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: SvgPicture.asset(
-                    'assets/icons/settings.svg',
-                    width: 20,
-                    height: 20,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const EinstellungenView(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Colors.white60,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icons/settings.svg',
+                      width: 20,
+                      height: 20,
+                    ),
                   ),
                 ),
               ),

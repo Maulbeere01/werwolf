@@ -1,7 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:werwolf/controller/LoginViewController.dart';
+import 'package:werwolf/main.dart';
 
 class EinstellungenView extends StatelessWidget {
   const EinstellungenView({super.key});
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Abmelden'),
+        content: const Text('Möchtest du dich wirklich abmelden?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Abmelden'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    await LoginViewController.logout();
+    if (!context.mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const MyHomePage(title: 'Werwolf Hauptmenü'),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+      (_) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +105,10 @@ class EinstellungenView extends StatelessWidget {
                 ),
               ),
               onTap: () {
-                
+                if (option == 'Ausloggen') {
+                  _confirmLogout(context);
+                  return;
+                }
                 print('$option geklickt');
               },
             );
