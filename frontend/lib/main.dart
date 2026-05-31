@@ -1,15 +1,44 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:werwolf/LoginView.dart';
 import 'package:werwolf/RegistrationView.dart';
 import 'package:werwolf/HomeScreen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
+import 'package:werwolf/controller/LoginViewController.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SessionStore.load();
+  await _maybeAutoLogin();
   runApp(const MyApp());
+}
+
+/// Dev: when WERWOLF_AUTOLOGIN_USER / WERWOLF_AUTOLOGIN_PASS are
+/// present in the environment (see scripts/run_clients.sh), sign in
+/// automatically so several test clients can be launched already logged in.
+/// Has no effect during normal use when those variables are unset.
+Future<void> _maybeAutoLogin() async {
+  final user = Platform.environment['WERWOLF_AUTOLOGIN_USER'];
+  final pass = Platform.environment['WERWOLF_AUTOLOGIN_PASS'];
+  if (user == null || user.isEmpty || pass == null || pass.isEmpty) return;
+
+  try {
+    // Drop any session inherited from the shared secure storage so we always
+    // end up as exactly this user (or logged out if the login fails).
+    AuthState.token = null;
+    AuthState.userId = null;
+    AuthState.lobbyCode = null;
+    final ok = await LoginViewController.loginUser(user, pass);
+    // ignore: avoid_print
+    print('[AUTOLOGIN] user=$user success=$ok');
+  } catch (e) {
+    // Never let auto-login block app startup.
+    // ignore: avoid_print
+    print('[AUTOLOGIN] user=$user failed: $e');
+  }
 }
 
 class MyApp extends StatelessWidget {

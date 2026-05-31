@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'auth_state.dart';
 
@@ -26,9 +25,9 @@ class SessionStore {
             ? _storage.write(key: _keyLobbyCode, value: lobbyCode)
             : _storage.delete(key: _keyLobbyCode),
       ]);
-    } on PlatformException catch (e) {
+    } catch (e) {
       assert(() {
-        print('[SessionStore] save skipped: ${e.message}');
+        print('[SessionStore] save skipped: $e');
         return true;
       }());
     }
@@ -39,10 +38,9 @@ class SessionStore {
       AuthState.token = await _storage.read(key: _keyToken);
       AuthState.userId = await _storage.read(key: _keyUserId);
       AuthState.lobbyCode = await _storage.read(key: _keyLobbyCode);
-    } on PlatformException catch (e) {
+    } catch (e) {
       assert(() {
-        // ignore: avoid_print
-        print('[SessionStore] load skipped: ${e.message}');
+        print('[SessionStore] load skipped: $e');
         return true;
       }());
     }
@@ -56,7 +54,10 @@ class SessionStore {
   static Future<void> clearAll() async {
     try {
       await _storage.deleteAll();
-    } on PlatformException catch (_) {}
+    } catch (_) {
+      // Secure storage may be unavailable; the in-memory clear below is what
+      // matters for the running session.
+    }
     AuthState.token = null;
     AuthState.userId = null;
     AuthState.lobbyCode = null;
