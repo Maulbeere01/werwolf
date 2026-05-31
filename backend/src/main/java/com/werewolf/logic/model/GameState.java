@@ -28,6 +28,11 @@ public class GameState {
     // The player the werewolves attacked this night; the witch may heal this id
     public String attackedThisNight;
 
+    // Committed werewolf night votes for NIGHT_WEREWOLVES: voterId -> targetId.
+    // A vote is final once placed (commit) and is resolved into attackedThisNight
+    // when the phase ends. Cleared when the phase starts.
+    public Map<String, String> werewolfVotes = new HashMap<>();
+
     //safe votings from DAY_VOTING
     public Map<String, String> votes = new HashMap<>();
 }

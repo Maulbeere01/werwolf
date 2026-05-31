@@ -53,16 +53,21 @@ class VotingScaffold extends StatelessWidget {
 }
 
 /// A selectable player row used inside the voting screens.
+///
+/// [voteCount] shows a red badge on the row indicating how many werewolves have
+/// committed to this target (a counter is shown when more than one).
 class VotingPlayerTile extends StatelessWidget {
   final String name;
   final bool selected;
   final VoidCallback? onTap;
+  final int voteCount;
 
   const VotingPlayerTile({
     super.key,
     required this.name,
     required this.selected,
     this.onTap,
+    this.voteCount = 0,
   });
 
   @override
@@ -94,11 +99,47 @@ class VotingPlayerTile extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          trailing: selected
-              ? const Icon(Icons.check_circle, color: Colors.black)
-              : null,
+          trailing: _buildTrailing(),
         ),
       ),
+    );
+  }
+
+  Widget? _buildTrailing() {
+    final hasBadge = voteCount > 0;
+    if (!hasBadge && !selected) return null;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasBadge) _voteBadge(voteCount),
+        if (selected)
+          Padding(
+            padding: EdgeInsets.only(left: hasBadge ? 8 : 0),
+            child: const Icon(Icons.check_circle, color: Colors.black),
+          ),
+      ],
+    );
+  }
+
+  Widget _voteBadge(int count) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: const BoxDecoration(
+        color: Colors.redAccent,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: count > 1
+          ? Text(
+              '$count',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            )
+          : null,
     );
   }
 }

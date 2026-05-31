@@ -15,12 +15,12 @@ public class AbilityExecutor {
     private final HunterAbility hunter;
     DayVotingAbility dayVoting;
 
-    public void execute(String lobbyCode, GameAction action, Phase currentPhase) {
+    public void execute(String lobbyCode, String userId, GameAction action, Phase currentPhase) {
         switch (action.getActionCase()) {
             // VOTE is reused by both werewolves (night kill) and the village (day elimination). currentPhase determines which handler to call.
             case VOTE -> {
                 if (currentPhase == Phase.NIGHT_WEREWOLVES) {
-                    werewolf.execute(lobbyCode, action.getVote());
+                    werewolf.execute(lobbyCode, userId, action.getVote());
                 }
                 // DAY_VOTING added later
 

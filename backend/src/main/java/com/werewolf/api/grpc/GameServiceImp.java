@@ -95,6 +95,16 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
             return;
         }
 
+        // the game may only start once the configured player count is reached
+        int maxPlayers = lobby.settings != null ? lobby.settings.getMaxPlayers() : 0;
+        if (maxPlayers > 0 && lobby.players.size() < maxPlayers) {
+            responseObserver.onError(Status.FAILED_PRECONDITION
+                    .withDescription("Not enough players to start: "
+                            + lobby.players.size() + "/" + maxPlayers)
+                    .asRuntimeException());
+            return;
+        }
+
         List<Role> rolePool = buildRolePool(lobby.settings, lobby.players.size());
 
         GameState state = new GameState();
@@ -125,6 +135,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
     @Override
     public void performAction(GameAction request, StreamObserver<Empty> responseObserver) {
         String lobbyCode = request.getLobbyCode();
+        String userId = AuthContext.USER_ID_KEY.get();
 
         GameState state = gameStateService.get(lobbyCode);
         if (state == null) {
@@ -142,7 +153,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
             return;
         }
 
-        abilityExecutor.execute(lobbyCode, request, state.phase);
+        abilityExecutor.execute(lobbyCode, userId, request, state.phase);
         gameStateService.save(state);
 
         responseObserver.onNext(Empty.getDefaultInstance());

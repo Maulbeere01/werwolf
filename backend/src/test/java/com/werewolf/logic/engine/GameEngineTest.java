@@ -26,8 +26,8 @@ class GameEngineTest {
     void shouldForwardActionToAbilityExecutor() {
         GameAction action = GameAction.newBuilder().build();
 
-        gameEngine.handleAction("ABCD", action, Phase.NIGHT_SEER);
+        gameEngine.handleAction("ABCD", "user1", action, Phase.NIGHT_SEER);
 
-        verify(abilityExecutor, times(1)).execute("ABCD", action, Phase.NIGHT_SEER);
+        verify(abilityExecutor, times(1)).execute("ABCD", "user1", action, Phase.NIGHT_SEER);
     }
 }

@@ -35,6 +35,7 @@ class WitchAbilityTest {
         // Ob die Hexe einen Spieler heilen kann, indem "lastNightTarget" aus der Todesliste entfernt wird.
         GameState state = new GameState();
         state.deadPlayers.add("lastNightTarget");
+        state.attackedThisNight = "lastNightTarget";
 
         when(stateService.get("ABCD")).thenReturn(state);
 

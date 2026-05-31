@@ -11,7 +11,7 @@ public class GameEngine {
 
     private final AbilityExecutor abilityExecutor;
 
-    public void handleAction(String lobbyCode, GameAction action, Phase currentPhase) {
-        abilityExecutor.execute(lobbyCode, action, currentPhase);
+    public void handleAction(String lobbyCode, String userId, GameAction action, Phase currentPhase) {
+        abilityExecutor.execute(lobbyCode, userId, action, currentPhase);
     }
 }

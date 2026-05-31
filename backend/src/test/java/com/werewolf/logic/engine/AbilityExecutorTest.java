@@ -36,7 +36,7 @@ class AbilityExecutorTest {
                 .setSeer(SeerAction.newBuilder().setTargetId("player1").build())
                 .build();
 
-        abilityExecutor.execute("ABCD", action, Phase.NIGHT_SEER);
+        abilityExecutor.execute("ABCD", "user1", action, Phase.NIGHT_SEER);
 
         verify(seerAbility, times(1)).execute(eq("ABCD"), any(SeerAction.class));
     }
@@ -47,7 +47,7 @@ class AbilityExecutorTest {
                 .setWitch(WitchAction.newBuilder().setHealTarget(true).build())
                 .build();
 
-        abilityExecutor.execute("ABCD", action, Phase.NIGHT_WITCH);
+        abilityExecutor.execute("ABCD", "user1", action, Phase.NIGHT_WITCH);
 
         verify(witchAbility, times(1)).execute(eq("ABCD"), any(WitchAction.class));
     }
@@ -58,7 +58,7 @@ class AbilityExecutorTest {
                 .setHunter(HunterAction.newBuilder().setTargetId("player2").build())
                 .build();
 
-        abilityExecutor.execute("ABCD", action, Phase.HUNTER_REVENGE);
+        abilityExecutor.execute("ABCD", "user1", action, Phase.HUNTER_REVENGE);
 
         verify(hunterAbility, times(1)).execute(eq("ABCD"), any(HunterAction.class));
     }
@@ -70,7 +70,7 @@ class AbilityExecutorTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> abilityExecutor.execute("ABCD", action, Phase.NIGHT_WEREWOLVES)
+                () -> abilityExecutor.execute("ABCD", "user1", action, Phase.NIGHT_WEREWOLVES)
         );
     }
 }
