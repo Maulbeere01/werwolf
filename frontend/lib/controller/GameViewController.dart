@@ -19,6 +19,17 @@ class GameViewController {
     }
   }
 
+  static Future<bool> performAction(GameAction action) async {
+    final grpc = await GrpcHandler.create();
+    try {
+      await grpc.gameClient.performAction(action);
+      return true;
+    } catch (e) {
+      print('[ACTION] Error performing action: $e');
+      return false;
+    }
+  }
+
   static Future<String?> joinLobby(String lobbyCode) async {
     final grpc = await GrpcHandler.create();
     try {

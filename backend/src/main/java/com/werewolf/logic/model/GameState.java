@@ -25,6 +25,9 @@ public class GameState {
     // The last public announcement broadcast this phase; cleared on each phase transition
     public PublicAnnouncement lastAnnouncement;
 
+    // The player the werewolves attacked this night; the witch may heal this id
+    public String attackedThisNight;
+
     //safe votings from DAY_VOTING
     public Map<String, String> votes = new HashMap<>();
 }

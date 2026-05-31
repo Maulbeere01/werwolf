@@ -46,6 +46,12 @@ public class LobbyManager {
             throw new IllegalStateException("Cannot join a game that has already started");
         }
 
+        // reject once the configured player cap is reached
+        int maxPlayers = lobby.settings != null ? lobby.settings.getMaxPlayers() : 0;
+        if (maxPlayers > 0 && lobby.players.size() >= maxPlayers) {
+            throw new IllegalStateException("Lobby is full");
+        }
+
         Player player = new Player();
         player.id = userId;
         player.name = username;

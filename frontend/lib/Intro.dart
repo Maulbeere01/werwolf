@@ -48,7 +48,10 @@ class _IntroState extends State<Intro> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => const NightStart(),
+        builder: (_) => NightStart(
+          lobbyCode: widget.lobbyCode,
+          initialUpdate: _controller.currentUpdate,
+        ),
       ),
     );
   }

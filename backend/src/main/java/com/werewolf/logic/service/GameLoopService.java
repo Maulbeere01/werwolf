@@ -139,11 +139,23 @@ public class GameLoopService {
     private void onEnter(GameState state, Lobby lobby) {
         switch (state.phase) {
             case NIGHT_WEREWOLVES -> notifyByRole(state, lobby, Role.WEREWOLF,
-                    ActionPrompt.newBuilder().setWerewolf(WerewolfPrompt.newBuilder().build()).build());
+                    ActionPrompt.newBuilder().setWerewolf(WerewolfPrompt.newBuilder()
+                            .addAllCandidateIds(aliveTargetIds(state, Role.WEREWOLF))
+                            .build()).build());
             case NIGHT_SEER -> notifyByRole(state, lobby, Role.SEER,
-                    ActionPrompt.newBuilder().setSeer(SeerPrompt.newBuilder().build()).build());
-            case NIGHT_WITCH -> notifyByRole(state, lobby, Role.WITCH,
-                    ActionPrompt.newBuilder().setWitch(WitchPrompt.newBuilder().build()).build());
+                    ActionPrompt.newBuilder().setSeer(SeerPrompt.newBuilder()
+                            .addAllCandidateIds(aliveTargetIds(state, Role.SEER))
+                            .build()).build());
+            case NIGHT_WITCH -> {
+                // the werewolves' victim is sitting in deadPlayers at this point
+                state.attackedThisNight = state.deadPlayers.isEmpty() ? "" : state.deadPlayers.get(0);
+                notifyByRole(state, lobby, Role.WITCH,
+                        ActionPrompt.newBuilder().setWitch(WitchPrompt.newBuilder()
+                                .setAttackedPlayerId(state.attackedThisNight)
+                                .setHasHealPotion(true)
+                                .setHasPoisonPotion(true)
+                                .build()).build());
+            }
             case NIGHT_FOX -> notifyByRole(state, lobby, Role.FOX,
                     ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder().build()).build());
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
@@ -155,6 +167,14 @@ public class GameLoopService {
 
             default -> {}
         }
+    }
+
+    // living players that may be targeted by an ability, excluding the acting role itself
+    private List<String> aliveTargetIds(GameState state, Role excludeRole) {
+        return state.players.values().stream()
+                .filter(p -> p.alive && p.role != excludeRole)
+                .map(p -> p.id)
+                .toList();
     }
 
     private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {

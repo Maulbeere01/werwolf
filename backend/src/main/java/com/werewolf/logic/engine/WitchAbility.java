@@ -14,8 +14,11 @@ public class WitchAbility {
 
     public void execute(String lobbyCode, WitchAction action) {
         GameState state = stateService.get(lobbyCode);
-        if (action.getHealTarget()) {
-            state.deadPlayers.removeIf(id -> id.equals("lastNightTarget"));
+
+        // heal saves the player the werewolves attacked this night
+        if (action.getHealTarget() && state.attackedThisNight != null
+                && !state.attackedThisNight.isEmpty()) {
+            state.deadPlayers.removeIf(id -> id.equals(state.attackedThisNight));
         }
 
         if (!action.getPoisonTargetId().isEmpty()) {
