@@ -26,7 +26,7 @@ class _WarteraumState extends State<Warteraum> {
 
   // navigate to the intro as soon as the server signals the game has started.
   // TODO: the intro currently stays forever; once the intro timer exists and
-  // the backend waits for it, advance from here to the GameScreen.
+  // the backend waits for it, advance from here to the next screen.
   void _onUpdate() {
     final phase = _controller.currentUpdate.currentPhase;
     if (phase == Phase.PHASE_UNSPECIFIED || phase == Phase.LOBBY) return;

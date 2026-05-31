@@ -5,6 +5,7 @@ import 'package:werwolf/Rules.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/settings_veiw.dart';
+import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class Intro extends StatefulWidget {
   final String lobbyCode;
@@ -201,6 +202,12 @@ class _IntroState extends State<Intro> {
                 const SizedBox(height: 30),
               ],
             ),
+          ),
+
+          const Positioned(
+            left: 16,
+            bottom: 16,
+            child: RoleRevealCard(),
           ),
         ],
       ),

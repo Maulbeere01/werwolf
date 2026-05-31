@@ -130,7 +130,8 @@ class _CreateGameState extends State<CreateGame> {
     if (lobbyCode != null) {
       Navigator.of(context).push(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => QRCodeScreen(lobbyCode: lobbyCode),
+          pageBuilder: (_, __, ___) =>
+              QRCodeScreen(lobbyCode: lobbyCode, requiredPlayers: _players),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
@@ -147,7 +148,7 @@ class _CreateGameState extends State<CreateGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+      backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         centerTitle: true,

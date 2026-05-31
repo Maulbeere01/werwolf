@@ -1,6 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:werwolf/Card.dart' as card_overlay;
+import 'package:werwolf/DayStart.dart';
 import 'package:werwolf/Rules.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controller/GameViewController.dart';
@@ -10,6 +12,7 @@ import 'package:werwolf/settings_veiw.dart';
 import 'package:werwolf/voting/hexe_voting.dart';
 import 'package:werwolf/voting/seher_voting.dart';
 import 'package:werwolf/voting/werwolf_voting.dart';
+import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class NightStart extends StatefulWidget {
   final String lobbyCode;
@@ -29,7 +32,6 @@ class _NightStartState extends State<NightStart>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final GameStreamController _stream;
-  bool _cardIsOverDropZone = false;
 
   // The phase for which this player has already submitted their action, so we
   // don't show the voting screen again after acting.
@@ -38,6 +40,12 @@ class _NightStartState extends State<NightStart>
   // Last known player list. Private updates (e.g. the seer reveal) omit the
   // player list, so we keep the most recent one to resolve names.
   List<PlayerStatus> _lastPlayers = const [];
+
+  // ticks once a second so the phase_ends_at countdown stays live
+  Timer? _ticker;
+
+  // hand off to the day screen only once
+  bool _navigatedToDay = false;
 
   @override
   void initState() {
@@ -52,13 +60,76 @@ class _NightStartState extends State<NightStart>
       lobbyCode: widget.lobbyCode,
       seed: widget.initialUpdate,
     );
+    _stream.addListener(_onPhase);
+
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
+    _ticker?.cancel();
+    _stream.removeListener(_onPhase);
     _controller.dispose();
     _stream.dispose();
     super.dispose();
+  }
+
+  // Once the night is over, the backend moves the game into the day phases.
+  // Hand the stream over to the day screen (which re-subscribes for the lobby).
+  void _onPhase() {
+    if (_navigatedToDay) return;
+    if (!_isDayPhase(_stream.currentUpdate.currentPhase)) return;
+
+    _navigatedToDay = true;
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => DayStart(
+          lobbyCode: widget.lobbyCode,
+          initialUpdate: _stream.currentUpdate,
+        ),
+      ),
+    );
+  }
+
+  static bool _isDayPhase(Phase phase) =>
+      phase == Phase.DAY_RESULT ||
+      phase == Phase.DAY_DISCUSSION ||
+      phase == Phase.DAY_VOTING ||
+      phase == Phase.HUNTER_REVENGE ||
+      phase == Phase.GAME_END;
+
+  // Remaining seconds in the current phase, or null when no deadline is set.
+  int? _secondsLeft(GameUpdate update) {
+    if (!update.hasPhaseEndsAt()) return null;
+    final secs = update.phaseEndsAt
+        .toDateTime()
+        .difference(DateTime.now().toUtc())
+        .inSeconds;
+    return secs < 0 ? 0 : secs;
+  }
+
+  // How many werewolves have committed to each target (live). Only wolves ever
+  // receive these fields from the backend, so this is empty for everyone else.
+  Map<String, int> _wolfVoteCounts(List<PlayerStatus> players) {
+    final counts = <String, int>{};
+    for (final p in players) {
+      if (p.hasVoted && p.votedForTargetId.isNotEmpty) {
+        counts.update(p.votedForTargetId, (v) => v + 1, ifAbsent: () => 1);
+      }
+    }
+    return counts;
+  }
+
+  // This player's own committed werewolf target, or '' if not yet voted.
+  String _ownVotedTarget(List<PlayerStatus> players) {
+    final self = AuthState.userId ?? '';
+    for (final p in players) {
+      if (p.id == self && p.hasVoted) return p.votedForTargetId;
+    }
+    return '';
   }
 
   Future<void> _submit(GameAction action, Phase phase) async {
@@ -83,17 +154,27 @@ class _NightStartState extends State<NightStart>
     final phase = update.currentPhase;
     final acted = _actedPhase == phase;
 
+    // Werewolf voting stays on screen for the whole phase (even after voting) so
+    // the wolf keeps seeing the live tally; the vote locks once committed.
+    if (update.hasOpenPrompt() &&
+        update.openPrompt.whichPrompt() == ActionPrompt_Prompt.werewolf) {
+      final ownVote = _ownVotedTarget(players);
+      return WerwolfVoting(
+        targets: _resolveTargets(players, update.openPrompt.werewolf.candidateIds),
+        voteCounts: _wolfVoteCounts(players),
+        committedTargetId: ownVote.isNotEmpty ? ownVote : null,
+        locked: acted || ownVote.isNotEmpty,
+        secondsLeft: _secondsLeft(update),
+        onVote: (id) => _submit(
+          GameAction(lobbyCode: widget.lobbyCode, vote: VoteAction(targetId: id)),
+          phase,
+        ),
+      );
+    }
+
     if (update.hasOpenPrompt() && !acted) {
       final prompt = update.openPrompt;
       switch (prompt.whichPrompt()) {
-        case ActionPrompt_Prompt.werewolf:
-          return WerwolfVoting(
-            targets: _resolveTargets(players, prompt.werewolf.candidateIds),
-            onVote: (id) => _submit(
-              GameAction(lobbyCode: widget.lobbyCode, vote: VoteAction(targetId: id)),
-              phase,
-            ),
-          );
         case ActionPrompt_Prompt.seer:
           return SeherVoting(
             targets: _resolveTargets(players, prompt.seer.candidateIds),
@@ -337,87 +418,13 @@ class _NightStartState extends State<NightStart>
                         ],
                       ),
                     ),
-                    Positioned(
+                    // role card: drag towards the centre to reveal your role;
+                    // it appears fixed in the middle while held and vanishes the
+                    // moment the finger is lifted.
+                    const Positioned(
                       left: 16,
                       bottom: 16,
-                      child: Draggable<String>(
-                        data: 'open-card',
-                        feedback: _buildCardPreview(),
-                        childWhenDragging: const SizedBox.shrink(),
-                        onDragStarted: () =>
-                            setState(() => _cardIsOverDropZone = false),
-                        child: Transform.translate(
-                          offset: const Offset(-80, 100),
-                          child: Transform.rotate(
-                            angle: 0.1,
-                            child: _buildCardCorner(),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      top: 140,
-                      bottom: 140,
-                      child: DragTarget<String>(
-                        builder: (context, candidateData, rejectedData) {
-                          final isActive =
-                              candidateData.isNotEmpty || _cardIsOverDropZone;
-
-                          return Center(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              width: 160,
-                              height: 220,
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? Colors.white.withOpacity(0.18)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: isActive
-                                      ? Colors.white70
-                                      : Colors.transparent,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  isActive ? 'Karte ablegen' : '',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withOpacity(0.6),
-                                        offset: const Offset(1, 1),
-                                        blurRadius: 3,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        onWillAcceptWithDetails: (details) {
-                          setState(() => _cardIsOverDropZone = true);
-                          return details.data == 'open-card';
-                        },
-                        onLeave: (_) =>
-                            setState(() => _cardIsOverDropZone = false),
-                        onAcceptWithDetails: (_) {
-                          setState(() => _cardIsOverDropZone = false);
-                          showDialog(
-                            context: context,
-                            barrierDismissible: true,
-                            builder: (dialogContext) => const card_overlay.Card(),
-                          );
-                        },
-                      ),
+                      child: RoleRevealCard(),
                     ),
                   ],
                 ),
@@ -428,50 +435,6 @@ class _NightStartState extends State<NightStart>
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildCardCorner({
-    double scale = 1 / 2.2,
-    double angle = 0,
-    Offset offset = Offset.zero,
-  }) {
-    const double cardWidth = 340;
-    const double cardHeight = 500;
-    return Material(
-      color: Colors.transparent,
-      child: Transform.translate(
-        offset: offset,
-        child: Transform.rotate(
-          angle: angle,
-          child: Container(
-            width: cardWidth * scale,
-            height: cardHeight * scale,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  offset: const Offset(0, 6),
-                  blurRadius: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardPreview() {
-    return Material(
-      color: Colors.transparent,
-      child: _buildCardCorner(
-        scale: 0.45,
-        angle: 0.01,
-        offset: const Offset(-80, 100),
       ),
     );
   }
