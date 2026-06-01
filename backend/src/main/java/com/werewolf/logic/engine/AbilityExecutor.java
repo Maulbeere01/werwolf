@@ -27,9 +27,9 @@ public class AbilityExecutor {
                 }
 
                 // DAY_DISCUSSION  ( before DAY_VOTING )
-                if(currentPhase == Phase.DAY_DISCUSSION) {
+                //if(currentPhase == Phase.DAY_DISCUSSION) {
                     // TODO: timer (30 sek.) in der alle diskutieren können
-                }
+                //}
 
                 // DAY_VOTING -> erneuter timer/loop muss laufen bis 50% der Spieler eine Person gewählt haben.
                 if (currentPhase == Phase.DAY_VOTING) {

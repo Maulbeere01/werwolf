@@ -198,7 +198,7 @@ public class GameLoopService {
 
             for( Long l : votes.values() ) {
                 int compare = maxVotes.compareTo(l);
-                if (compare == -1) {
+                if (compare < 0) {
                     maxVotes = l;
                     tied = false;
                 }
@@ -221,6 +221,7 @@ public class GameLoopService {
                         .build();
 
             } else {    // meistgewählter Spieler stirbt
+                //assert topEntry != null;
                 String eliminatedId = topEntry.getKey();
                 Player p = state.players.get(eliminatedId);
                 if (p != null) p.alive = false;
