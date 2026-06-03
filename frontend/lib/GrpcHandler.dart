@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
+import 'package:werwolf/auth/auth_interceptor.dart';
 import '../generated/werwolf.pbgrpc.dart';
 
 class GrpcHandler {
@@ -8,9 +9,9 @@ class GrpcHandler {
   late UserServiceClient userClient;
 
   GrpcHandler._internal(ClientChannel channel) {
-    // Initialisiere die Stubs
-    gameClient = GameServiceClient(channel);
-    userClient = UserServiceClient(channel);
+    final interceptors = [AuthInterceptor()];
+    gameClient = GameServiceClient(channel, interceptors: interceptors);
+    userClient = UserServiceClient(channel, interceptors: interceptors);
   }
 
   static Future<GrpcHandler> create() async {
@@ -19,12 +20,10 @@ class GrpcHandler {
         ? 'assets/config.prod.json'
         : 'assets/config.json';
 
-    // assets/config laden
     final String response = await rootBundle.loadString(configPath);
     final data = json.decode(response);
     final useTls = data['use_tls'] == true;
 
-    // Client erstellen mit den Daten aus der JSON
     final channel = ClientChannel(
       data['server_ip'],
       port: data['server_port'],
@@ -32,6 +31,13 @@ class GrpcHandler {
         credentials: useTls
             ? const ChannelCredentials.secure()
             : const ChannelCredentials.insecure(),
+        // ping server every 60 s; drop the connection after 20 s without a reply
+        // mirrors server keepalive so both ends detect silent failures
+        keepAlive: const ClientKeepAliveOptions(
+          pingInterval: Duration(seconds: 60),
+          timeout: Duration(seconds: 20),
+          permitWithoutCalls: true,
+        ),
       ),
     );
 

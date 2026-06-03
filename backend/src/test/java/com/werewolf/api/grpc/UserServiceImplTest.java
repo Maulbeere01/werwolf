@@ -1,5 +1,6 @@
 package com.werewolf.api.grpc;
 
+import com.werewolf.auth.JwtService;
 import com.werewolf.grpc.RegisterRequest;
 import com.werewolf.grpc.LoginRequest;
 import com.werewolf.grpc.LoginResponse;
@@ -15,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MySQLContainer;
@@ -50,12 +52,17 @@ class UserServiceImplTest {
     private UserRepository userRepository;
 
     private UserServiceImpl userService;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private JwtService jwtService;
 
     @BeforeEach
     void setup() {
+        jwtService = mock(JwtService.class);
+        when(jwtService.generateToken(any(), any())).thenReturn("test-token");
+
         // flush db between tests to avoid data leakage
         userRepository.deleteAllInBatch();
-        userService = new UserServiceImpl(userRepository);
+        userService = new UserServiceImpl(userRepository, passwordEncoder, jwtService);
     }
 
     @Test
@@ -82,7 +89,7 @@ class UserServiceImplTest {
         UserEntity user = new UserEntity();
         user.setUsername("loginuser");
         user.setEmail("login@mail.com");
-        user.setPasswordHash("secret");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
         user.setExp(0);
         userRepository.save(user);
 
@@ -108,7 +115,7 @@ class UserServiceImplTest {
         UserEntity user = new UserEntity();
         user.setUsername("wrongpass");
         user.setEmail("wrongpass@test.com");
-        user.setPasswordHash("correct_hash");
+        user.setPasswordHash(passwordEncoder.encode("correct_password"));
         user.setExp(0);
         userRepository.save(user);
 

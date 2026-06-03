@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:werwolf/controller/LoginViewController.dart';
+import 'package:werwolf/HomeScreen.dart';
+
 import 'widgets/RegistrationLoginBackgroundWrapper.dart';
 import 'widgets/DynamicAuthForm.dart';
 import 'widgets/AuthenticationFormField.dart';
+
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -14,48 +17,90 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
 
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      print("Login-Versuch mit: ${_emailController.text}");
+
+      final success = await LoginViewController.loginUser(
+        _usernameController.text,
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Homescreen(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.'),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
     return RegistrationBackgroundWrapper(
-      child: DynamicAuthForm(
-        formKey: _formKey,
-        submitButtonText: "Einloggen",
-        onSubmit: _handleLogin,
-        fields: [
-          AuthenticationFormField(
-            controller: _emailController,
-            label: "Mail-Adresse",
-            hint: "Gib eine E-Mail Adresse ein",
-            icon: Icons.email,
-            validator: (value) => LoginViewController.validateMail(value)
+      child: Column(
+        children: [
+
+          DynamicAuthForm(
+            formKey: _formKey,
+            submitButtonText: "Einloggen",
+            onSubmit: _handleLogin,
+            fields: [
+              AuthenticationFormField(
+                controller: _usernameController,
+                label: "Benutzername",
+                hint: "Gib deinen Benutzernamen ein",
+                icon: Icons.person,
+                validator: (value) =>
+                    value == null || value.isEmpty ? "Bitte gib deinen Benutzernamen ein" : null,
+              ),
+
+              AuthenticationFormField(
+                controller: _passwordController,
+                label: "Passwort",
+                hint: "Dein Passwort",
+                icon: Icons.lock,
+                isPassword: true,
+              ),
+            ],
           ),
 
-          // Passwort Feld
-          AuthenticationFormField(
-            controller: _passwordController,
-            label: "Passwort",
-            hint: "Dein Passwort",
-            icon: Icons.lock,
-            isPassword: true, // Verdeckt die Eingabe
-            validator: (value) => LoginViewController.validateMail(value)
+          const SizedBox(height: 10),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Homescreen(),
+                  ),
+                );
+              },
+              child: const Text("Ohne Login fortfahren"),
+            ),
           ),
+
         ],
       ),
     );

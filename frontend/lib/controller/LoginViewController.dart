@@ -1,23 +1,11 @@
 import 'package:werwolf/GrpcHandler.dart';
-import 'package:werwolf/controller/RegistrationViewController.dart';
+import 'package:werwolf/auth/auth_state.dart';
+import 'package:werwolf/auth/session_store.dart';
 import '../generated/werwolf.pb.dart';
 
 class LoginViewController  {
 
-  //Kontrolliert, ob Email-Adresse das richtige Format hat
-  static String? validateMail (String? value) {
-    if (value == null || value.isEmpty) {
-      return "Bitte gib eine gültige E-Mail Adresse ein";
-    }
-    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-
-    if(!emailRegExp.hasMatch(value)) {
-      return "Ungültiges E-Mail Format";
-    }
-    return null;
-  }
-
-  static Future<void> loginUser(String username, String password) async {
+  static Future<bool> loginUser(String username, String password) async {
     final grpc = await GrpcHandler.create();
 
     try {
@@ -25,12 +13,21 @@ class LoginViewController  {
       request.username = username;
       request.password = password;
 
-      //await wartet bis Antwort vom Server
-      await grpc.userClient.login(request);
+      final response = await grpc.userClient.login(request);
+      AuthState.token = response.token;
+      AuthState.userId = response.profile.userId;
+      await SessionStore.save();
 
-      print("Erfolg");
+      print('[LOGIN] Success userId=${response.profile.userId}, username=${response.profile.username}');
+      print('[LOGIN] Token: ${response.token.substring(0, 20)}...');
+      return true;
     } catch (e) {
-      print("Fehler: $e");
+      print('[LOGIN] Error: $e');
+      return false;
     }
+  }
+
+  static Future<void> logout() async {
+    await SessionStore.clearAll();
   }
 }
