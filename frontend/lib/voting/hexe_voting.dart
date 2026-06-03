@@ -46,7 +46,7 @@ class _HexeVotingState extends State<HexeVoting> {
 
     return VotingScaffold(
       title: 'Hexe',
-      subtitle: 'Heiltrank und Gifttrank — nutze sie weise',
+      subtitle: 'Heiltrank und Gifttrank: Nutze sie weise!',
       children: [
         // Healing section
         _SectionLabel('Heiltrank'),

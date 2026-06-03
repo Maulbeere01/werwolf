@@ -13,6 +13,7 @@ import 'package:werwolf/voting/hexe_voting.dart';
 import 'package:werwolf/voting/seher_voting.dart';
 import 'package:werwolf/voting/werwolf_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
+import 'package:werwolf/widgets/death_gate.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class NightStart extends StatefulWidget {
@@ -48,6 +49,14 @@ class _NightStartState extends State<NightStart>
   // hand off to the day screen only once
   bool _navigatedToDay = false;
 
+  // Each night phase opens with a 5s view of the plain night scene before the
+  // action UI appears. _introPhase is the phase that delay is running for and
+  // _overlayReadyAt is when the action UI may be shown.
+  static const Duration _introDelay = Duration(seconds: 5);
+  Phase? _introPhase;
+  DateTime? _overlayReadyAt;
+  Timer? _introTimer;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +72,9 @@ class _NightStartState extends State<NightStart>
     );
     _stream.addListener(_onPhase);
 
+    // gate the first phase's action UI behind the intro delay from the start
+    _maybeStartIntro(widget.initialUpdate.currentPhase);
+
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -71,17 +83,41 @@ class _NightStartState extends State<NightStart>
   @override
   void dispose() {
     _ticker?.cancel();
+    _introTimer?.cancel();
     _stream.removeListener(_onPhase);
     _controller.dispose();
     _stream.dispose();
     super.dispose();
   }
 
-  // Once the night is over, the backend moves the game into the day phases.
-  // Hand the stream over to the day screen (which re-subscribes for the lobby).
+  static bool _isNightActionPhase(Phase phase) =>
+      phase == Phase.NIGHT_WEREWOLVES ||
+      phase == Phase.NIGHT_SEER ||
+      phase == Phase.NIGHT_WITCH ||
+      phase == Phase.NIGHT_FOX;
+
+  // When a new night phase begins, start its 5s intro delay (once per phase).
+  void _maybeStartIntro(Phase phase) {
+    if (!_isNightActionPhase(phase) || phase == _introPhase) return;
+    _introPhase = phase;
+    _overlayReadyAt = DateTime.now().add(_introDelay);
+    _introTimer?.cancel();
+    _introTimer = Timer(_introDelay, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  // Once the night is over the backend moves the game into the day phases or
+  // straight to GAME_END if the night kill already decided it. Either way we hand
+  // over to the day screen, so the night->day animation plays first; the day
+  // screen then shows the result or (on GAME_END) the end screen once the
+  // animation has finished.
   void _onPhase() {
+    final phase = _stream.currentUpdate.currentPhase;
+    _maybeStartIntro(phase);
+
     if (_navigatedToDay) return;
-    if (!_isDayPhase(_stream.currentUpdate.currentPhase)) return;
+    if (!_isDayPhase(phase) && phase != Phase.GAME_END) return;
 
     _navigatedToDay = true;
     if (!mounted) return;
@@ -99,8 +135,7 @@ class _NightStartState extends State<NightStart>
       phase == Phase.DAY_RESULT ||
       phase == Phase.DAY_DISCUSSION ||
       phase == Phase.DAY_VOTING ||
-      phase == Phase.HUNTER_REVENGE ||
-      phase == Phase.GAME_END;
+      phase == Phase.HUNTER_REVENGE;
 
   // Remaining seconds in the current phase, or null when no deadline is set.
   int? _secondsLeft(GameUpdate update) {
@@ -159,6 +194,25 @@ class _NightStartState extends State<NightStart>
     final phase = update.currentPhase;
     final acted = _actedPhase == phase;
 
+    // The seer's reveal appears right after acting and is NOT gated by the intro
+    // delay; it stays until the backend advances the phase (~5s grace). The
+    // result is only ever present post-action during the seer phase, so showing
+    // it whenever present is safe (and survives a reconnect).
+    if (update.hasYourResults() && update.yourResults.hasSeerReveal()) {
+      return SeherVoting(
+        targets: const [],
+        players: players,
+        reveal: update.yourResults.seerReveal,
+        onInspect: (_) {},
+      );
+    }
+
+    // Show the plain night scene for the first 5s of each night phase, so the
+    // transition animations/announcements are visible before the action UI.
+    if (_overlayReadyAt != null && DateTime.now().isBefore(_overlayReadyAt!)) {
+      return null;
+    }
+
     // Werewolf voting stays on screen for the whole phase (even after voting) so
     // the wolf keeps seeing the live tally; the vote locks once committed.
     if (update.hasOpenPrompt() &&
@@ -213,19 +267,7 @@ class _NightStartState extends State<NightStart>
       }
     }
 
-    if (acted) {
-      // the seer gets to see the verdict; everyone else just waits
-      if (update.hasYourResults() && update.yourResults.hasSeerReveal()) {
-        return SeherVoting(
-          targets: const [],
-          players: players,
-          reveal: update.yourResults.seerReveal,
-          onInspect: (_) {},
-        );
-      }
-      return _waitingOverlay();
-    }
-
+    // already acted (e.g. the witch) or nothing to do -> plain night scene
     return null;
   }
 
@@ -242,24 +284,13 @@ class _NightStartState extends State<NightStart>
     return players.where((p) => p.isAlive && p.id != self).toList();
   }
 
-  Widget _waitingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.85),
-      child: const Center(
-        child: Text(
-          'Aktion übermittelt.\nWarte auf die anderen...',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 18),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ConnectionStatusScope(
       controller: _stream,
-      child: Scaffold(
+      child: DeathGate(
+        controller: _stream,
+        child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
@@ -442,6 +473,7 @@ class _NightStartState extends State<NightStart>
             ],
           );
         },
+      ),
       ),
       ),
     );

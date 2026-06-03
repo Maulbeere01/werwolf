@@ -2,11 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:werwolf/NightStart.dart';
 import 'package:werwolf/Rules.dart';
+import 'package:werwolf/auth/auth_state.dart';
+import 'package:werwolf/controller/GameViewController.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/role_display.dart';
 import 'package:werwolf/settings_veiw.dart';
+import 'package:werwolf/wahlScreen.dart';
+import 'package:werwolf/voting/dorf_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
+import 'package:werwolf/widgets/death_gate.dart';
+import 'package:werwolf/widgets/endscreen.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class DayStart extends StatefulWidget {
@@ -31,6 +39,13 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
   // ticks once a second so the phase_ends_at countdown stays live
   Timer? _ticker;
 
+  // the phase for which this player has already cast their day vote, so we show
+  // the waiting screen instead of the vote screen after they voted
+  Phase? _votedPhase;
+
+  // set once we start navigating away from the day screen (to night or end)
+  bool _leaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -44,14 +59,93 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       lobbyCode: widget.lobbyCode,
       seed: widget.initialUpdate,
     );
+    _stream.addListener(_onTransition);
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
   }
 
+  static bool _isNightPhase(Phase phase) =>
+      phase == Phase.NIGHT_START ||
+      phase == Phase.NIGHT_WEREWOLVES ||
+      phase == Phase.NIGHT_SEER ||
+      phase == Phase.NIGHT_WITCH ||
+      phase == Phase.NIGHT_FOX;
+
+  // Drives the transitions out of the day screen:
+  //  - GAME_END  -> the end screen (a win condition was met)
+  //  - next night -> first show the day-vote result reveal for 5s (so the animation plays), then hand over to the night screen
+  Future<void> _onTransition() async {
+    if (_leaving) return;
+    final update = _stream.currentUpdate;
+    final phase = update.currentPhase;
+
+    if (phase == Phase.GAME_END) {
+      _leaving = true;
+      _stream.removeListener(_onTransition);
+      // when the werewolves win via a night kill we arrive here straight from the
+      // night, so wait for the night->day animation to finish before the end
+      // screen; if it already played (e.g. game ended by a day vote), go now
+      _goToEndscreenAfterAnimation(update);
+      return;
+    }
+
+    if (_isNightPhase(phase)) {
+      _leaving = true;
+      _stream.removeListener(_onTransition);
+
+      // the day vote result reveal auto-closes after 5s
+      if (update.hasAnnouncement() && update.announcement.hasVoteResult()) {
+        final vr = update.announcement.voteResult;
+        final eliminated = (vr.tied || vr.eliminatedPlayerId.isEmpty)
+            ? null
+            : _playerOf(vr.eliminatedPlayerId);
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => WahlergebnisScreen(
+              spielerName: eliminated?.name,
+              // the role is revealed on death
+              rolle: eliminated != null ? germanRoleName(eliminated.role) : null,
+            ),
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => NightStart(
+            lobbyCode: widget.lobbyCode,
+            initialUpdate: _stream.currentUpdate,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _goToEndscreenAfterAnimation(GameUpdate update) {
+    void go() {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => Endscreen(gewinner: winningTeamName(winningTeamOf(update))),
+        ),
+      );
+    }
+
+    if (_controller.status == AnimationStatus.completed) {
+      go();
+    } else {
+      _controller.addStatusListener((status) {
+        if (status == AnimationStatus.completed) go();
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _stream.removeListener(_onTransition);
     _ticker?.cancel();
     _controller.dispose();
     _stream.dispose();
@@ -82,7 +176,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     }
     if (a.hasNoDeath()) return 'Heute Nacht ist niemand gestorben.';
     if (a.hasVoteResult()) {
-      if (a.voteResult.tied) return 'Unentschieden — niemand scheidet aus.';
+      if (a.voteResult.tied) return 'Unentschieden: niemand scheidet aus.';
       return '${_playerName(a.voteResult.eliminatedPlayerId)} scheidet aus.';
     }
     if (a.hasGameEnd()) {
@@ -100,11 +194,87 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     return id;
   }
 
+  PlayerStatus? _playerOf(String id) {
+    for (final p in _stream.currentUpdate.players) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  // The day vote screen, shown to every living player during DAY_VOTING. It
+  // stays up for the whole phase (even after voting) so the live tally keeps
+  // updating; the vote locks once committed. Null outside the vote phase and for
+  // dead players, who no longer take part.
+  Widget? _buildVoteOverlay(GameUpdate update) {
+    if (update.currentPhase != Phase.DAY_VOTING) return null;
+
+    final self = AuthState.userId ?? '';
+    final players = update.players;
+    final selfAlive = players.any((p) => p.id == self && p.isAlive);
+    if (!selfAlive) return null;
+
+    final ownVote = _ownDayVote(players); // null = not voted, '' = skip, id = target
+    // you may also vote for yourself; your own tile then shows the yellow tally
+    // of how many others voted for you
+    final targets = players.where((p) => p.isAlive).toList();
+    return DorfVoting(
+      targets: targets,
+      voteCounts: _dayVoteCounts(players),
+      committedTargetId: ownVote,
+      locked: ownVote != null || _votedPhase == Phase.DAY_VOTING,
+      secondsLeft: _secondsLeft(update),
+      onVote: _submitVote,
+    );
+  }
+
+  // How many OTHER players voted for each target (live, public). Own vote is
+  // excluded (it shows as the committed checkmark, not a yellow dot), as are
+  // abstentions (empty target).
+  Map<String, int> _dayVoteCounts(List<PlayerStatus> players) {
+    final self = AuthState.userId ?? '';
+    final counts = <String, int>{};
+    for (final p in players) {
+      if (p.id == self) continue;
+      if (p.hasVoted && p.votedForTargetId.isNotEmpty) {
+        counts.update(p.votedForTargetId, (v) => v + 1, ifAbsent: () => 1);
+      }
+    }
+    return counts;
+  }
+
+  // This player's own day vote: null if not voted, '' if abstained, else target.
+  String? _ownDayVote(List<PlayerStatus> players) {
+    final self = AuthState.userId ?? '';
+    for (final p in players) {
+      if (p.id == self) return p.hasVoted ? p.votedForTargetId : null;
+    }
+    return null;
+  }
+
+  Future<void> _submitVote(String targetId) async {
+    final ok = await GameViewController.performAction(
+      GameAction(
+        lobbyCode: widget.lobbyCode,
+        vote: VoteAction(targetId: targetId),
+      ),
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _votedPhase = Phase.DAY_VOTING);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Abstimmung fehlgeschlagen')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ConnectionStatusScope(
       controller: _stream,
-      child: Scaffold(
+      child: DeathGate(
+        controller: _stream,
+        child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
@@ -164,6 +334,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
           final secondsLeft = _secondsLeft(update);
           final announcement =
               update.hasAnnouncement() ? _announcementText(update.announcement) : '';
+          final voteOverlay = _buildVoteOverlay(update);
 
           return Stack(
             children: [
@@ -305,9 +476,13 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
                   ],
                 ),
               ),
+
+              // day vote screen, shown on top during DAY_VOTING
+              if (voteOverlay != null) Positioned.fill(child: voteOverlay),
             ],
           );
         },
+      ),
       ),
       ),
     );

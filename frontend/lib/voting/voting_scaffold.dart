@@ -61,6 +61,7 @@ class VotingPlayerTile extends StatelessWidget {
   final bool selected;
   final VoidCallback? onTap;
   final int voteCount;
+  final Color voteBadgeColor;
 
   const VotingPlayerTile({
     super.key,
@@ -68,6 +69,7 @@ class VotingPlayerTile extends StatelessWidget {
     required this.selected,
     this.onTap,
     this.voteCount = 0,
+    this.voteBadgeColor = Colors.redAccent,
   });
 
   @override
@@ -125,8 +127,8 @@ class VotingPlayerTile extends StatelessWidget {
     return Container(
       width: 22,
       height: 22,
-      decoration: const BoxDecoration(
-        color: Colors.redAccent,
+      decoration: BoxDecoration(
+        color: voteBadgeColor,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
