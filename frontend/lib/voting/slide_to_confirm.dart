@@ -9,12 +9,17 @@ class SlideToConfirm extends StatefulWidget {
   final bool completed;
   final VoidCallback onConfirm;
 
+  /// Maximum track width; the slider is centred and never wider than this so the
+  /// swipe distance stays comfortable for a thumb instead of spanning the screen.
+  final double maxWidth;
+
   const SlideToConfirm({
     super.key,
     required this.label,
     required this.onConfirm,
     this.enabled = true,
     this.completed = false,
+    this.maxWidth = 240,
   });
 
   @override
@@ -33,7 +38,10 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
     final completed = widget.completed;
     final interactive = widget.enabled && !completed;
 
-    return LayoutBuilder(
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: widget.maxWidth),
+        child: LayoutBuilder(
       builder: (context, constraints) {
         final maxX = (constraints.maxWidth - _thumb - 4).clamp(0.0, double.infinity);
         final thumbX = completed ? maxX : _dragX.clamp(0.0, maxX);
@@ -41,7 +49,7 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
 
         return Container(
           height: _height,
-          width: double.infinity, // fill the track; don't shrink to the label
+          width: double.infinity, // fill the (constrained) track width
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(_height / 2),
@@ -102,6 +110,8 @@ class _SlideToConfirmState extends State<SlideToConfirm> {
           ),
         );
       },
+        ),
+      ),
     );
   }
 }

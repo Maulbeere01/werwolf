@@ -50,13 +50,11 @@ class _DorfVotingState extends State<DorfVoting> {
       subtitle.write('  •  ${widget.secondsLeft}s');
     }
 
-    // slide button label: defaults to "Niemanden wählen", switches to a short
-    // "Wählen" once a player is picked (the name is omitted to avoid overflow).
     final picked = locked ? (widget.committedTargetId ?? _selectedId) : _selectedId;
     final bool hasPick = picked != null && picked != DorfVoting.skip;
     final String label;
     if (!hasPick) {
-      label = locked ? 'Niemanden gewählt' : 'Niemanden wählen';
+      label = locked ? 'Enthalten' : 'Enthalten';
     } else {
       label = locked ? 'Gewählt' : 'Wählen';
     }
@@ -64,6 +62,15 @@ class _DorfVotingState extends State<DorfVoting> {
     return VotingScaffold(
       title: 'Abstimmung',
       subtitle: subtitle.toString(),
+      // the slider is pinned at the bottom so it sits within thumb reach and is
+      // never pushed off-screen by a long player list
+      footer: SlideToConfirm(
+        label: label,
+        enabled: !locked,
+        completed: locked,
+        onConfirm: () => widget.onVote(_selectedId ?? DorfVoting.skip),
+      ),
+      // the player list fills the remaining space and scrolls on its own
       children: [
         for (final p in widget.targets)
           VotingPlayerTile(
@@ -77,13 +84,6 @@ class _DorfVotingState extends State<DorfVoting> {
                 : () => setState(
                     () => _selectedId = _selectedId == p.id ? null : p.id),
           ),
-        const SizedBox(height: 24),
-        SlideToConfirm(
-          label: label,
-          enabled: !locked,
-          completed: locked,
-          onConfirm: () => widget.onVote(_selectedId ?? DorfVoting.skip),
-        ),
       ],
     );
   }
