@@ -34,11 +34,10 @@ public class GameLoopService {
     private final ConcurrentHashMap<String, ScheduledFuture<?>> activeLoops =
             new ConcurrentHashMap<>();
 
-    // can be skipped conditionally later (e.g. omit NIGHT_FOX if no fox is in the game, skip HUNTER_REVENGE if
-    // the hunter is still alive).
-    // Add skip logic in nextPhase() when game conditions require it.
-    static final List<Phase> PHASE_SEQUENCE = List.of(
-            Phase.NIGHT_START,
+    // NIGHT_START is the one-off intro. The game then loops over CYCLE
+    // (night -> day -> night) until a win condition ends it (see checkWinner /
+    // concludeGame); phases without a living holder are skipped (see shouldSkip).
+    static final List<Phase> CYCLE = List.of(
             Phase.NIGHT_WEREWOLVES,
             Phase.NIGHT_SEER,
             Phase.NIGHT_WITCH,
@@ -46,8 +45,7 @@ public class GameLoopService {
             Phase.DAY_RESULT,
             Phase.DAY_DISCUSSION,
             Phase.DAY_VOTING,
-            Phase.HUNTER_REVENGE,
-            Phase.GAME_END
+            Phase.HUNTER_REVENGE
     );
 
     // werewolves get a full minute to agree on a victim
@@ -57,16 +55,23 @@ public class GameLoopService {
     // tally and fall back asleep before the night moves on
     static final long WEREWOLF_GRACE_SECONDS = 5;
 
+    // the whole village gets a full minute to vote someone out by day
+    static final long DAY_VOTE_PHASE_SECONDS = 60;
+
+    // the seer and the witch each get 40s to make their choice
+    static final long SEER_PHASE_SECONDS = 40;
+    static final long WITCH_PHASE_SECONDS = 40;
+
     // placeholder durations (seconds)
     static final Map<Phase, Long> PHASE_DURATIONS = Map.ofEntries(
             Map.entry(Phase.NIGHT_START,      10L),
             Map.entry(Phase.NIGHT_WEREWOLVES, WEREWOLF_PHASE_SECONDS),
-            Map.entry(Phase.NIGHT_SEER,       10L),
-            Map.entry(Phase.NIGHT_WITCH,      10L),
+            Map.entry(Phase.NIGHT_SEER,       SEER_PHASE_SECONDS),
+            Map.entry(Phase.NIGHT_WITCH,      WITCH_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_FOX,        10L),
             Map.entry(Phase.DAY_RESULT,       10L),
             Map.entry(Phase.DAY_DISCUSSION,   10L),   // increase timer to 30 seconds
-            Map.entry(Phase.DAY_VOTING,       10L),   // increase timer ?
+            Map.entry(Phase.DAY_VOTING,       DAY_VOTE_PHASE_SECONDS),
             Map.entry(Phase.HUNTER_REVENGE,   10L)
     );
 
@@ -86,16 +91,42 @@ public class GameLoopService {
         log.info("[LOOP] Started phase loop for lobby {}", lobbyCode);
     }
 
-    // Advances to the next phase that is actually relevant for this game,
-    // skipping role phases whose role isn't part of the game (see shouldSkip).
+    // Advances to the next relevant phase within the night/day CYCLE, wrapping
+    // around so the game keeps looping. NIGHT_START (intro) and anything off-cycle
+    // begin a fresh night. Phases whose role has no living holder are skipped. The
+    // game leaves the cycle only via a win condition (concludeGame), never here.
     public Phase nextPhase(GameState state, Phase current) {
-        int idx = PHASE_SEQUENCE.indexOf(current);
-        if (idx < 0) return Phase.GAME_END;
-        for (int i = idx + 1; i < PHASE_SEQUENCE.size(); i++) {
-            Phase candidate = PHASE_SEQUENCE.get(i);
+        int idx = CYCLE.indexOf(current);
+        int start = (idx < 0) ? 0 : idx + 1;
+        for (int i = 0; i < CYCLE.size(); i++) {
+            Phase candidate = CYCLE.get((start + i) % CYCLE.size());
             if (!shouldSkip(state, candidate)) return candidate;
         }
-        return Phase.GAME_END;
+        return Phase.GAME_END; // nothing left to run (should not happen)
+    }
+
+    // Win conditions, evaluated after every death: the werewolves win once they
+    // reach parity with everyone else; the village wins once no werewolf is left
+    // alive. Returns the winning team, or null while the game continues.
+    Role checkWinner(GameState state) {
+        long wolves = countAlive(state, Role.WEREWOLF);
+        long others = state.players.values().stream()
+                .filter(p -> p.alive && p.role != Role.WEREWOLF).count();
+        if (wolves == 0) return Role.VILLAGER;
+        if (wolves >= others) return Role.WEREWOLF;
+        return null;
+    }
+
+    // Ends the game: switch to GAME_END and announce the winning team.
+    private void concludeGame(GameState state, Role winningTeam) {
+        state.winningTeam = winningTeam;
+        state.phase = Phase.GAME_END;
+        state.phaseEndsAt = null;
+        state.pendingPrompts.clear();
+        state.lastAnnouncement = PublicAnnouncement.newBuilder()
+                .setGameEnd(GameEndEvent.newBuilder().setWinningTeam(winningTeam).build())
+                .build();
+        log.info("[LOOP] Game over: {} win", winningTeam);
     }
 
     // A role phase is skipped when no LIVING player holds that role, whether the
@@ -131,25 +162,31 @@ public class GameLoopService {
         }
     }
 
-    // Called once all living werewolves have committed their vote. Instead of
-    // ending instantly we shorten the phase to a brief grace period so the wolves
-    // can see the final tally and fall back asleep. phase_ends_at is updated so
-    // the clients' countdown reflects the grace, then the loop advances normally.
-    public void beginWerewolfGrace(String lobbyCode) {
+    // Shortens the current phase to a brief grace period instead of ending it
+    // instantly, so clients can see the outcome (e.g. the werewolf tally or the
+    // seer's reveal) before the loop advances. No-op unless we are still in the
+    // expected phase. phase_ends_at is updated so the countdown reflects the grace.
+    public void beginGrace(String lobbyCode, Phase expectedPhase, long graceSeconds) {
         GameState state = gameStateService.get(lobbyCode);
-        if (state == null || state.phase != Phase.NIGHT_WEREWOLVES) return;
+        if (state == null || state.phase != expectedPhase) return;
 
         ScheduledFuture<?> current = activeLoops.get(lobbyCode);
         if (current != null) current.cancel(false);
 
-        state.phaseEndsAt = Instant.now().plusSeconds(WEREWOLF_GRACE_SECONDS);
+        state.phaseEndsAt = Instant.now().plusSeconds(graceSeconds);
         gameStateService.save(state);
 
         ScheduledFuture<?> next = scheduler.schedule(
-                () -> tickLoop(lobbyCode), WEREWOLF_GRACE_SECONDS, TimeUnit.SECONDS);
+                () -> tickLoop(lobbyCode), graceSeconds, TimeUnit.SECONDS);
         activeLoops.put(lobbyCode, next);
-        log.info("[LOOP] All werewolves voted in {}, {}s grace before advancing",
-                lobbyCode, WEREWOLF_GRACE_SECONDS);
+        log.info("[LOOP] Grace in {} for phase {}: {}s before advancing",
+                lobbyCode, expectedPhase, graceSeconds);
+    }
+
+    // Called once all living werewolves have committed their vote: a short grace
+    // so they see the final tally and fall back asleep before the night moves on.
+    public void beginWerewolfGrace(String lobbyCode) {
+        beginGrace(lobbyCode, Phase.NIGHT_WEREWOLVES, WEREWOLF_GRACE_SECONDS);
     }
 
     private void tickLoop(String lobbyCode) {
@@ -164,12 +201,32 @@ public class GameLoopService {
             // so any announcement produced while resolving (e.g. the day vote result)
             // is still present when the personalised snapshot is sent below.
             state.pendingPrompts.clear();
+            state.pendingResults.clear();
             state.lastAnnouncement = null;
 
-            // resolve the phase that is ending before moving on (may set lastAnnouncement)
-            onExit(state, state.phase);
+            // resolve the phase that is ending before moving on (may kill via lynch)
+            Phase leaving = state.phase;
+            onExit(state, leaving);
 
-            state.phase = nextPhase(state, state.phase);
+            // a death may already have decided the game (e.g. lynching the last wolf)
+            Role winner = checkWinner(state);
+            if (winner != null) {
+                concludeGame(state, winner);
+            } else {
+                state.phase = nextPhase(state, leaving);
+            }
+
+            Lobby lobby = lobbyManager.getLobby(lobbyCode);
+
+            // onEnter for the new phase may apply deaths (the night victims at
+            // DAY_RESULT), so re-check the win condition afterwards
+            if (state.phase != Phase.GAME_END && lobby != null) {
+                onEnter(state, lobby);
+                winner = checkWinner(state);
+                if (winner != null) {
+                    concludeGame(state, winner);
+                }
+            }
 
             if (state.phase == Phase.GAME_END) {
                 state.phaseEndsAt = null;
@@ -180,9 +237,7 @@ public class GameLoopService {
                 activeLoops.put(lobbyCode, next);
             }
 
-            Lobby lobby = lobbyManager.getLobby(lobbyCode);
             if (lobby != null) {
-                onEnter(state, lobby);
                 gameStateService.save(state);
                 lobby.players.forEach(p ->
                         lobbySubscriptionService.sendTo(lobbyCode, p.id,
@@ -238,8 +293,12 @@ public class GameLoopService {
             // morning: apply the deaths gathered during the night and reveal them
             case DAY_RESULT -> resolveNightDeaths(state);
 
-            // DAY_VOTING only opens the vote here; the result is tallied in
-            // onExit(DAY_VOTING) once the phase ends (timer or all players voted).
+            // the village votes by day: every living player may cast one vote.
+            // There is no per-role prompt (the client opens the vote screen for
+            // the DAY_VOTING phase); we just start from a clean tally. The result
+            // is resolved in onExit(DAY_VOTING) once the timer runs out or all
+            // living players have voted.
+            case DAY_VOTING -> state.votes.clear();
 
             default -> {
             }
@@ -310,16 +369,19 @@ public class GameLoopService {
         // at least half of the living players must have cast a vote for a lynch
         boolean halfOfPlayersVoted = state.votes.size() * 2L >= alivePlayers;
 
+        // abstentions (skip votes) have an empty target and elect nobody
+        Map<String, Long> tally = state.votes.values().stream()
+                .filter(id -> id != null && !id.isEmpty())
+                .collect(java.util.stream.Collectors.groupingBy(
+                        id -> id, java.util.stream.Collectors.counting()));
+
         PublicAnnouncement announcement;
-        if (state.votes.isEmpty() || !halfOfPlayersVoted) {
-            // not enough participation => nobody is lynched
+        if (tally.isEmpty() || !halfOfPlayersVoted) {
+            // nobody picked a target (all abstained) or too few voted => no lynch
             announcement = PublicAnnouncement.newBuilder()
                     .setVoteResult(VoteResultEvent.newBuilder().setTied(true).build())
                     .build();
         } else {
-            Map<String, Long> tally = state.votes.values().stream()
-                    .collect(java.util.stream.Collectors.groupingBy(
-                            id -> id, java.util.stream.Collectors.counting()));
             long maxVotes = tally.values().stream().max(Long::compareTo).orElse(0L);
             List<String> topTargets = tally.entrySet().stream()
                     .filter(e -> e.getValue() == maxVotes)

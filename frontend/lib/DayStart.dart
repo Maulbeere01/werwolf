@@ -106,7 +106,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
             builder: (_) => WahlergebnisScreen(
               spielerName: eliminated?.name,
               // the role is revealed on death
-              rolle: eliminated != null ? germanRoleName(eliminated.role) : null,
+              rolle: eliminated != null ? roleName(eliminated.role) : null,
             ),
           ),
         );

@@ -1,8 +1,10 @@
 package com.werewolf.logic.model;
 
 import com.werewolf.grpc.ActionPrompt;
+import com.werewolf.grpc.ActionResult;
 import com.werewolf.grpc.Phase;
 import com.werewolf.grpc.PublicAnnouncement;
+import com.werewolf.grpc.Role;
 import java.time.Instant;
 import java.util.*;
 
@@ -22,6 +24,10 @@ public class GameState {
     // Per player action prompt for the current phase; cleared on each phase transition
     public Map<String, ActionPrompt> pendingPrompts = new HashMap<>();
 
+    // Per player private result for the current phase (e.g. the seer's reveal);
+    // delivered via the snapshot and cleared on each phase transition
+    public Map<String, ActionResult> pendingResults = new HashMap<>();
+
     // The last public announcement broadcast this phase; cleared on each phase transition
     public PublicAnnouncement lastAnnouncement;
 
@@ -35,4 +41,8 @@ public class GameState {
 
     //safe votings from DAY_VOTING
     public Map<String, String> votes = new HashMap<>();
+
+    // The team that has met its win condition once the game reaches GAME_END
+    // (WEREWOLF or VILLAGER); null while the game is still running.
+    public Role winningTeam;
 }

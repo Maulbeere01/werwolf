@@ -31,8 +31,17 @@ public final class GameUpdateFactory {
             b.setOpenPrompt(prompt);
         }
 
+        ActionResult result = state.pendingResults.get(userId);
+        if (result != null) {
+            b.setYourResults(result);
+        }
+
         if (state.lastAnnouncement != null) {
             b.setAnnouncement(state.lastAnnouncement);
+        }
+
+        if (state.phase == Phase.GAME_END && state.winningTeam != null) {
+            b.setWinningTeam(state.winningTeam);
         }
 
         if (state.phaseEndsAt != null) {
@@ -74,18 +83,22 @@ public final class GameUpdateFactory {
         return b.build();
     }
 
-    // Adds the lobby's players to the update. While the werewolf vote is running,
-    // a wolf recipient additionally sees which target each (living) wolf committed
-    // to, so the client can render the live tally. For everyone else the vote
-    // fields stay masked.
+    // Adds the lobby's players to the update with the live vote tally attached:
+    //  - NIGHT_WEREWOLVES: each wolf's committed target, visible only to wolves
+    //  - DAY_VOTING: each player's committed vote, visible to everyone (the day
+    //    vote is public); an empty votedForTargetId means the player abstained
+    // For everyone else the vote fields stay masked.
     private static void addPlayers(GameUpdate.Builder b, GameState state, Lobby lobby, String recipientId) {
         boolean showWolfVotes = state.phase == Phase.NIGHT_WEREWOLVES && isWerewolf(state, recipientId);
+        boolean showDayVotes = state.phase == Phase.DAY_VOTING;
         lobby.players.forEach(lp -> {
             // playerStatus already reveals the role of dead players
             PlayerStatus.Builder ps = playerStatus(lp, lobby.hostId).toBuilder();
             if (showWolfVotes && lp.role == Role.WEREWOLF
                     && state.werewolfVotes.containsKey(lp.id)) {
                 ps.setHasVoted(true).setVotedForTargetId(state.werewolfVotes.get(lp.id));
+            } else if (showDayVotes && state.votes.containsKey(lp.id)) {
+                ps.setHasVoted(true).setVotedForTargetId(state.votes.get(lp.id));
             }
             b.addPlayers(ps.build());
         });
