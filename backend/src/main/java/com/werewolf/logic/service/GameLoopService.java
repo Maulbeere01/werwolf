@@ -367,17 +367,20 @@ public class GameLoopService {
         long alivePlayers = state.players.values().stream()
                 .filter(p -> p.alive).count();
 
-        // at least half of the living players must have cast a vote for a lynch
-        boolean halfOfPlayersVoted = state.votes.size() * 2L >= alivePlayers;
-
-        // abstentions (skip votes) have an empty target and elect nobody
+        // abstentions (skip votes) have an empty target and elect nobody; only
+        // real votes for an actual player are tallied here.
         Map<String, Long> tally = state.votes.values().stream()
                 .filter(id -> id != null && !id.isEmpty())
                 .collect(java.util.stream.Collectors.groupingBy(
                         id -> id, java.util.stream.Collectors.counting()));
 
+        // at least half of the living players must have voted for a real player
+        // (skips do NOT count) for a lynch to be possible
+        long votesForSomeone = tally.values().stream().mapToLong(Long::longValue).sum();
+        boolean halfVotedForSomeone = votesForSomeone * 2L >= alivePlayers;
+
         PublicAnnouncement announcement;
-        if (tally.isEmpty() || !halfOfPlayersVoted) {
+        if (tally.isEmpty() || !halfVotedForSomeone) {
             // nobody picked a target (all abstained) or too few voted => no lynch
             announcement = PublicAnnouncement.newBuilder()
                     .setVoteResult(VoteResultEvent.newBuilder().setTied(true).build())
