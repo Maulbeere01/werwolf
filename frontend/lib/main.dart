@@ -11,6 +11,13 @@ import 'package:audioplayers/audioplayers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // The in-game backgrounds are large, which
+  // overflows the image cache's 100 MB default and gets one evicted right after
+  // it was precached. Raise
+  // the limit so all of them stay resident once warmed.
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 1024 * 1024 * 300;
+
   await SessionStore.load();
   await _maybeAutoLogin();
   runApp(const MyApp());

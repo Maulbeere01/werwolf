@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:werwolf/NightStart.dart';
@@ -27,6 +29,14 @@ class Intro extends StatefulWidget {
 class _IntroState extends State<Intro> {
   late final GameStreamController _controller;
 
+  // A black cover that hides the first-frame background pop-in (the GPU still
+  // has to upload the large textures on first paint, which precaching can't
+  // avoid). It holds for a moment, then fades out to reveal the ready scene.
+  double _coverOpacity = 1.0;
+  Timer? _coverTimer;
+  static const Duration _coverHold = Duration(milliseconds: 200);
+  static const Duration _coverFade = Duration(seconds: 6);
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +45,11 @@ class _IntroState extends State<Intro> {
       seed: widget.initialUpdate,
     );
     _controller.addListener(_onUpdate);
+
+    // hold black briefly so the backgrounds are painted/uploaded, then fade out
+    _coverTimer = Timer(_coverHold, () {
+      if (mounted) setState(() => _coverOpacity = 0.0);
+    });
   }
 
   bool _precached = false;
@@ -73,6 +88,7 @@ class _IntroState extends State<Intro> {
 
   @override
   void dispose() {
+    _coverTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -224,6 +240,19 @@ class _IntroState extends State<Intro> {
             left: 16,
             bottom: 16,
             child: RoleRevealCard(role: selfRoleOf(_controller.currentUpdate)),
+          ),
+
+          // black cover that fades out, hiding the first-frame background load
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _coverOpacity,
+                duration: _coverFade,
+                // slow at the start, accelerating towards the end
+                curve: Curves.easeIn,
+                child: const ColoredBox(color: Colors.black),
+              ),
+            ),
           ),
         ],
       ),
