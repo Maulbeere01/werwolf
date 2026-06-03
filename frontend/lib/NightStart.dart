@@ -12,6 +12,7 @@ import 'package:werwolf/settings_veiw.dart';
 import 'package:werwolf/voting/hexe_voting.dart';
 import 'package:werwolf/voting/seher_voting.dart';
 import 'package:werwolf/voting/werwolf_voting.dart';
+import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class NightStart extends StatefulWidget {
@@ -111,11 +112,15 @@ class _NightStartState extends State<NightStart>
     return secs < 0 ? 0 : secs;
   }
 
-  // How many werewolves have committed to each target (live). Only wolves ever
-  // receive these fields from the backend, so this is empty for everyone else.
+  // How many OTHER werewolves have committed to each target (live). Only wolves
+  // ever receive these fields from the backend, so this is empty for everyone
+  // else. The player's own vote is intentionally excluded here: it is shown as
+  // the committed checkmark on their chosen tile, not as a second red dot.
   Map<String, int> _wolfVoteCounts(List<PlayerStatus> players) {
+    final self = AuthState.userId ?? '';
     final counts = <String, int>{};
     for (final p in players) {
+      if (p.id == self) continue; // own vote -> checkmark, not a red dot
       if (p.hasVoted && p.votedForTargetId.isNotEmpty) {
         counts.update(p.votedForTargetId, (v) => v + 1, ifAbsent: () => 1);
       }
@@ -252,7 +257,9 @@ class _NightStartState extends State<NightStart>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ConnectionStatusScope(
+      controller: _stream,
+      child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
@@ -435,6 +442,7 @@ class _NightStartState extends State<NightStart>
             ],
           );
         },
+      ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:werwolf/Rules.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/settings_veiw.dart';
+import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class Intro extends StatefulWidget {
@@ -65,7 +66,9 @@ class _IntroState extends State<Intro> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ConnectionStatusScope(
+      controller: _controller,
+      child: Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
@@ -210,6 +213,7 @@ class _IntroState extends State<Intro> {
             child: RoleRevealCard(),
           ),
         ],
+      ),
       ),
     );
   }

@@ -19,7 +19,7 @@ public final class GameUpdateFactory {
     // Full personalised snapshot sent as the first message on (re)subscribe
     public static GameUpdate snapshot(GameState state, Lobby lobby, String userId) {
         GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(state.phase);
-        lobby.players.forEach(p -> b.addPlayers(playerStatus(p, lobby.hostId)));
+        addPlayers(b, state, lobby, userId);
 
         Player caller = state.players.get(userId);
         if (caller != null && caller.role != null) {
@@ -74,38 +74,27 @@ public final class GameUpdateFactory {
         return b.build();
     }
 
-    public static GameUpdate werewolfVoteUpdate(GameState state, Lobby lobby, String recipientId) {
-        boolean recipientIsWolf = isWerewolf(state, recipientId);
-
-        GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(state.phase);
+    // Adds the lobby's players to the update. While the werewolf vote is running,
+    // a wolf recipient additionally sees which target each (living) wolf committed
+    // to, so the client can render the live tally. For everyone else the vote
+    // fields stay masked.
+    private static void addPlayers(GameUpdate.Builder b, GameState state, Lobby lobby, String recipientId) {
+        boolean showWolfVotes = state.phase == Phase.NIGHT_WEREWOLVES && isWerewolf(state, recipientId);
         lobby.players.forEach(lp -> {
             // playerStatus already reveals the role of dead players
             PlayerStatus.Builder ps = playerStatus(lp, lobby.hostId).toBuilder();
-            if (recipientIsWolf && lp.role == Role.WEREWOLF
+            if (showWolfVotes && lp.role == Role.WEREWOLF
                     && state.werewolfVotes.containsKey(lp.id)) {
                 ps.setHasVoted(true).setVotedForTargetId(state.werewolfVotes.get(lp.id));
             }
             b.addPlayers(ps.build());
         });
+    }
 
-        Player caller = state.players.get(recipientId);
-        if (caller != null && caller.role != null) {
-            b.setYourRole(caller.role);
-        }
-
-        ActionPrompt prompt = state.pendingPrompts.get(recipientId);
-        if (prompt != null) {
-            b.setOpenPrompt(prompt);
-        }
-
-        if (state.phaseEndsAt != null) {
-            b.setPhaseEndsAt(Timestamp.newBuilder()
-                    .setSeconds(state.phaseEndsAt.getEpochSecond())
-                    .setNanos(state.phaseEndsAt.getNano())
-                    .build());
-        }
-
-        return b.build();
+    // The live werewolf tally pushed to each wolf on every committed vote. This is
+    // just the personalised snapshot, which already carries the vote annotations.
+    public static GameUpdate werewolfVoteUpdate(GameState state, Lobby lobby, String recipientId) {
+        return snapshot(state, lobby, recipientId);
     }
 
     private static boolean isWerewolf(GameState state, String userId) {

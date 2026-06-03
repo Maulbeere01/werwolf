@@ -5,6 +5,7 @@ import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -159,11 +160,15 @@ public class GameLoopService {
                 return;
             }
 
-            // resolve the phase that is ending before moving on
-            onExit(state, state.phase);
-
+            // Clear the per-phase transient data before resolving the ending phase,
+            // so any announcement produced while resolving (e.g. the day vote result)
+            // is still present when the personalised snapshot is sent below.
             state.pendingPrompts.clear();
             state.lastAnnouncement = null;
+
+            // resolve the phase that is ending before moving on (may set lastAnnouncement)
+            onExit(state, state.phase);
+
             state.phase = nextPhase(state, state.phase);
 
             if (state.phase == Phase.GAME_END) {
@@ -230,10 +235,11 @@ public class GameLoopService {
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
                     ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
 
-            //TODO: unterschiedliche Methode für Day_Result und Day_Voting
-            case DAY_RESULT -> notifyAllPlayersDayResult(state, lobby);  // reveal who was killed in the night to all players
+            // morning: apply the deaths gathered during the night and reveal them
+            case DAY_RESULT -> resolveNightDeaths(state);
 
-            case DAY_VOTING -> notifyAllPlayersDayResult(state, lobby); // announce vote results to all players
+            // DAY_VOTING only opens the vote here; the result is tallied in
+            // onExit(DAY_VOTING) once the phase ends (timer or all players voted).
 
             default -> {
             }
@@ -245,6 +251,7 @@ public class GameLoopService {
     private void onExit(GameState state, Phase leaving) {
         switch (leaving) {
             case NIGHT_WEREWOLVES -> resolveWerewolfAttack(state);
+            case DAY_VOTING -> resolveDayVote(state);
             default -> {}
         }
     }
@@ -292,64 +299,44 @@ public class GameLoopService {
                 });
     }
 
-    //notyfyAllPlayers() für DAY_Voting
-    private void notifyAllPlayersDayResult(GameState state, Lobby lobby) {
-
+    // Tally the day votes once DAY_VOTING ends and turn them into a lynch result.
+    // The most-voted living player is eliminated; a tie (or too few votes) means
+    // nobody dies. The result is stored in lastAnnouncement and delivered to every
+    // player through the snapshot that follows this phase transition.
+    private void resolveDayVote(GameState state) {
         long alivePlayers = state.players.values().stream()
                 .filter(p -> p.alive).count();
 
-        PublicAnnouncement announcement;
-
-        // mindestens die Hälfte muss abgestimmt haben
+        // at least half of the living players must have cast a vote for a lynch
         boolean halfOfPlayersVoted = state.votes.size() * 2L >= alivePlayers;
 
-        if (!halfOfPlayersVoted || state.votes.isEmpty()) {
-            // niemand hat gevoted -> niemand stirbt, soll eigentlich nicht gehen
+        PublicAnnouncement announcement;
+        if (state.votes.isEmpty() || !halfOfPlayersVoted) {
+            // not enough participation => nobody is lynched
             announcement = PublicAnnouncement.newBuilder()
-                    .setVoteResult(VoteResultEvent.newBuilder()
-                            .setTied(true)
-                            .build())
+                    .setVoteResult(VoteResultEvent.newBuilder().setTied(true).build())
                     .build();
         } else {
-
-            // testen ob es ein Unentschieden gibt
-            Long maxVotes = 0L;
-            boolean tied = false;
-            Map<String, Long> votes = state.votes.values().stream()
+            Map<String, Long> tally = state.votes.values().stream()
                     .collect(java.util.stream.Collectors.groupingBy(
                             id -> id, java.util.stream.Collectors.counting()));
+            long maxVotes = tally.values().stream().max(Long::compareTo).orElse(0L);
+            List<String> topTargets = tally.entrySet().stream()
+                    .filter(e -> e.getValue() == maxVotes)
+                    .map(Map.Entry::getKey)
+                    .toList();
 
-            for( Long l : votes.values() ) {
-                int compare = maxVotes.compareTo(l);
-                if (compare < 0) {
-                    maxVotes = l;
-                    tied = false;
-                }
-                if (compare == 0) {
-                    tied = true;
-                }
-            }
-
-
-            var topEntry = state.votes.values().stream()
-                    .collect(java.util.stream.Collectors.groupingBy(
-                            id -> id, java.util.stream.Collectors.counting()))
-                    .entrySet().stream()
-                    .max(Map.Entry.comparingByValue())  // hier gucken, dass bei Gleichstand keiner stirbt
-                    .orElse(null);
-
-            if (tied) { // unentschieden -> niemand stirbt
+            if (topTargets.size() != 1) { // a tie => nobody dies
                 announcement = PublicAnnouncement.newBuilder()
                         .setVoteResult(VoteResultEvent.newBuilder().setTied(true).build())
                         .build();
-
-            } else {    // meistgewählter Spieler stirbt
-                //assert topEntry != null;
-                String eliminatedId = topEntry.getKey();
+            } else { // the single most-voted player is lynched
+                String eliminatedId = topTargets.get(0);
                 Player p = state.players.get(eliminatedId);
                 if (p != null) p.alive = false;
-                state.deadPlayers.add(eliminatedId);
-
+                if (!state.deadPlayers.contains(eliminatedId)) {
+                    state.deadPlayers.add(eliminatedId);
+                }
                 announcement = PublicAnnouncement.newBuilder()
                         .setVoteResult(VoteResultEvent.newBuilder()
                                 .setEliminatedPlayerId(eliminatedId)
@@ -361,9 +348,37 @@ public class GameLoopService {
 
         state.votes.clear();
         state.lastAnnouncement = announcement;
-        lobbySubscriptionService.broadcast(lobby.lobbyCode,     // Mitteilung an alle Spieler
-                GameUpdateFactory.announcement(Phase.DAY_VOTING, announcement));
+    }
 
+    // Morning resolution: apply every death that piled up during the night
+    // (werewolf victim, witch poison; the witch's heal already removed the saved
+    // player) and announce it. As with the day vote, the announcement rides along
+    // on the snapshot sent right after this phase transition.
+    private void resolveNightDeaths(GameState state) {
+        List<String> killedThisNight = new ArrayList<>();
+        for (String id : state.deadPlayers) {
+            Player p = state.players.get(id);
+            if (p != null && p.alive) {
+                p.alive = false;
+                killedThisNight.add(id);
+            }
+        }
+        state.deadPlayers.clear();
+
+        PublicAnnouncement announcement;
+        if (killedThisNight.isEmpty()) {
+            announcement = PublicAnnouncement.newBuilder()
+                    .setNoDeath(NoDeathEvent.newBuilder().build())
+                    .build();
+        } else {
+            announcement = PublicAnnouncement.newBuilder()
+                    .setNightDeath(NightDeathEvent.newBuilder()
+                            .setPlayerId(killedThisNight.get(0))
+                            .setCause(EliminationCause.KILLED_BY_WEREWOLVES)
+                            .build())
+                    .build();
+        }
+        state.lastAnnouncement = announcement;
     }
 
 

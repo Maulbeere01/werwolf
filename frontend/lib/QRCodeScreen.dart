@@ -8,6 +8,7 @@ import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/widgets/connection_status.dart';
 
 class QRCodeScreen extends StatefulWidget {
   final String lobbyCode;
@@ -96,7 +97,9 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    return ConnectionStatusScope(
+      controller: _controller,
+      child: ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
         final players = _controller.currentUpdate.players;
@@ -285,6 +288,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
           ),
         );
       },
+      ),
     );
   }
 }
