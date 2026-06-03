@@ -19,6 +19,10 @@ class LobbyServiceTest {
         lobbyService = new LobbyService();
     }
 
+    /**
+     * Prüft, dass eine Lobby korrekt gespeichert und anschließend
+     * über den LobbyCode wieder abgerufen werden kann.
+     */
     @Test
     void shouldSaveAndRetrieveLobby() {
 
@@ -34,6 +38,10 @@ class LobbyServiceTest {
         assertEquals("ABC123", result.lobbyCode);
     }
 
+    /**
+     * Prüft, dass bei einem unbekannten LobbyCode
+     * null zurückgegeben wird.
+     */
     @Test
     void shouldReturnNullForUnknownLobby() {
 
@@ -42,6 +50,10 @@ class LobbyServiceTest {
         assertNull(result);
     }
 
+    /**
+     * Prüft, dass eine bestehende Lobby mit gleichem Code
+     * durch eine neue Instanz überschrieben wird.
+     */
     @Test
     void shouldOverwriteLobbyIfSameCode() {
 

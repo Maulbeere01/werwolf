@@ -28,6 +28,11 @@ class WerewolfAbilityTest {
         werewolfAbility = new WerewolfAbility(stateService);
     }
 
+    /**
+     * prüft, dass die WerewolfAbility das gewählte Opfer aus einer VoteAction korrekt
+     * in die deadPlayers Liste des GameState einträgt
+     * und dabei den GameState einmal über den GameStateService lädt.
+     */
     @Test
     void shouldAddTargetToDeadPlayers() {
 

@@ -30,6 +30,9 @@ class AbilityExecutorTest {
         abilityExecutor = new AbilityExecutor(werewolfAbility, seerAbility, witchAbility, hunterAbility);
     }
 
+    /**
+     * prüft, dass bei NIGHT_SEER die Seer-Fähigkeit mit richtiger Lobby-ID und Action ausgeführt wird
+     */
     @Test
     void shouldExecuteSeerAbility() {
         GameAction action = GameAction.newBuilder()
@@ -41,6 +44,9 @@ class AbilityExecutorTest {
         verify(seerAbility, times(1)).execute(eq("ABCD"), any(SeerAction.class));
     }
 
+    /**
+     * prüft, dass bei NIGHT_WITCH die Witch-Fähigkeit korrekt aufgerufen wird
+     */
     @Test
     void shouldExecuteWitchAbility() {
         GameAction action = GameAction.newBuilder()
@@ -52,6 +58,9 @@ class AbilityExecutorTest {
         verify(witchAbility, times(1)).execute(eq("ABCD"), any(WitchAction.class));
     }
 
+    /**
+     * prüft, dass bei HUNTER_REVENGE die Hunter-Fähigkeit korrekt ausgeführt wird
+     */
     @Test
     void shouldExecuteHunterAbility() {
         GameAction action = GameAction.newBuilder()
@@ -63,6 +72,9 @@ class AbilityExecutorTest {
         verify(hunterAbility, times(1)).execute(eq("ABCD"), any(HunterAction.class));
     }
 
+    /**
+     * prüft, dass bei fehlender Action (ACTION_NOT_SET) eine IllegalArgumentException geworfen wird
+     */
     @Test
     void shouldThrowExceptionForUnknownAction() {
         // ACTION_NOT_SET hits the default branch

@@ -16,6 +16,13 @@ public class GameState {
     // and clear it for the next round
     public List<String> deadPlayers = new ArrayList<>();
 
+    public String lastNightTarget;
+    // NIGHT STATE
+    public String nightVictimId;              // Werwolf-Ziel
+    public String witchHealTargetId;          // gespeichertes Opfer
+    public boolean witchHasHealPotion = true;
+    public boolean witchHasPoisonPotion = true;
+
     // When the current phase is scheduled to end (set on every phase transition)
     public Instant phaseEndsAt;
 

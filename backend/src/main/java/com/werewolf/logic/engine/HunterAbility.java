@@ -12,6 +12,10 @@ public class HunterAbility {
 
     private final GameStateService stateService;
 
+    /**
+     * Führt die Fähigkeit des Jägers aus.
+     * Der Jäger kann einen Spieler markieren, der sofort stirbt (Revenge-Kill).
+     */
     public void execute(String lobbyCode, HunterAction action) {
         GameState state = stateService.get(lobbyCode);
         state.deadPlayers.add(action.getTargetId());

@@ -28,6 +28,10 @@ class HunterAbilityTest {
         hunterAbility = new HunterAbility(stateService);
     }
 
+    /**
+     * prüft, dass die HunterAbility beim Auslösen einen Zielspieler
+     * korrekt in die deadPlayers Liste des GameState einträgt.
+     */
     @Test
     void shouldAddTargetToDeadPlayers() {
 

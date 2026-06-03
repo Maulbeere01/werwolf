@@ -14,6 +14,9 @@ public class AbilityExecutor {
     private final WitchAbility witch;
     private final HunterAbility hunter;
 
+    /**
+     * Leitet Spieleraktionen an die zuständige Rollenfähigkeit weiter.
+     */
     public void execute(String lobbyCode, GameAction action, Phase currentPhase) {
         switch (action.getActionCase()) {
             // VOTE is reused by both werewolves (night kill) and the village (day elimination). currentPhase determines which handler to call.

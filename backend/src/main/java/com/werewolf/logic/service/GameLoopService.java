@@ -11,7 +11,6 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
 import java.util.concurrent.*;
 
 @Slf4j
@@ -61,11 +60,22 @@ public class GameLoopService {
         return PHASE_DURATIONS.getOrDefault(phase, 10L);
     }
 
+    /**
+     * Startet den Spiel-Loop für eine Lobby.
+     * Initialisiert den GameState (falls nötig) und setzt die erste Phase sowie Timer.
+     */
     public void start(String lobbyCode) {
         GameState state = gameStateService.get(lobbyCode);
+        if (state == null) {
+            state = new GameState();
+            state.lobbyCode = lobbyCode;
+            state.phase = Phase.NIGHT_START;
+        }
+        gameStateService.save(lobbyCode, state);
+
         if (state != null) {
             state.phaseEndsAt = Instant.now().plusSeconds(durationOf(state.phase));
-            gameStateService.save(state);
+            gameStateService.save(lobbyCode, state);
         }
         long firstDelay = state != null ? durationOf(state.phase) : 10L;
         ScheduledFuture<?> future = scheduler.schedule(() -> tickLoop(lobbyCode), firstDelay, TimeUnit.SECONDS);
@@ -73,12 +83,18 @@ public class GameLoopService {
         log.info("[LOOP] Started phase loop for lobby {}", lobbyCode);
     }
 
+    /**
+     * Berechnet die nächste Phase im festgelegten Phasenablauf.
+     */
     public Phase nextPhase(Phase current) {
         int idx = PHASE_SEQUENCE.indexOf(current);
         if (idx < 0 || idx >= PHASE_SEQUENCE.size() - 1) return Phase.GAME_END;
         return PHASE_SEQUENCE.get(idx + 1);
     }
 
+    /**
+     * Stoppt den laufenden Game-Loop einer Lobby und beendet alle geplanten Tasks.
+     */
     public void stop(String lobbyCode) {
         ScheduledFuture<?> future = activeLoops.remove(lobbyCode);
         if (future != null) {
@@ -87,6 +103,11 @@ public class GameLoopService {
         }
     }
 
+    /**
+     * Haupt-Tick des Spiels.
+     * Wird zyklisch aufgerufen und wechselt die Phase, aktualisiert den GameState
+     * und sendet Updates an alle Spieler.
+     */
     private void tickLoop(String lobbyCode) {
         try {
             GameState state = gameStateService.get(lobbyCode);
@@ -111,12 +132,12 @@ public class GameLoopService {
             Lobby lobby = lobbyManager.getLobby(lobbyCode);
             if (lobby != null) {
                 onEnter(state, lobby);
-                gameStateService.save(state);
+                gameStateService.save(lobbyCode, state);
                 lobby.players.forEach(p ->
                         lobbySubscriptionService.sendTo(lobbyCode, p.id,
                                 GameUpdateFactory.snapshot(state, lobby, p.id)));
             } else {
-                gameStateService.save(state);
+                gameStateService.save(lobbyCode, state);
             }
 
             log.info("[LOOP] Lobby {} advanced to phase {}", lobbyCode, state.phase);
@@ -130,6 +151,10 @@ public class GameLoopService {
         }
     }
 
+    /**
+     * Wird direkt nach einem Phasenwechsel aufgerufen.
+     * Führt phasespezifische Initialisierungen und Benachrichtigungen durch.
+     */
     // called immediately after every phase transition. add phase setup logic here:
     //  reveal who was killed to the village at DAY_RESULT, announce vote results at
     // DAY_VOTING end, etc. Each case sends private info to the relevant role via sendTo()
@@ -149,6 +174,10 @@ public class GameLoopService {
         }
     }
 
+    /**
+     * Sendet eine private Prompt-Nachricht an alle Spieler einer bestimmten Rolle.
+     * Wird verwendet, um Rollen-spezifische Aktionen zu starten.
+     */
     private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {
         state.players.values().stream()
                 .filter(p -> p.role == role && p.alive)
@@ -159,6 +188,9 @@ public class GameLoopService {
                 });
     }
 
+    /**
+     * Beendet den Scheduler sauber beim Herunterfahren der Anwendung.
+     */
     @PreDestroy
     public void shutdown() {
         scheduler.shutdownNow();

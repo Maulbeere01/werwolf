@@ -30,6 +30,11 @@ class SeerAbilityTest {
         seerAbility = new SeerAbility(stateService, subscriptionService);
     }
 
+    /**
+     * prüft, dass die SeerAbility den Zielspieler aus dem GameState korrekt ausliest,
+     * den Rollentyp bestimmt (Werwolf oder nicht) und anschließend ein Ergebnis
+     * über den LobbySubscriptionService an den Seher zurückschickt.
+     */
     @Test
     void shouldRevealTargetPlayer() {
         Player seer = new Player();

@@ -33,6 +33,10 @@ class LobbyManagerTest {
         lobbyManager = new LobbyManager(lobbyService);
     }
 
+    /**
+     * Prüft, dass eine Lobby korrekt erstellt wird,
+     * inklusive Host, Spieler und Einstellungen.
+     */
     @Test
     void shouldCreateLobbyWithHost() {
 
@@ -66,6 +70,10 @@ class LobbyManagerTest {
         assertEquals(8, result.settings.getMaxPlayers());
     }
 
+    /**
+     * Prüft, dass der LobbyManager den LobbyService
+     * beim Erstellen einer Lobby korrekt aufruft.
+     */
     @Test
     void shouldCallLobbyService() {
 
@@ -79,6 +87,10 @@ class LobbyManagerTest {
         verify(lobbyService, times(1)).createLobby(any(Lobby.class));
     }
 
+    /**
+     * Prüft, dass ein bereits eingeloggter Spieler
+     * einem gestarteten Spiel erneut beitreten darf.
+     */
     @Test
     void shouldAllowReturningPlayerToRejoinStartedGame() {
         Lobby lobby = new Lobby();
@@ -97,6 +109,10 @@ class LobbyManagerTest {
         assertEquals(1, result.players.size());
     }
 
+    /**
+     * Prüft, dass ein fremder Spieler
+     * ein bereits gestartetes Spiel nicht betreten darf.
+     */
     @Test
     void shouldRejectStrangerFromStartedGame() {
         Lobby lobby = new Lobby();

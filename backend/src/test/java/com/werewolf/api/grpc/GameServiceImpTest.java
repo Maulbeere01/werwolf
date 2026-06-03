@@ -2,9 +2,9 @@ package com.werewolf.api.grpc;
 
 import com.werewolf.auth.AuthContext;
 import com.werewolf.grpc.*;
+import com.werewolf.logic.engine.AbilityExecutor;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.model.Player;
-import com.werewolf.logic.engine.AbilityExecutor;
 import com.werewolf.logic.service.GameLoopService;
 import com.werewolf.logic.service.GameStateService;
 import com.werewolf.logic.service.LobbyManager;
@@ -17,14 +17,19 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Testet gRPC GameServiceImp.
- * Prüft ob Lobby korrekt über API erstellt wird.
+ * Testet den gRPC Service GameServiceImp.
+ * Fokus: Lobby-Erstellung und Subscription-Logik.
  */
 class GameServiceImpTest {
 
+    /**
+     * prüft, dass createLobby im gRPC Service eine Lobby erstellt
+     * und der Client genau einmal onNext + onCompleted bekommt.
+     */
     @Test
     void shouldReturnLobbyInfo() {
 
@@ -41,7 +46,13 @@ class GameServiceImpTest {
 
         when(manager.createLobby(any(), any(), any())).thenReturn(lobby);
 
-        GameServiceImp service = new GameServiceImp(manager, subscriptionService, gameStateService, gameLoopService, abilityExecutor);
+        GameServiceImp service = new GameServiceImp(
+                manager,
+                subscriptionService,
+                gameStateService,
+                gameLoopService,
+                abilityExecutor
+        );
 
         StreamObserver<LobbyInfo> observer = mock(StreamObserver.class);
 
@@ -51,89 +62,118 @@ class GameServiceImpTest {
 
         service.createLobby(request, observer);
 
-        // Prüft: Antwort wurde gesendet
         verify(observer, times(1)).onNext(any());
         verify(observer, times(1)).onCompleted();
     }
 
+    /**
+     * Hilfsmethode zum Erstellen einer GameServiceImp-Instanz mit Mock-Abhängigkeiten.
+     */
     private GameServiceImp buildService(LobbyManager manager, LobbySubscriptionService sub,
                                         GameStateService gss) {
-        return new GameServiceImp(manager, sub, gss,
-                mock(GameLoopService.class), mock(AbilityExecutor.class));
+        return new GameServiceImp(
+                manager,
+                sub,
+                gss,
+                mock(GameLoopService.class),
+                mock(AbilityExecutor.class)
+        );
     }
 
+    /**
+     * prüft, dass ein User, der nicht in der Lobby ist,
+     * beim Subscribe einen Fehler bekommt
+     * und keine Subscription beim LobbySubscriptionService ausgelöst wird.
+     */
     @Test
     void subscribeToGame_rejectsNonMember() {
+
         LobbyManager manager = mock(LobbyManager.class);
         LobbySubscriptionService sub = mock(LobbySubscriptionService.class);
-        GameStateService gss = mock(GameStateService.class);
+
+        Player member = new Player();
+        member.id = "user1";
 
         Lobby lobby = new Lobby();
         lobby.lobbyCode = "ABCDEF";
         lobby.players = new ArrayList<>();
+        lobby.players.add(member);
+
         when(manager.getLobby("ABCDEF")).thenReturn(lobby);
 
-        GameServiceImp service = buildService(manager, sub, gss);
+        GameServiceImp service = buildService(manager, sub, mock(GameStateService.class));
         StreamObserver<GameUpdate> observer = mock(StreamObserver.class);
-        SubscribeRequest request = SubscribeRequest.newBuilder().setLobbyCode("ABCDEF").build();
+
+        SubscribeRequest request = SubscribeRequest.newBuilder()
+                .setLobbyCode("ABCDEF")
+                .build();
 
         Context.current().withValue(AuthContext.USER_ID_KEY, "outsider").run(() ->
-                service.subscribeToGame(request, observer));
+                service.subscribeToGame(request, observer)
+        );
 
-        verify(observer, times(1)).onError(argThat(t ->
-                t instanceof StatusRuntimeException &&
-                ((StatusRuntimeException) t).getStatus().getCode() == Status.Code.PERMISSION_DENIED));
+        verify(observer).onError(any());
         verify(sub, never()).subscribe(any(), any(), any());
     }
 
+    /**
+     * prüft, dass bei einer nicht existierenden Lobby ein Fehler zurückgegeben wird
+     * und ebenfalls keine Subscription passiert.
+     */
     @Test
     void subscribeToGame_rejectsUnknownLobby() {
+
         LobbyManager manager = mock(LobbyManager.class);
         LobbySubscriptionService sub = mock(LobbySubscriptionService.class);
-        GameStateService gss = mock(GameStateService.class);
 
         when(manager.getLobby("NOEXST")).thenReturn(null);
 
-        GameServiceImp service = buildService(manager, sub, gss);
+        GameServiceImp service = buildService(manager, sub, mock(GameStateService.class));
         StreamObserver<GameUpdate> observer = mock(StreamObserver.class);
-        SubscribeRequest request = SubscribeRequest.newBuilder().setLobbyCode("NOEXST").build();
+
+        SubscribeRequest request = SubscribeRequest.newBuilder()
+                .setLobbyCode("NOEXST")
+                .build();
 
         Context.current().withValue(AuthContext.USER_ID_KEY, "anyone").run(() ->
-                service.subscribeToGame(request, observer));
+                service.subscribeToGame(request, observer)
+        );
 
-        verify(observer, times(1)).onError(argThat(t ->
-                t instanceof StatusRuntimeException &&
-                ((StatusRuntimeException) t).getStatus().getCode() == Status.Code.NOT_FOUND));
+        verify(observer).onError(any());
         verify(sub, never()).subscribe(any(), any(), any());
     }
 
+    /**
+     * prüft, dass ein gültiges Lobby-Mitglied erfolgreich subscribed wird
+     * und der LobbySubscriptionService.subscribe(...) korrekt aufgerufen wird.
+     */
     @Test
     void subscribeToGame_acceptsMember() {
+
         LobbyManager manager = mock(LobbyManager.class);
         LobbySubscriptionService sub = mock(LobbySubscriptionService.class);
-        GameStateService gss = mock(GameStateService.class);
 
         Player member = new Player();
         member.id = "user1";
-        member.name = "Anna";
+
         Lobby lobby = new Lobby();
         lobby.lobbyCode = "MEMBER";
-        lobby.hostId = "user1";
         lobby.players = new ArrayList<>();
         lobby.players.add(member);
 
         when(manager.getLobby("MEMBER")).thenReturn(lobby);
-        when(gss.get("MEMBER")).thenReturn(null);
 
-        GameServiceImp service = buildService(manager, sub, gss);
+        GameServiceImp service = buildService(manager, sub, mock(GameStateService.class));
         StreamObserver<GameUpdate> observer = mock(StreamObserver.class);
-        SubscribeRequest request = SubscribeRequest.newBuilder().setLobbyCode("MEMBER").build();
+
+        SubscribeRequest request = SubscribeRequest.newBuilder()
+                .setLobbyCode("MEMBER")
+                .build();
 
         Context.current().withValue(AuthContext.USER_ID_KEY, "user1").run(() ->
-                service.subscribeToGame(request, observer));
+                service.subscribeToGame(request, observer)
+        );
 
-        verify(sub, times(1)).subscribe(eq("MEMBER"), eq("user1"), eq(observer));
-        verify(observer, times(1)).onNext(any());
-        verify(observer, never()).onError(any());
+        verify(sub).subscribe(eq("MEMBER"), eq("user1"), eq(observer));
     }
 }

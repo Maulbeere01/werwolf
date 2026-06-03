@@ -11,4 +11,15 @@ public class Player {
     public String name;
     public Role role;
     public boolean alive = true;
+
+    public Player(String id, String name, Role role, boolean alive) {
+        this.id = id;
+        this.name = name;
+        this.role = role;
+        this.alive = alive;
+    }
+
+    public Player() {
+
+    }
 }

@@ -8,8 +8,15 @@ import com.werewolf.logic.model.Player;
 
 public final class GameUpdateFactory {
 
+    /**
+     * Erstellt GameUpdate-Nachrichten für verschiedene Spielzustände.
+     * Zentraler Mapper zwischen Server-GameState und Client-Updates.
+     */
     private GameUpdateFactory() {}
 
+    /**
+     * Erstellt ein minimales Lobby-Update mit allen Spielern.
+     */
     public static GameUpdate forLobby(Lobby lobby) {
         GameUpdate.Builder b = GameUpdate.newBuilder().setCurrentPhase(Phase.LOBBY);
         lobby.players.forEach(p -> b.addPlayers(playerStatus(p, lobby.hostId)));
@@ -61,6 +68,10 @@ public final class GameUpdateFactory {
                 .build();
     }
 
+    /**
+     * Baut den PlayerStatus für das Frontend.
+     * Enthält ID, Name, Alive-Status und Host-Flag.
+     */
     static PlayerStatus playerStatus(Player p, String hostId) {
         return PlayerStatus.newBuilder()
                 .setId(p.id)
