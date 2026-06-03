@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:werwolf/NightStart.dart';
 import 'package:werwolf/Rules.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
+import 'package:werwolf/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/settings_veiw.dart';
 import 'package:werwolf/widgets/connection_status.dart';
@@ -33,6 +34,17 @@ class _IntroState extends State<Intro> {
       seed: widget.initialUpdate,
     );
     _controller.addListener(_onUpdate);
+  }
+
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      precacheGameAssets(context);
+    }
   }
 
   // The game starts in NIGHT_START (the intro). Once the backend advances the

@@ -7,6 +7,7 @@ import 'package:werwolf/Rules.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controller/GameViewController.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
+import 'package:werwolf/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/settings_veiw.dart';
 import 'package:werwolf/voting/hexe_voting.dart';
@@ -78,6 +79,17 @@ class _NightStartState extends State<NightStart>
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
+  }
+
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      precacheGameAssets(context);
+    }
   }
 
   @override

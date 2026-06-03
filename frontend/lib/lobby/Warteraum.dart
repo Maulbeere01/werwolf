@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:werwolf/Intro.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
+import 'package:werwolf/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/widgets/spieleranzeige.dart';
 
@@ -24,14 +25,32 @@ class _WarteraumState extends State<Warteraum> {
     _controller.addListener(_onUpdate);
   }
 
+  // Warm the game image cache while players wait in the lobby, so the intro and
+  // the night/day screens render with their backgrounds already in place
+  // instead of flashing black when the game starts.
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      precacheGameAssets(context);
+    }
+  }
+
   // navigate to the intro as soon as the server signals the game has started.
   // TODO: the intro currently stays forever; once the intro timer exists and
   // the backend waits for it, advance from here to the next screen.
-  void _onUpdate() {
+  Future<void> _onUpdate() async {
     final phase = _controller.currentUpdate.currentPhase;
     if (phase == Phase.PHASE_UNSPECIFIED || phase == Phase.LOBBY) return;
 
     _controller.removeListener(_onUpdate);
+    if (!mounted) return;
+
+    // make sure the backgrounds are decoded before we show the intro
+    await precacheGameAssets(context);
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
