@@ -5,7 +5,6 @@ import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +33,9 @@ public class GameLoopService {
     private final ConcurrentHashMap<String, ScheduledFuture<?>> activeLoops =
             new ConcurrentHashMap<>();
 
-    // can be skipped conditionally later (e.g. omit NIGHT_FOX if no fox is in the game, skip HUNTER_REVENGE if the hunter
-    // is still alive). Add skip logic in nextPhase() when game conditions require it.
+    // can be skipped conditionally later (e.g. omit NIGHT_FOX if no fox is in the game, skip HUNTER_REVENGE if
+    // the hunter is still alive).
+    // Add skip logic in nextPhase() when game conditions require it.
     static final List<Phase> PHASE_SEQUENCE = List.of(
             Phase.NIGHT_START,
             Phase.NIGHT_WEREWOLVES,
@@ -64,8 +64,8 @@ public class GameLoopService {
             Map.entry(Phase.NIGHT_WITCH,      10L),
             Map.entry(Phase.NIGHT_FOX,        10L),
             Map.entry(Phase.DAY_RESULT,       10L),
-            Map.entry(Phase.DAY_DISCUSSION,   10L),
-            Map.entry(Phase.DAY_VOTING,       10L),
+            Map.entry(Phase.DAY_DISCUSSION,   10L),   // increase timer to 30 seconds
+            Map.entry(Phase.DAY_VOTING,       10L),   // increase timer ?
             Map.entry(Phase.HUNTER_REVENGE,   10L)
     );
 
@@ -230,11 +230,13 @@ public class GameLoopService {
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
                     ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
 
-            case DAY_RESULT -> notifyAllPlayersDayResult(state, lobby);  // reveal who was killed to all players
+            //TODO: unterschiedliche Methode für Day_Result und Day_Voting
+            case DAY_RESULT -> notifyAllPlayersDayResult(state, lobby);  // reveal who was killed in the night to all players
 
-            case DAY_VOTING -> notifyAllPlayersDayVotingResult( state, lobby); // announce vote results to all players -> noifyAll() aufrufen
+            case DAY_VOTING -> notifyAllPlayersDayResult(state, lobby); // announce vote results to all players
 
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -290,62 +292,86 @@ public class GameLoopService {
                 });
     }
 
-    //notyfyAllPlayers() für DAY_RESULT
-    private void notifyAllPlayersDayResult(GameState state, Lobby lobby){
+    //notyfyAllPlayers() für DAY_Voting
+    private void notifyAllPlayersDayResult(GameState state, Lobby lobby) {
 
-        List<String> died = new ArrayList<>(state.deadPlayers);
-        died.forEach(id -> {
-            Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
-            if (p != null) p.alive = false;
-        });
-        state.deadPlayers.clear();
+        long alivePlayers = state.players.values().stream()
+                .filter(p -> p.alive).count();
 
         PublicAnnouncement announcement;
 
-        if (died.isEmpty()) {
+        // mindestens die Hälfte muss abgestimmt haben
+        boolean halfOfPlayersVoted = state.votes.size() * 2L >= alivePlayers;
+
+        if (!halfOfPlayersVoted || state.votes.isEmpty()) {
+            // niemand hat gevoted -> niemand stirbt, soll eigentlich nicht gehen
             announcement = PublicAnnouncement.newBuilder()
-                    .setNoDeath(NoDeathEvent.newBuilder().build())
-                    .build();
-        } else {
-            // Für mehrere Tote: entweder nur den ersten ankündigen oder mehrere Broadcasts
-            announcement = PublicAnnouncement.newBuilder()
-                    .setNightDeath(NightDeathEvent.newBuilder()
-                            .setPlayerId(died.get(0))
-                            .setCause(EliminationCause.KILLED_BY_WEREWOLVES)
+                    .setVoteResult(VoteResultEvent.newBuilder()
+                            .setTied(true)
                             .build())
                     .build();
+        } else {
+
+            // testen ob es ein Unentschieden gibt
+            Long maxVotes = 0L;
+            boolean tied = false;
+            Map<String, Long> votes = state.votes.values().stream()
+                    .collect(java.util.stream.Collectors.groupingBy(
+                            id -> id, java.util.stream.Collectors.counting()));
+
+            for( Long l : votes.values() ) {
+                int compare = maxVotes.compareTo(l);
+                if (compare < 0) {
+                    maxVotes = l;
+                    tied = false;
+                }
+                if (compare == 0) {
+                    tied = true;
+                }
+            }
+
+
+            var topEntry = state.votes.values().stream()
+                    .collect(java.util.stream.Collectors.groupingBy(
+                            id -> id, java.util.stream.Collectors.counting()))
+                    .entrySet().stream()
+                    .max(Map.Entry.comparingByValue())  // hier gucken, dass bei Gleichstand keiner stirbt
+                    .orElse(null);
+
+            if (tied) { // unentschieden -> niemand stirbt
+                announcement = PublicAnnouncement.newBuilder()
+                        .setVoteResult(VoteResultEvent.newBuilder().setTied(true).build())
+                        .build();
+
+            } else {    // meistgewählter Spieler stirbt
+                //assert topEntry != null;
+                String eliminatedId = topEntry.getKey();
+                Player p = state.players.get(eliminatedId);
+                if (p != null) p.alive = false;
+                state.deadPlayers.add(eliminatedId);
+
+                announcement = PublicAnnouncement.newBuilder()
+                        .setVoteResult(VoteResultEvent.newBuilder()
+                                .setEliminatedPlayerId(eliminatedId)
+                                .setTied(false)
+                                .build())
+                        .build();
+            }
         }
-        lobbySubscriptionService.broadcast(lobby.lobbyCode,
-                GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
+
+        state.votes.clear();
+        state.lastAnnouncement = announcement;
+        lobbySubscriptionService.broadcast(lobby.lobbyCode,     // Mitteilung an alle Spieler
+                GameUpdateFactory.announcement(Phase.DAY_VOTING, announcement));
 
     }
 
-    // notifyAllPlayers() für DAY_VOTING
-    private void notifyAllPlayersDayVotingResult(GameState state, Lobby lobby){
-        // wird hier der Ablauf von DAY_VOTING selbst implementiert, oder nur der
-        // outcome bzw. der GameState verarbeitet
 
-        // in the end: announce the results to all players
-        List<String> died = new ArrayList<>(state.deadPlayers);
-        died.forEach(id -> {
-            Player p = state.players.get(id);   //Klasse importiert -> soll das vermieden werden?
-            if (p != null) p.alive = false;
-        });
-
-        state.deadPlayers.clear();
-
-        PublicAnnouncement announcement = PublicAnnouncement.newBuilder()
-                .setNightDeath(NightDeathEvent.newBuilder()
-                        .setPlayerId(died.get(0))
-                        .setCause(EliminationCause.VOTED_OUT)
-                        .build())
-                .build();
-
-        lobbySubscriptionService.broadcast(lobby.lobbyCode,
-                GameUpdateFactory.announcement(Phase.DAY_RESULT,announcement));
-
+    public void advanceNow(String lobbyCode) {  // Abbruch-Methode, wenn alle Spieler gevoted haben
+        ScheduledFuture<?> current = activeLoops.get(lobbyCode);
+        if (current != null) current.cancel(false);
+        scheduler.execute(() -> tickLoop(lobbyCode));
     }
-
 
 
     @PreDestroy

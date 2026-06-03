@@ -27,7 +27,7 @@ class AbilityExecutorTest {
         witchAbility = mock(WitchAbility.class);
         hunterAbility = mock(HunterAbility.class);
 
-        abilityExecutor = new AbilityExecutor(werewolfAbility, seerAbility, witchAbility, hunterAbility);
+        abilityExecutor = new AbilityExecutor(werewolfAbility, seerAbility, witchAbility, hunterAbility, null);
     }
 
     @Test
