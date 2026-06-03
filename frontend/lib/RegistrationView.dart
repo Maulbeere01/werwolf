@@ -29,13 +29,28 @@ class _LoginViewState extends State<Registrationview> {
   }
 
   Future<void> _handleRegistration() async {
-    if (_formKey.currentState!.validate()) {
-      print("Registrierungs-Versuch mit: ${_emailController.text}");
-      await RegistrationViewController.registerUser(
-        _usernameController.text,
-        _emailController.text,
-        _passwordController.text,
-      );
+    if (!_formKey.currentState!.validate()) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    final error = await RegistrationViewController.registerUser(
+      _usernameController.text,
+      _emailController.text,
+      _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(error ?? "Registrierung erfolgreich"),
+        backgroundColor: error == null ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    if (error == null) {
+      Navigator.pop(context);
     }
   }
 
