@@ -37,11 +37,8 @@
 **/coverage/
 .metadata
 
-# grpc & proto
-**/*.pb.dart
-**/*.pbenum.dart
-**/*.pbjson.dart
-**/*.pbgrpc.dart
+# grpc & proto: the generated Dart stubs are committed on purpose so teammates
+# don't end up with stale stubs when they forget to regenerate after a .proto change.
 
 # linux desktop
 **/linux/flutter/ephemeral/
