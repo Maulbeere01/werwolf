@@ -1,3 +1,11 @@
 werwolf.wehrberger.net {
-	reverse_proxy h2c://backend:9090
+	@apk path /app.apk
+	handle @apk {
+		root * /srv
+		file_server
+	}
+
+	handle {
+		reverse_proxy h2c://backend:9090
+	}
 }

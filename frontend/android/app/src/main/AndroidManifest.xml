@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required so release builds can reach the gRPC server (debug/profile
+         manifests declare this separately; release does not inherit them). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="werwolf"
         android:name="${applicationName}"

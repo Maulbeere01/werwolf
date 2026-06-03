@@ -10,13 +10,15 @@ SKIP_BUILD=0
 AUTOLOGIN=1
 USER_PREFIX="test"
 PASSWORD="1234567890"
-# default to a phone-sized portrait window; override with --size=WIDTHxHEIGHT
+IS_PROD=0
 WIN_WIDTH=400
 WIN_HEIGHT=860
+
 for arg in "$@"; do
   case "$arg" in
     --skip-build) SKIP_BUILD=1 ;;
     --no-login) AUTOLOGIN=0 ;;
+    --prod) IS_PROD=1 ;;
     --user-prefix=*) USER_PREFIX="${arg#*=}" ;;
     --password=*) PASSWORD="${arg#*=}" ;;
     --size=*) WIN_WIDTH="${arg#*=}"; WIN_WIDTH="${WIN_WIDTH%x*}"; WIN_HEIGHT="${arg##*x}" ;;
@@ -25,16 +27,19 @@ for arg in "$@"; do
   esac
 done
 
-# the Linux runner reads these to set its initial window size (see
-# linux/runner/my_application.cc); children inherit them once exported
 export WERWOLF_WINDOW_WIDTH="$WIN_WIDTH"
 export WERWOLF_WINDOW_HEIGHT="$WIN_HEIGHT"
 
 BUNDLE="build/linux/x64/debug/bundle"
 
 if [[ "$SKIP_BUILD" -eq 0 ]]; then
-  echo "Building Linux debug bundle once"
-  flutter build linux --debug
+  if [[ "$IS_PROD" -eq 1 ]]; then
+    echo "Building Linux debug bundle for PROD environment"
+    flutter build linux --debug --dart-define=APP_ENV=prod
+  else
+    echo "Building Linux debug bundle for DEV environment"
+    flutter build linux --debug
+  fi
 fi
 
 if [[ ! -x "$BUNDLE/werwolf" ]]; then
