@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
@@ -23,9 +25,17 @@ class DeathGate extends StatefulWidget {
 }
 
 class _DeathGateState extends State<DeathGate> {
-  // null while alive; set once with the role + cause captured at the moment of
-  // death (later updates clear the announcement, so we snapshot it here).
+  // How long the result that killed the player stays visible before the
+  // personal death screen takes over.
+  static const Duration _revealDelay = Duration(seconds: 5);
+
+  // null until the death screen is actually shown; holds the role + cause
+  // captured at the moment of death (later updates clear the announcement).
   _Death? _death;
+
+  // Captured once death is detected, before the reveal delay elapses.
+  _Death? _pending;
+  Timer? _revealTimer;
 
   @override
   void initState() {
@@ -36,12 +46,13 @@ class _DeathGateState extends State<DeathGate> {
 
   @override
   void dispose() {
+    _revealTimer?.cancel();
     widget.controller.removeListener(_check);
     super.dispose();
   }
 
   void _check() {
-    if (_death != null) return; // already dead, nothing changes
+    if (_death != null || _pending != null) return; // already dying/dead
     final update = widget.controller.currentUpdate;
     final self = AuthState.userId ?? '';
 
@@ -54,13 +65,26 @@ class _DeathGateState extends State<DeathGate> {
     }
     if (me == null || me.isAlive) return;
 
+    // Snapshot role + cause now, since the announcement is cleared on the next
+    // phase.
     final role = me.role != Role.ROLE_UNSPECIFIED ? me.role : update.yourRole;
-    if (!mounted) {
-      _death = _Death(role: roleName(role), cause: _deathCause(update, self));
+    _pending = _Death(role: roleName(role), cause: _deathCause(update, self));
+
+    final isVoteDeath =
+        update.hasAnnouncement() && update.announcement.hasVoteResult();
+    if (isVoteDeath) {
+      if (mounted) {
+        setState(() => _death = _pending);
+      } else {
+        _death = _pending;
+      }
       return;
     }
-    setState(() {
-      _death = _Death(role: roleName(role), cause: _deathCause(update, self));
+    _revealTimer = Timer(_revealDelay, () {
+      if (!mounted) return;
+      setState(() {
+        _death = _pending;
+      });
     });
   }
 

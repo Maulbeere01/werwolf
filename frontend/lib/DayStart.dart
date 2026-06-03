@@ -97,10 +97,28 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     if (phase == Phase.GAME_END) {
       _leaving = true;
       _stream.removeListener(_onTransition);
-      // when the werewolves win via a night kill we arrive here straight from the
-      // night, so wait for the night->day animation to finish before the end
-      // screen; if it already played (e.g. game ended by a day vote), go now
-      _goToEndscreenAfterAnimation(update);
+
+      // if the game ended on a day vote, reveal the lynch result first (the
+      if (update.hasAnnouncement() && update.announcement.hasVoteResult()) {
+        final vr = update.announcement.voteResult;
+        final eliminated = (vr.tied || vr.eliminatedPlayerId.isEmpty)
+            ? null
+            : _playerOf(vr.eliminatedPlayerId);
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => WahlergebnisScreen(
+              spielerName: eliminated?.name,
+              rolle: eliminated != null ? roleName(eliminated.role) : null,
+            ),
+          ),
+        );
+        if (!mounted) return;
+        _goToEndscreen(update);
+      } else {
+        // werewolves won via a night kill: we arrive here straight from the
+        // night, so wait for the night->day animation to finish first
+        _goToEndscreenAfterAnimation(update);
+      }
       return;
     }
 
@@ -108,8 +126,16 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       _leaving = true;
       _stream.removeListener(_onTransition);
 
-      // the day vote result reveal auto-closes after 5s
-      if (update.hasAnnouncement() && update.announcement.hasVoteResult()) {
+      final self = AuthState.userId ?? '';
+      final selfDead = _selfIsDead(update);
+
+      // Show the day-vote result reveal (auto-closes after 5s) to living players
+      // and to the player who was just lynched. A player who died earlier stays
+      // on their death screen and is not interrupted by it.
+      final hasVote = update.hasAnnouncement() && update.announcement.hasVoteResult();
+      final showReveal = hasVote &&
+          (!selfDead || update.announcement.voteResult.eliminatedPlayerId == self);
+      if (showReveal) {
         final vr = update.announcement.voteResult;
         final eliminated = (vr.tied || vr.eliminatedPlayerId.isEmpty)
             ? null
@@ -126,6 +152,12 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       }
 
       if (!mounted) return;
+
+      // A player who was just lynched does not follow the village into the
+      // night: they stay on this screen so the DeathGate shows their personal
+      // death screen right after the "X ist tot" vote reveal.
+      if (selfDead) return;
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => NightStart(
@@ -137,21 +169,29 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     }
   }
 
-  void _goToEndscreenAfterAnimation(GameUpdate update) {
-    void go() {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => Endscreen(gewinner: winningTeamName(winningTeamOf(update))),
-        ),
-      );
+  bool _selfIsDead(GameUpdate update) {
+    final self = AuthState.userId ?? '';
+    for (final p in update.players) {
+      if (p.id == self) return !p.isAlive;
     }
+    return false;
+  }
 
+  void _goToEndscreen(GameUpdate update) {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => Endscreen(gewinner: winningTeamName(winningTeamOf(update))),
+      ),
+    );
+  }
+
+  void _goToEndscreenAfterAnimation(GameUpdate update) {
     if (_controller.status == AnimationStatus.completed) {
-      go();
+      _goToEndscreen(update);
     } else {
       _controller.addStatusListener((status) {
-        if (status == AnimationStatus.completed) go();
+        if (status == AnimationStatus.completed) _goToEndscreen(update);
       });
     }
   }

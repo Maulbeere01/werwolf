@@ -117,15 +117,16 @@ public class GameLoopService {
         return null;
     }
 
-    // Ends the game: switch to GAME_END and announce the winning team.
+    // Ends the game: switch to GAME_END. The winner is carried by the dedicated
+    // winning_team field of the snapshot (see GameUpdateFactory), so we do NOT
+    // overwrite lastAnnouncement here: the result that ended the game (the day
+    // vote lynch or the night death) survives to the GAME_END snapshot, letting
+    // the client reveal it before showing the win screen.
     private void concludeGame(GameState state, Role winningTeam) {
         state.winningTeam = winningTeam;
         state.phase = Phase.GAME_END;
         state.phaseEndsAt = null;
         state.pendingPrompts.clear();
-        state.lastAnnouncement = PublicAnnouncement.newBuilder()
-                .setGameEnd(GameEndEvent.newBuilder().setWinningTeam(winningTeam).build())
-                .build();
         log.info("[LOOP] Game over: {} win", winningTeam);
     }
 

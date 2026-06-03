@@ -185,7 +185,7 @@ class TodScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 20),
                   ),
                   child: const Text(
-                    "Weiter",
+                    "Home",
                     style: TextStyle(
                       fontFamily: 'BagelFatOne',
                       color: Colors.white,
