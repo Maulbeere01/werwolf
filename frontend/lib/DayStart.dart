@@ -528,10 +528,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
                         ],
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       left: 16,
                       bottom: 16,
-                      child: RoleRevealCard(),
+                      child: RoleRevealCard(role: selfRoleOf(update)),
                     ),
                   ],
                 ),

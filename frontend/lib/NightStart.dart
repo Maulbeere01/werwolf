@@ -9,6 +9,7 @@ import 'package:werwolf/controller/GameViewController.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
 import 'package:werwolf/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/role_display.dart';
 import 'package:werwolf/settings_veiw.dart';
 import 'package:werwolf/voting/hexe_voting.dart';
 import 'package:werwolf/voting/seher_voting.dart';
@@ -473,10 +474,10 @@ class _NightStartState extends State<NightStart>
                     // role card: drag towards the centre to reveal your role;
                     // it appears fixed in the middle while held and vanishes the
                     // moment the finger is lifted.
-                    const Positioned(
+                    Positioned(
                       left: 16,
                       bottom: 16,
-                      child: RoleRevealCard(),
+                      child: RoleRevealCard(role: selfRoleOf(update)),
                     ),
                   ],
                 ),

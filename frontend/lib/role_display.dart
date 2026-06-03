@@ -1,4 +1,26 @@
+import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
+
+/// The role card artwork for a role. The witch has no dedicated card yet, so it
+/// borrows the Armor card as a placeholder; roles without their own card fall
+/// back to the villager card.
+String roleCardAsset(Role role) => switch (role) {
+      Role.SEER => 'assets/PNGs/Seher.png',
+      Role.WEREWOLF => 'assets/PNGs/wolf.png',
+      Role.WITCH => 'assets/PNGs/Armor.png',
+      _ => 'assets/PNGs/villager.png',
+    };
+
+/// This player's own role from a snapshot: the dedicated your_role field if set,
+/// otherwise their entry in the player list. ROLE_UNSPECIFIED when unknown.
+Role selfRoleOf(GameUpdate update) {
+  if (update.yourRole != Role.ROLE_UNSPECIFIED) return update.yourRole;
+  final self = AuthState.userId ?? '';
+  for (final p in update.players) {
+    if (p.id == self) return p.role;
+  }
+  return Role.ROLE_UNSPECIFIED;
+}
 
 String roleName(Role role) => switch (role) {
       Role.WEREWOLF => 'Werwolf',

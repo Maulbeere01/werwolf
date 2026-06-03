@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/role_display.dart';
 
 class RoleRevealCard extends StatefulWidget {
   final Widget? revealChild;
 
   final double revealThreshold;
 
+  /// This player's role; selects which card artwork is shown when revealed.
+  final Role role;
+
   const RoleRevealCard({
     super.key,
     this.revealChild,
     this.revealThreshold = 110,
+    this.role = Role.ROLE_UNSPECIFIED,
   });
 
   @override
@@ -52,8 +58,17 @@ class _RoleRevealCardState extends State<RoleRevealCard>
     if (_overlay != null) return;
     _overlay = OverlayEntry(
       builder: (context) => IgnorePointer(
-        child: Center(
-          child: _revealed ? _buildRevealCard() : _buildHintTarget(),
+        child: Stack(
+          children: [
+            // darken everything behind the card once it is actually revealed
+            if (_revealed)
+              Positioned.fill(
+                child: Container(color: Colors.black.withOpacity(0.75)),
+              ),
+            Center(
+              child: _revealed ? _buildRevealCard() : _buildHintTarget(),
+            ),
+          ],
         ),
       ),
     );
@@ -131,7 +146,6 @@ class _RoleRevealCardState extends State<RoleRevealCard>
         width: cardWidth * scale,
         height: cardHeight * scale,
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -140,6 +154,11 @@ class _RoleRevealCardState extends State<RoleRevealCard>
               blurRadius: 20,
             ),
           ],
+        ),
+        // the face-down card shows the shared card back
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset('assets/PNGs/Backside.png', fit: BoxFit.cover),
         ),
       ),
     );
@@ -176,40 +195,15 @@ class _RoleRevealCardState extends State<RoleRevealCard>
       child: SizedBox(
         width: _revealCardWidth,
         height: _revealCardHeight,
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Image.asset(
-                    'assets/PNGs/villager.png',
-                    fit: BoxFit.cover,
-                    width: 240,
-                  ),
-                ),
-              ),
+        child: Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Image.asset(
+              roleCardAsset(widget.role),
+              fit: BoxFit.cover,
+              width: 240,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: Text(
-                'Rollenbeschreibung',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black.withOpacity(0.7),
-                      offset: const Offset(1, 1),
-                      blurRadius: 3,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
