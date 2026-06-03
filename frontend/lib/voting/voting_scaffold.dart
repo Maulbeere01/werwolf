@@ -7,11 +7,14 @@ class VotingScaffold extends StatelessWidget {
   final String subtitle;
   final List<Widget> children;
 
+  final Widget? footer;
+
   const VotingScaffold({
     super.key,
     required this.title,
     required this.subtitle,
     required this.children,
+    this.footer,
   });
 
   @override
@@ -20,10 +23,9 @@ class VotingScaffold extends StatelessWidget {
       color: Colors.black.withOpacity(0.85),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
           child: Column(
             children: [
-              const SizedBox(height: 12),
               Text(
                 title,
                 style: const TextStyle(
@@ -38,12 +40,16 @@ class VotingScaffold extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(children: children),
                 ),
               ),
+              if (footer != null) ...[
+                const SizedBox(height: 12),
+                footer!,
+              ],
             ],
           ),
         ),

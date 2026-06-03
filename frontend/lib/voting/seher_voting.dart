@@ -6,6 +6,7 @@ class SeherVoting extends StatefulWidget {
   final List<PlayerStatus> targets;
   final List<PlayerStatus> players;
   final SeerReveal? reveal;
+  final int? secondsLeft;
   final void Function(String targetId) onInspect;
 
   const SeherVoting({
@@ -14,6 +15,7 @@ class SeherVoting extends StatefulWidget {
     required this.players,
     required this.onInspect,
     this.reveal,
+    this.secondsLeft,
   });
 
   @override
@@ -57,9 +59,14 @@ class _SeherVotingState extends State<SeherVoting> {
       );
     }
 
+    final subtitle = StringBuffer('Wähle einen Spieler, den du prüfen willst');
+    if (widget.secondsLeft != null) {
+      subtitle.write('  •  ${widget.secondsLeft}s');
+    }
+
     return VotingScaffold(
       title: 'Seherin',
-      subtitle: 'Wähle einen Spieler, den du prüfen willst',
+      subtitle: subtitle.toString(),
       children: [
         for (final p in widget.targets)
           VotingPlayerTile(

@@ -19,13 +19,15 @@ public class WitchAbility {
         if (state == null) return;
 
         // heal saves the player the werewolves attacked this night
-        if (action.getHealTarget() && state.attackedThisNight != null
-                && !state.attackedThisNight.isEmpty()) {
+        if (action.getHealTarget() && state.witchHasHealPotion
+                && state.attackedThisNight != null && !state.attackedThisNight.isEmpty()) {
             state.deadPlayers.removeIf(id -> id.equals(state.attackedThisNight));
+            state.witchHasHealPotion = false;
         }
 
-        if (!action.getPoisonTargetId().isEmpty()) {
+        if (!action.getPoisonTargetId().isEmpty() && state.witchHasPoisonPotion) {
             state.deadPlayers.add(action.getPoisonTargetId());
+            state.witchHasPoisonPotion = false;
         }
 
         // the witch is solo: there is nobody to wait for, so move on immediately

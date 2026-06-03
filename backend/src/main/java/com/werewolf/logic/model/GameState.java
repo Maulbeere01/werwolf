@@ -42,6 +42,10 @@ public class GameState {
     //safe votings from DAY_VOTING
     public Map<String, String> votes = new HashMap<>();
 
+    // Witch potion state: each potion can only be used once per game.
+    public boolean witchHasHealPotion = true;
+    public boolean witchHasPoisonPotion = true;
+
     // The team that has met its win condition once the game reaches GAME_END
     // (WEREWOLF or VILLAGER); null while the game is still running.
     public Role winningTeam;

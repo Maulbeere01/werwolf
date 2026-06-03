@@ -238,6 +238,7 @@ class _NightStartState extends State<NightStart>
           return SeherVoting(
             targets: _resolveTargets(players, prompt.seer.candidateIds),
             players: players,
+            secondsLeft: _secondsLeft(update),
             onInspect: (id) => _submit(
               GameAction(lobbyCode: widget.lobbyCode, seer: SeerAction(targetId: id)),
               phase,
@@ -251,6 +252,7 @@ class _NightStartState extends State<NightStart>
             hasPoisonPotion: w.hasPoisonPotion,
             players: players,
             selfId: AuthState.userId ?? '',
+            secondsLeft: _secondsLeft(update),
             onSubmit: (heal, poisonId) => _submit(
               GameAction(
                 lobbyCode: widget.lobbyCode,

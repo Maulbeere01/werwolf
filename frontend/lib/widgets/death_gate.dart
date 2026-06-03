@@ -85,8 +85,10 @@ class _Death {
 String _deathCause(GameUpdate update, String selfId) {
   if (update.hasAnnouncement()) {
     final a = update.announcement;
-    if (a.hasNightDeath() && a.nightDeath.playerId == selfId) {
-      return _causeText(a.nightDeath.cause);
+    if (a.hasNightDeath()) {
+      for (final d in a.nightDeath.deaths) {
+        if (d.playerId == selfId) return _causeText(d.cause);
+      }
     }
     if (a.hasVoteResult() &&
         !a.voteResult.tied &&

@@ -79,6 +79,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
   Future<void> _onTransition() async {
     if (_leaving) return;
     final update = _stream.currentUpdate;
+    if (update.players.isEmpty) return;
     final phase = update.currentPhase;
 
     if (phase == Phase.GAME_END) {
@@ -172,7 +173,14 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
 
   String _announcementText(PublicAnnouncement a) {
     if (a.hasNightDeath()) {
-      return '${_playerName(a.nightDeath.playerId)} wurde in der Nacht getötet.';
+      final names =
+          a.nightDeath.deaths.map((d) => _playerName(d.playerId)).toList();
+      if (names.isEmpty) return 'Heute Nacht ist niemand gestorben.';
+      if (names.length == 1) {
+        return '${names.first} wurde in der Nacht getötet.';
+      }
+      final last = names.removeLast();
+      return '${names.join(', ')} und $last wurden in der Nacht getötet.';
     }
     if (a.hasNoDeath()) return 'Heute Nacht ist niemand gestorben.';
     if (a.hasVoteResult()) {

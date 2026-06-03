@@ -262,6 +262,10 @@ message PublicAnnouncement {
 }
 
 message NightDeathEvent {
+  repeated PlayerDeath deaths = 1;
+}
+
+message PlayerDeath {
   string player_id = 1;
   EliminationCause cause = 2;
 }

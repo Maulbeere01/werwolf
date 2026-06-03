@@ -137,7 +137,8 @@ public class GameLoopService {
         return switch (phase) {
             case NIGHT_WEREWOLVES -> countAlive(state, Role.WEREWOLF) == 0;
             case NIGHT_SEER -> countAlive(state, Role.SEER) == 0;
-            case NIGHT_WITCH -> countAlive(state, Role.WITCH) == 0;
+            case NIGHT_WITCH -> countAlive(state, Role.WITCH) == 0
+                    || (!state.witchHasHealPotion && !state.witchHasPoisonPotion);
             case NIGHT_FOX -> countAlive(state, Role.FOX) == 0;
             // the hunter only takes revenge when a hunter is in the game AND dead;
             // a living hunter must never be prompted to shoot
@@ -266,6 +267,7 @@ public class GameLoopService {
         switch (state.phase) {
             case NIGHT_WEREWOLVES -> {
                 state.werewolfVotes.clear(); // fresh tally each night
+                state.deadPlayers.clear();   // discard stale day-vote entries before the new night
                 notifyByRole(state, lobby, Role.WEREWOLF,
                         ActionPrompt.newBuilder().setWerewolf(WerewolfPrompt.newBuilder()
                                 .addAllCandidateIds(aliveTargetIds(state, Role.WEREWOLF))
@@ -276,13 +278,14 @@ public class GameLoopService {
                             .addAllCandidateIds(aliveTargetIds(state, Role.SEER))
                             .build()).build());
             case NIGHT_WITCH -> {
-                // the werewolves' victim is sitting in deadPlayers at this point
-                state.attackedThisNight = state.deadPlayers.isEmpty() ? "" : state.deadPlayers.get(0);
+                // attackedThisNight was already set by resolveWerewolfAttack (onExit of NIGHT_WEREWOLVES).
+                // The witch always sees who was attacked so she can decide whether to act.
+                String attacked = state.attackedThisNight != null ? state.attackedThisNight : "";
                 notifyByRole(state, lobby, Role.WITCH,
                         ActionPrompt.newBuilder().setWitch(WitchPrompt.newBuilder()
-                                .setAttackedPlayerId(state.attackedThisNight)
-                                .setHasHealPotion(true)
-                                .setHasPoisonPotion(true)
+                                .setAttackedPlayerId(attacked)
+                                .setHasHealPotion(state.witchHasHealPotion)
+                                .setHasPoisonPotion(state.witchHasPoisonPotion)
                                 .build()).build());
             }
             case NIGHT_FOX -> notifyByRole(state, lobby, Role.FOX,
@@ -349,13 +352,11 @@ public class GameLoopService {
     }
 
     private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {
+        // Only record the prompt; it is delivered via the full personalised
+        // snapshot that tickLoop broadcasts right after onEnter. We deliberately
         state.players.values().stream()
                 .filter(p -> p.role == role && p.alive)
-                .forEach(p -> {
-                    state.pendingPrompts.put(p.id, prompt);
-                    lobbySubscriptionService.sendTo(lobby.lobbyCode, p.id,
-                            GameUpdateFactory.privatePrompt(state.phase, prompt));
-                });
+                .forEach(p -> state.pendingPrompts.put(p.id, prompt));
     }
 
     // Tally the day votes once DAY_VOTING ends and turn them into a lynch result.
@@ -417,12 +418,20 @@ public class GameLoopService {
     // player) and announce it. As with the day vote, the announcement rides along
     // on the snapshot sent right after this phase transition.
     private void resolveNightDeaths(GameState state) {
-        List<String> killedThisNight = new ArrayList<>();
+        List<PlayerDeath> killedThisNight = new ArrayList<>();
         for (String id : state.deadPlayers) {
             Player p = state.players.get(id);
             if (p != null && p.alive) {
                 p.alive = false;
-                killedThisNight.add(id);
+                // the werewolves' victim is attackedThisNight; anyone else who
+                // died this night was poisoned by the witch
+                EliminationCause cause = id.equals(state.attackedThisNight)
+                        ? EliminationCause.KILLED_BY_WEREWOLVES
+                        : EliminationCause.KILLED_BY_WITCH;
+                killedThisNight.add(PlayerDeath.newBuilder()
+                        .setPlayerId(id)
+                        .setCause(cause)
+                        .build());
             }
         }
         state.deadPlayers.clear();
@@ -435,8 +444,7 @@ public class GameLoopService {
         } else {
             announcement = PublicAnnouncement.newBuilder()
                     .setNightDeath(NightDeathEvent.newBuilder()
-                            .setPlayerId(killedThisNight.get(0))
-                            .setCause(EliminationCause.KILLED_BY_WEREWOLVES)
+                            .addAllDeaths(killedThisNight)
                             .build())
                     .build();
         }
