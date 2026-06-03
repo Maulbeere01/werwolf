@@ -1,3 +1,4 @@
+import 'package:grpc/grpc.dart';
 import 'package:werwolf/GrpcHandler.dart';
 
 import '../generated/werwolf.pb.dart';
@@ -55,7 +56,7 @@ class RegistrationViewController {
     return null;
   }
 
-  static Future<void> registerUser(String name, String email, String password) async {
+  static Future<String?> registerUser(String name, String email, String password) async {
 
     //Privaten Konstruktor machen (Singleton Prinzip)
     final grpc = await GrpcHandler.create();
@@ -70,8 +71,13 @@ class RegistrationViewController {
       await grpc.userClient.register(request);
 
       print("Erfolg");
+      return null;
+    } on GrpcError catch (e) {
+      print("Fehler: $e");
+      return e.message ?? "Registrierung fehlgeschlagen";
     } catch (e) {
       print("Fehler: $e");
+      return "Keine Verbindung zum Server";
     }
   }
 }
