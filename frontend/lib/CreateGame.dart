@@ -147,8 +147,9 @@ class _CreateGameState extends State<CreateGame> {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = Theme.of(context).colorScheme.onPrimaryContainer;
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      backgroundColor: bgColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         centerTitle: true,
@@ -194,8 +195,12 @@ class _CreateGameState extends State<CreateGame> {
             children: [
               const SizedBox(height: 8),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 16),
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                  // extra bottom padding so the last card can scroll clear of
+                  // the fade and isn't permanently hidden behind it
+                  padding: const EdgeInsets.only(bottom: 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -249,6 +254,30 @@ class _CreateGameState extends State<CreateGame> {
                     ],
                   ),
                 ),
+                    // soft fade so the scrollable settings dissolve into the
+                    // background just above the button instead of cutting off
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: IgnorePointer(
+                        child: Container(
+                          height: 28,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                bgColor.withOpacity(0.0),
+                                bgColor,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               // invalid hint
@@ -275,6 +304,9 @@ class _CreateGameState extends State<CreateGame> {
                     foregroundColor: Colors.black,
                     disabledBackgroundColor: Colors.white.withOpacity(0.3),
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    // lift the button above the scrolling content
+                    elevation: 10,
+                    shadowColor: Colors.black.withOpacity(0.6),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
