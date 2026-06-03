@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 class NoServerConnection extends StatelessWidget {
-  const NoServerConnection({super.key});
+  /// Called when the user taps "Erneut versuchen". When null the button is a
+  /// no-op (the controller keeps retrying on its own in the background anyway).
+  final VoidCallback? onRetry;
+
+  const NoServerConnection({super.key, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -66,9 +70,7 @@ class NoServerConnection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16), // Abgerundete Ecken
                       ),
                     ),
-                    onPressed: () {
-                      // TODO Logik reinballern
-                    },
+                    onPressed: onRetry,
                     icon: const Icon(Icons.refresh_rounded, size: 22),
                     label: const Text(
                       "Erneut versuchen",

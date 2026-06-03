@@ -52,7 +52,19 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "werwolf");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  gint win_width = 400;
+  gint win_height = 860;
+  const gchar* env_w = g_getenv("WERWOLF_WINDOW_WIDTH");
+  const gchar* env_h = g_getenv("WERWOLF_WINDOW_HEIGHT");
+  if (env_w != nullptr) {
+    gint v = (gint)g_ascii_strtoll(env_w, nullptr, 10);
+    if (v > 0) win_width = v;
+  }
+  if (env_h != nullptr) {
+    gint v = (gint)g_ascii_strtoll(env_h, nullptr, 10);
+    if (v > 0) win_height = v;
+  }
+  gtk_window_set_default_size(window, win_width, win_height);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

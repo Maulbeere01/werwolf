@@ -2,6 +2,7 @@ package com.werewolf.logic.engine;
 
 import com.werewolf.grpc.WitchAction;
 import com.werewolf.logic.model.GameState;
+import com.werewolf.logic.service.GameLoopService;
 import com.werewolf.logic.service.GameStateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.*;
 class WitchAbilityTest {
 
     private GameStateService stateService;
+    private GameLoopService gameLoopService;
     private WitchAbility witchAbility;
 
     @BeforeEach
@@ -24,9 +26,10 @@ class WitchAbilityTest {
 
         // Mock für GameStateService erstellen
         stateService = mock(GameStateService.class);
+        gameLoopService = mock(GameLoopService.class);
 
         // WitchAbility erstellen
-        witchAbility = new WitchAbility(stateService);
+        witchAbility = new WitchAbility(stateService, gameLoopService);
     }
 
     @Test
@@ -35,6 +38,7 @@ class WitchAbilityTest {
         // Ob die Hexe einen Spieler heilen kann, indem "lastNightTarget" aus der Todesliste entfernt wird.
         GameState state = new GameState();
         state.deadPlayers.add("lastNightTarget");
+        state.attackedThisNight = "lastNightTarget";
 
         when(stateService.get("ABCD")).thenReturn(state);
 

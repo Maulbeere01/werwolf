@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:werwolf/GameScreen.dart';
+import 'package:werwolf/Intro.dart';
 import 'package:werwolf/GrpcHandler.dart';
 import 'package:werwolf/HomeScreen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/controller/game_stream_controller.dart';
+import 'package:werwolf/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/widgets/connection_status.dart';
 
 class QRCodeScreen extends StatefulWidget {
   final String lobbyCode;
 
-  const QRCodeScreen({super.key, required this.lobbyCode});
+  final int requiredPlayers;
+
+  const QRCodeScreen({
+    super.key,
+    required this.lobbyCode,
+    this.requiredPlayers = 0,
+  });
 
   @override
   State<QRCodeScreen> createState() => _QRCodeScreenState();
@@ -28,17 +36,34 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
     _controller.addListener(_onUpdate);
   }
 
-  // navigate to GameScreen as soon as the server signals the game has started
-  void _onUpdate() {
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      precacheGameAssets(context);
+    }
+  }
+
+  // navigate to the intro as soon as the server signals the game has started.
+  // TODO: the intro currently stays forever; once the intro timer exists and
+  // the backend waits for it, advance from here to the next screen.
+  Future<void> _onUpdate() async {
     final phase = _controller.currentUpdate.currentPhase;
     if (phase == Phase.PHASE_UNSPECIFIED || phase == Phase.LOBBY) return;
 
     _controller.removeListener(_onUpdate);
     if (!mounted) return;
 
+    // make sure the backgrounds are decoded before we show the intro
+    await precacheGameAssets(context);
+    if (!mounted) return;
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => GameScreen(
+        builder: (_) => Intro(
           lobbyCode: widget.lobbyCode,
           initialUpdate: _controller.currentUpdate,
         ),
@@ -71,6 +96,12 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
       debugPrint('[INPUT] startGame request sent successfully');
     } catch (e) {
       debugPrint('[START GAME] Error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Spiel kann noch nicht gestartet werden.'),
+        ),
+      );
     }
   }
 
@@ -82,16 +113,23 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    return ConnectionStatusScope(
+      controller: _controller,
+      child: ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
         final players = _controller.currentUpdate.players;
         final isHost = players.any(
           (p) => p.id == AuthState.userId && p.isHost,
         );
+        // enough players if the configured count is reached
+        final enoughPlayers = widget.requiredPlayers <= 0 ||
+            players.length >= widget.requiredPlayers;
+        final canStart = isHost && enoughPlayers;
+        final missing = widget.requiredPlayers - players.length;
 
         return Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+          backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
           extendBodyBehindAppBar: true,
           appBar: AppBar(
             centerTitle: true,
@@ -166,7 +204,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                       widget.lobbyCode,
                       style: TextStyle(
                         fontFamily: 'BagelFatOne',
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                         fontSize: 28,
                         letterSpacing: 6,
                         fontWeight: FontWeight.bold,
@@ -223,14 +261,30 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
 
                   const SizedBox(height: 30),
 
+                  // waiting hint shown to the host until the lobby is full
+                  if (isHost && !enoughPlayers)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        missing == 1
+                            ? "Warte auf noch 1 Spieler..."
+                            : "Warte auf noch $missing Spieler...",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+
                   // START BUTTON
                   SizedBox(
                     width: 220,
                     child: ElevatedButton(
-                      onPressed: isHost ? _startGame : null,
+                      onPressed: canStart ? _startGame : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.9),
                         foregroundColor: Colors.black,
+                        disabledBackgroundColor: Colors.white.withOpacity(0.3),
                         padding: const EdgeInsets.symmetric(vertical: 18),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -250,6 +304,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
           ),
         );
       },
+      ),
     );
   }
 }

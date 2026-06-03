@@ -2,13 +2,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class WahlergebnisScreen extends StatefulWidget {
-  final String spielerName;
-  final int erhalteneStimmen;
+  /// Name of the hanged player, or null when the vote was tied / nobody was
+  /// voted out.
+  final String? spielerName;
+
+  /// Revealed role of the hanged player (shown only when [spielerName] is set).
+  final String? rolle;
 
   const WahlergebnisScreen({
     super.key,
-    required this.spielerName,
-    required this.erhalteneStimmen,
+    this.spielerName,
+    this.rolle,
   });
 
   @override
@@ -17,6 +21,7 @@ class WahlergebnisScreen extends StatefulWidget {
 
 class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
   Timer? _startTimer;
+  Timer? _autoCloseTimer;
   Alignment _textAlignment = Alignment.center;
   bool _zeigeDetails = false;
 
@@ -31,11 +36,18 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
         });
       }
     });
+
+    // the game continues automatically: after 5s we leave the result screen so
+    // the next night can begin
+    _autoCloseTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) Navigator.of(context).maybePop();
+    });
   }
 
   @override
   void dispose() {
     _startTimer?.cancel();
+    _autoCloseTimer?.cancel();
     super.dispose();
   }
 
@@ -105,72 +117,74 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
                               color: Colors.white60,
                             ),
                             const SizedBox(height: 16),
-                            Text(
-                              widget.spielerName.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontFamily: "BagelFatOne",
-                                color: Colors.white,
+                            if (widget.spielerName != null) ...[
+                              Text(
+                                widget.spielerName!.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontFamily: "BagelFatOne",
+                                  color: Colors.white,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Wurde mit ${widget.erhalteneStimmen} Stimmen gehängt.",
-                              style: const TextStyle(color: Colors.white70, fontSize: 14),
-                            ),
-                            const Divider(height: 32, color: Colors.white12),
-
-                            const Text(
-                              "Das hat Opfer war:",
-                              style: TextStyle(fontSize: 12, color: Colors.white38, letterSpacing: 1.2),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              "ROLLE?",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontFamily: "BagelFatOne",
-                                color: Colors.white38,
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Wurde vom Dorf gehängt.",
+                                style: TextStyle(color: Colors.white70, fontSize: 14),
                               ),
-                            ),
+                              if (widget.rolle != null) ...[
+                                const Divider(height: 32, color: Colors.white12),
+                                const Text(
+                                  "Das Opfer war:",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white38,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.rolle!.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontFamily: "BagelFatOne",
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ] else ...[
+                              const Text(
+                                "Das Dorf konnte sich nicht einigen.",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontFamily: "BagelFatOne",
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Niemand wurde gehängt.",
+                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                              ),
+                            ],
                           ],
                         ),
                       ),
 
                       const SizedBox(height: 30),
 
-                      const Text(
-                        "Ein schweres Schweigen legt sich über das Dorf. \n Ein neues Opfer wurde gefunden",
+                      Text(
+                        widget.spielerName != null
+                            ? "Ein schweres Schweigen legt sich über das Dorf. \n Ein neues Opfer wurde gefunden"
+                            : "Ein schweres Schweigen legt sich über das Dorf. \n Die Nacht bricht herein...",
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white60,
                           fontSize: 15,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
 
-                      const SizedBox(height: 60),
-
-                      SizedBox(
-                        width: 400,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text(
-                            "Fortsetzen",
-                            maxLines: 1,
-                            style: TextStyle(
-                              fontFamily: 'BagelFatOne',
-                              color: Colors.black,
-                              fontSize: 20,
-                            ),
-                          ),
-                        ),
-                      )
                     ],
                   ),
                 ),

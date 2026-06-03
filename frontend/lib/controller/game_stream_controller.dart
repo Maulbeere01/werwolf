@@ -5,14 +5,17 @@ import 'package:werwolf/GrpcHandler.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 
-/// Owns the SubscribeToGame stream for one lobby
+/// Owns the SubscribeToGame stream for one lobby.
 ///
-/// Handles reconnect with exponential backoff, foreground resume resubscription
-/// and the 3 second grace period before surfacing a connection indicator
+/// Reconnects automatically: while the stream is down it retries roughly once a
+/// second and exposes two escalating connection signals:
+///   isReconnecting   => true after 3 s down  => wire to a small spinner
+///   isConnectionLost => true after 10 s down => wire to the full "no server screen
 ///
-/// consumers only need two fields:
-///   currentUpdate => latest snapshot from the server
-///   isReconnecting => true when the connection is down (after 3 s)
+/// consumers only need three fields:
+///   currentUpdate    => latest snapshot from the server
+///   isReconnecting   => connection has been down for >= 3 s
+///   isConnectionLost => connection has been down for >= 10 s
 
 class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
   GameStreamController({required this.lobbyCode, GameUpdate? seed})
@@ -26,14 +29,21 @@ class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
   /// Latest update received from the server
   GameUpdate currentUpdate;
 
-  /// true when the stream has been down for more than 3 seconds
-  /// Wire this to UI components to disable actions or show a indicator
+  /// true once the stream has been down for >= 3 s (small reconnect spinner)
   bool isReconnecting = false;
+
+  /// true once the stream has been down for >= 10 s (full no-connection screen)
+  bool isConnectionLost = false;
+
+  // how often we retry while down, and how long until each connection signal
+  static const Duration _retryInterval = Duration(seconds: 1);
+  static const Duration _reconnectingAfter = Duration(seconds: 3);
+  static const Duration _connectionLostAfter = Duration(seconds: 10);
 
   // private reconnect state
   bool _disposed = false;
-  int _retryCount = 0;
-  Timer? _feedbackTimer;
+  Timer? _reconnectingTimer;
+  Timer? _connectionLostTimer;
   StreamSubscription<GameUpdate>? _subscription;
   Completer<void>? _streamCompleter;
   Completer<void>? _wakeUpCompleter;
@@ -41,20 +51,62 @@ class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
   // lifecycle
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _forceReconnect();
+    // Only wake the reconnect loop when the stream is actually down (we are
+    // sitting in the retry wait, so _subscription is null). On desktop, merely
+    // focusing a window fires `resumed`; tearing a healthy stream down on every
+    // window click would resubscribe constantly and clobber live state (e.g. the
+    // werewolf vote tally) with a fresh snapshot.
+    if (state == AppLifecycleState.resumed && _subscription == null) {
+      _wakeReconnect();
+    }
   }
 
-  void _forceReconnect() {
-    _retryCount = 0;
-    _feedbackTimer?.cancel();
-    if (isReconnecting) {
-      isReconnecting = false;
-      notifyListeners();
-    }
+  /// Retry the connection immediately instead of waiting out the retry interval.
+  /// Safe to call from UI (e.g. the "try again" button on the no-server screen).
+  void retryNow() => _wakeReconnect();
+
+  // Skip the current retry wait without touching the down-timers, so a manual
+  // retry / app resume during an outage reconnects right away.
+  void _wakeReconnect() {
     _subscription?.cancel();
     _subscription = null;
     if (!(_streamCompleter?.isCompleted ?? true)) _streamCompleter!.complete();
     if (!(_wakeUpCompleter?.isCompleted ?? true)) _wakeUpCompleter!.complete();
+  }
+
+  // The stream is down: start the escalating connection signals if they aren't
+  // already running. Using ??= keeps them measuring from the first failure
+  // instead of restarting on every retry attempt.
+  void _startDownTimers() {
+    _reconnectingTimer ??= Timer(_reconnectingAfter, () {
+      if (_disposed || isReconnecting) return;
+      isReconnecting = true;
+      notifyListeners();
+    });
+    _connectionLostTimer ??= Timer(_connectionLostAfter, () {
+      if (_disposed || isConnectionLost) return;
+      isConnectionLost = true;
+      notifyListeners();
+    });
+  }
+
+  // A message arrived => we are connected again. Cancel the timers and clear the
+  // signals (notifying only when something actually changed).
+  void _clearDownState() {
+    if (_reconnectingTimer == null &&
+        _connectionLostTimer == null &&
+        !isReconnecting &&
+        !isConnectionLost) {
+      return; // already in the connected state
+    }
+    _reconnectingTimer?.cancel();
+    _reconnectingTimer = null;
+    _connectionLostTimer?.cancel();
+    _connectionLostTimer = null;
+    final changed = isReconnecting || isConnectionLost;
+    isReconnecting = false;
+    isConnectionLost = false;
+    if (changed) notifyListeners();
   }
 
   // stream loop
@@ -72,22 +124,16 @@ class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
       if (_disposed) break;
       if (currentUpdate.currentPhase == Phase.GAME_END) break;
 
-      _retryCount++;
-      final delay = Duration(seconds: (1 << (_retryCount - 1)).clamp(1, 30));
-      debugPrint('[STREAM] Retry $_retryCount in ${delay.inSeconds}s ($lobbyCode)');
-
-      _feedbackTimer?.cancel();
-      _feedbackTimer = Timer(const Duration(seconds: 3), () {
-        if (!_disposed) {
-          isReconnecting = true;
-          notifyListeners();
-        }
-      });
+      // stream is down: keep the connection signals running and retry shortly
+      _startDownTimers();
+      debugPrint('[STREAM] Retry in ${_retryInterval.inSeconds}s ($lobbyCode)');
 
       _wakeUpCompleter = Completer<void>();
-      await Future.any([Future.delayed(delay), _wakeUpCompleter!.future]);
+      await Future.any([
+        Future.delayed(_retryInterval),
+        _wakeUpCompleter!.future,
+      ]);
       _wakeUpCompleter = null;
-      _feedbackTimer?.cancel();
     }
   }
 
@@ -101,12 +147,8 @@ class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
     final request = SubscribeRequest()..lobbyCode = lobbyCode;
     _subscription = grpc.gameClient.subscribeToGame(request).listen(
       (update) {
-        // reset reconnect state and deliver update in a single notification
-        if (_retryCount > 0 || isReconnecting) {
-          _retryCount = 0;
-          _feedbackTimer?.cancel();
-          isReconnecting = false;
-        }
+        // any message means we're connected: clear the reconnect signals
+        _clearDownState();
         debugPrint('[STREAM] ${update.currentPhase.name} ($lobbyCode)');
         if (update.currentPhase == Phase.GAME_END) SessionStore.clearLobbyCode();
         currentUpdate = update;
@@ -131,7 +173,8 @@ class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
-    _feedbackTimer?.cancel();
+    _reconnectingTimer?.cancel();
+    _connectionLostTimer?.cancel();
     _subscription?.cancel();
     super.dispose();
   }

@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:werwolf/widgets/progressbar.dart';
 
 class Endscreen extends StatefulWidget {
+  /// Name of the winning team, e.g. "Werwölfe" or "Dorf".
+  final String gewinner;
   final int aktuelleSpielNummer;
   final int gesamtSpiele;
 
   const Endscreen({
     super.key,
-    required this.aktuelleSpielNummer,
-    required this.gesamtSpiele,
+    this.gewinner = "Werwölfe",
+    this.aktuelleSpielNummer = 1,
+    this.gesamtSpiele = 1,
   });
 
   @override
@@ -18,7 +21,6 @@ class Endscreen extends StatefulWidget {
 
 class _EndscreenState extends State<Endscreen> {
   Timer? _startTimer;
-  String gewinnerRolle = "Werwölfe";
 
   Alignment _textAlignment = Alignment.center;
   bool _zeigeDetails = false;
@@ -69,7 +71,7 @@ class _EndscreenState extends State<Endscreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Text(
-                  "Die $gewinnerRolle \n hat/haben gewonnen",
+                  "Die ${widget.gewinner} \n hat/haben gewonnen",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
