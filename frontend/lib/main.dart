@@ -38,7 +38,7 @@ Future<void> _validateSession() async {
   if (AuthState.token == null) return;
 
   try {
-    final grpc = await GrpcHandler.create();
+    final grpc = await GrpcHandler.instance();
     await grpc.userClient
         .getProfile(ProfileRequest()) // empty target -> own profile
         .timeout(const Duration(seconds: 8));

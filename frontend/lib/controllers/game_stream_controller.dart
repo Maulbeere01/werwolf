@@ -141,7 +141,7 @@ class GameStreamController extends ChangeNotifier with WidgetsBindingObserver {
     final completer = Completer<void>();
     _streamCompleter = completer;
 
-    final grpc = await GrpcHandler.create();
+    final grpc = await GrpcHandler.instance();
     if (_disposed || completer.isCompleted) return;
 
     final request = SubscribeRequest()..lobbyCode = lobbyCode;

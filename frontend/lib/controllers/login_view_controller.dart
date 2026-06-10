@@ -6,7 +6,7 @@ import 'package:werwolf/generated/werwolf.pb.dart';
 class LoginViewController  {
 
   static Future<bool> loginUser(String username, String password) async {
-    final grpc = await GrpcHandler.create();
+    final grpc = await GrpcHandler.instance();
 
     try {
       var request = LoginRequest();

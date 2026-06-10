@@ -90,7 +90,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
   Future<void> _startGame() async {
     debugPrint('[INPUT] Start button pressed: lobby ${widget.lobbyCode}');
     try {
-      final grpc = await GrpcHandler.create();
+      final grpc = await GrpcHandler.instance();
       final request = StartGameRequest()..lobbyCode = widget.lobbyCode;
       await grpc.gameClient.startGame(request);
       debugPrint('[INPUT] startGame request sent successfully');

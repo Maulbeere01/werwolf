@@ -5,7 +5,7 @@ import 'package:werwolf/generated/werwolf.pb.dart';
 
 class GameViewController {
   static Future<String?> createLobby(LobbySettings settings) async {
-    final grpc = await GrpcHandler.create();
+    final grpc = await GrpcHandler.instance();
     try {
       final request = CreateLobbyRequest()..settings = settings;
       final response = await grpc.gameClient.createLobby(request);
@@ -20,7 +20,7 @@ class GameViewController {
   }
 
   static Future<bool> performAction(GameAction action) async {
-    final grpc = await GrpcHandler.create();
+    final grpc = await GrpcHandler.instance();
     try {
       await grpc.gameClient.performAction(action);
       return true;
@@ -31,7 +31,7 @@ class GameViewController {
   }
 
   static Future<String?> joinLobby(String lobbyCode) async {
-    final grpc = await GrpcHandler.create();
+    final grpc = await GrpcHandler.instance();
     try {
       final request = JoinRequest()..lobbyCode = lobbyCode;
       final response = await grpc.gameClient.joinLobby(request);
