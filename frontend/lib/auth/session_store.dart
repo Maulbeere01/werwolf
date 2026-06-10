@@ -1,5 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'auth_state.dart';
+import 'package:werwolf/auth/auth_state.dart';
 
 class SessionStore {
   static const _storage = FlutterSecureStorage();

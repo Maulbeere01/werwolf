@@ -1,7 +1,7 @@
 import 'package:grpc/grpc.dart';
-import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/services/grpc_handler.dart';
 
-import '../generated/werwolf.pb.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 
 class RegistrationViewController {
 

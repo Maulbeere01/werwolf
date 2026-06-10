@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:werwolf/Rules.dart';
-import 'package:werwolf/CreateGame.dart';
-import 'package:werwolf/QRCodeScreen.dart';
+import 'package:werwolf/screens/rules.dart';
+import 'package:werwolf/screens/create_game.dart';
+import 'package:werwolf/screens/qr_code_screen.dart';
 import 'package:werwolf/auth/auth_state.dart';
-import 'package:werwolf/controller/GameViewController.dart';
-import 'package:werwolf/lobby/Warteraum.dart';
-import 'package:werwolf/profile_view.dart';
-import 'package:werwolf/settings_veiw.dart';
+import 'package:werwolf/controllers/game_view_controller.dart';
+import 'package:werwolf/lobby/waiting_room.dart';
+import 'package:werwolf/screens/profile_view.dart';
+import 'package:werwolf/screens/settings_view.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});

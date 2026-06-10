@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:grpc/grpc.dart';
-import 'package:werwolf/GrpcHandler.dart';
-import 'package:werwolf/LoginView.dart';
-import 'package:werwolf/RegistrationView.dart';
-import 'package:werwolf/HomeScreen.dart';
+import 'package:werwolf/services/grpc_handler.dart';
+import 'package:werwolf/screens/login_view.dart';
+import 'package:werwolf/screens/registration_view.dart';
+import 'package:werwolf/screens/home_screen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
-import 'package:werwolf/controller/LoginViewController.dart';
+import 'package:werwolf/controllers/login_view_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:audioplayers/audioplayers.dart';
 

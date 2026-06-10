@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
-import 'package:werwolf/role_display.dart';
+import 'package:werwolf/utils/role_display.dart';
 
 class RoleRevealCard extends StatefulWidget {
   final Widget? revealChild;

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:werwolf/Intro.dart';
+import 'package:werwolf/screens/intro.dart';
 import 'package:werwolf/auth/session_store.dart';
-import 'package:werwolf/controller/game_stream_controller.dart';
-import 'package:werwolf/game_assets.dart';
+import 'package:werwolf/controllers/game_stream_controller.dart';
+import 'package:werwolf/utils/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
-import 'package:werwolf/widgets/spieleranzeige.dart';
+import 'package:werwolf/widgets/player_display.dart';
 
 class Warteraum extends StatefulWidget {
   final String lobbyCode;

@@ -1,7 +1,7 @@
-import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/services/grpc_handler.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
-import '../generated/werwolf.pb.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 
 class GameViewController {
   static Future<String?> createLobby(LobbySettings settings) async {

@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:werwolf/controller/GameViewController.dart';
+import 'package:werwolf/controllers/game_view_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
-import 'QRCodeScreen.dart';
+import 'package:werwolf/screens/qr_code_screen.dart';
 
 const int kMinPlayers = 4;
 const int kMaxPlayers = 10;

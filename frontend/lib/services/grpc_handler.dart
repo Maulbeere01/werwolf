@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
 import 'package:werwolf/auth/auth_interceptor.dart';
-import '../generated/werwolf.pbgrpc.dart';
+import 'package:werwolf/generated/werwolf.pbgrpc.dart';
 
 class GrpcHandler {
   late GameServiceClient gameClient;

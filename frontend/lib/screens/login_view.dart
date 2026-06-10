@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:werwolf/controller/LoginViewController.dart';
-import 'package:werwolf/HomeScreen.dart';
+import 'package:werwolf/controllers/login_view_controller.dart';
+import 'package:werwolf/screens/home_screen.dart';
 
-import 'widgets/RegistrationLoginBackgroundWrapper.dart';
-import 'widgets/DynamicAuthForm.dart';
-import 'widgets/AuthenticationFormField.dart';
+import 'package:werwolf/widgets/registration_login_background_wrapper.dart';
+import 'package:werwolf/widgets/dynamic_auth_form.dart';
+import 'package:werwolf/widgets/authentication_form_field.dart';
 
 
 class LoginView extends StatefulWidget {

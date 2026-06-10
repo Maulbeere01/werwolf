@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:werwolf/GrpcHandler.dart';
+import 'package:werwolf/services/grpc_handler.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 

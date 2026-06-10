@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:werwolf/settings_veiw.dart';
+import 'package:werwolf/screens/settings_view.dart';
 
 class Rules extends StatelessWidget {
   const Rules({super.key});

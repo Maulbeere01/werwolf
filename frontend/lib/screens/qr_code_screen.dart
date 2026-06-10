@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:werwolf/Intro.dart';
-import 'package:werwolf/GrpcHandler.dart';
-import 'package:werwolf/HomeScreen.dart';
+import 'package:werwolf/screens/intro.dart';
+import 'package:werwolf/services/grpc_handler.dart';
+import 'package:werwolf/screens/home_screen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
-import 'package:werwolf/controller/game_stream_controller.dart';
-import 'package:werwolf/game_assets.dart';
+import 'package:werwolf/controllers/game_stream_controller.dart';
+import 'package:werwolf/utils/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 

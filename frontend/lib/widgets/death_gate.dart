@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:werwolf/auth/auth_state.dart';
-import 'package:werwolf/controller/game_stream_controller.dart';
+import 'package:werwolf/controllers/game_stream_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
-import 'package:werwolf/personal_todscreen.dart';
-import 'package:werwolf/role_display.dart';
+import 'package:werwolf/screens/personal_death_screen.dart';
+import 'package:werwolf/utils/role_display.dart';
 
 /// Wraps a game screen and, the moment this player dies, replaces it with the
 /// personal [TodScreen]. Death is latched: once dead the player stays on the

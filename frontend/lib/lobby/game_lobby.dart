@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:werwolf/Rules.dart';
-import 'package:werwolf/widgets/spieleranzeige.dart';
+import 'package:werwolf/screens/rules.dart';
+import 'package:werwolf/widgets/player_display.dart';
 
-import '../settings_veiw.dart';
+import 'package:werwolf/screens/settings_view.dart';
 
 class GameLobby extends StatelessWidget {
   const GameLobby({super.key});

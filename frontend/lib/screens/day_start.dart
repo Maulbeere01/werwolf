@@ -2,20 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:werwolf/NightStart.dart';
-import 'package:werwolf/Rules.dart';
+import 'package:werwolf/screens/night_start.dart';
+import 'package:werwolf/screens/rules.dart';
 import 'package:werwolf/auth/auth_state.dart';
-import 'package:werwolf/controller/GameViewController.dart';
-import 'package:werwolf/controller/game_stream_controller.dart';
-import 'package:werwolf/game_assets.dart';
+import 'package:werwolf/controllers/game_view_controller.dart';
+import 'package:werwolf/controllers/game_stream_controller.dart';
+import 'package:werwolf/utils/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
-import 'package:werwolf/role_display.dart';
-import 'package:werwolf/settings_veiw.dart';
-import 'package:werwolf/wahlScreen.dart';
-import 'package:werwolf/voting/dorf_voting.dart';
+import 'package:werwolf/utils/role_display.dart';
+import 'package:werwolf/screens/settings_view.dart';
+import 'package:werwolf/screens/vote_screen.dart';
+import 'package:werwolf/voting/village_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
-import 'package:werwolf/widgets/endscreen.dart';
+import 'package:werwolf/widgets/end_screen.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
 
 class DayStart extends StatefulWidget {
