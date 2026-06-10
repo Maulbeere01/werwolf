@@ -41,6 +41,9 @@ Schließt eure Augen.
 
 - Sabateur, erwache und wähle jemanden, den du zum Schweigen bringen möchtest.
 
+- Schließe deine Augen.
+
+
 ## Ankündigung der Geschehnisse aus der Nacht
 
 - In der Nacht gab es ein Opfer.
