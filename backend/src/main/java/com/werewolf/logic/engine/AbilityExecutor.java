@@ -14,6 +14,9 @@ public class AbilityExecutor {
     private final SeerAbility seer;
     private final WitchAbility witch;
     private final HunterAbility hunter;
+    private final FoxAbility fox;
+    private final CupidAbility cupid;
+    private final SaboteurAbility saboteur;
     private final DayVotingAbility dayVoting;
 
 
@@ -39,7 +42,9 @@ public class AbilityExecutor {
             case SEER    -> seer.execute(lobbyCode, action.getSeer());
             case WITCH   -> witch.execute(lobbyCode, action.getWitch());
             case HUNTER  -> hunter.execute(lobbyCode, action.getHunter());
-            case FOX     -> {}
+            case FOX     -> fox.execute(lobbyCode, action.getFox());
+            case CUPID   -> cupid.execute(lobbyCode, action.getCupid());
+            case SABOTEUR -> saboteur.execute(lobbyCode, action.getSaboteur());
             default      -> throw new IllegalArgumentException("Unhandled action type: " + action.getActionCase());
         }
     }
