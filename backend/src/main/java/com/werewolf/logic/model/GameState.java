@@ -14,9 +14,11 @@ public class GameState {
     public String lobbyCode;
     public Phase phase = Phase.LOBBY;
 
-    // Cupid
+    // Cupid: the two lovers (chosen on the first night). If one dies, so does the
+    // other. cupidDone guards that cupid only ever wakes once, even on a timeout.
     public String loverA;
     public String loverB;
+    public boolean cupidDone = false;
 
     // Player IDs marked for death during the current night. Witch can still remove entries
     // here before DAY_RESULT. At DAY_RESULT, process this list to set player.alive = false

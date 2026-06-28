@@ -15,6 +15,7 @@ import 'package:werwolf/voting/witch_voting.dart';
 import 'package:werwolf/voting/seer_voting.dart';
 import 'package:werwolf/voting/fox_voting.dart';
 import 'package:werwolf/voting/saboteur_voting.dart';
+import 'package:werwolf/voting/cupid_voting.dart';
 import 'package:werwolf/voting/werewolf_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
@@ -106,6 +107,7 @@ class _NightStartState extends State<NightStart>
   }
 
   static bool _isNightActionPhase(Phase phase) =>
+      phase == Phase.NIGHT_CUPID ||
       phase == Phase.NIGHT_WEREWOLVES ||
       phase == Phase.NIGHT_SEER ||
       phase == Phase.NIGHT_WITCH ||
@@ -234,6 +236,7 @@ class _NightStartState extends State<NightStart>
       );
     }
 
+
     // Show the plain night scene for the first 5s of each night phase, so the
     // transition animations/announcements are visible before the action UI.
     if (_overlayReadyAt != null && DateTime.now().isBefore(_overlayReadyAt!)) {
@@ -315,6 +318,18 @@ class _NightStartState extends State<NightStart>
               phase,
             ),
           );
+        case ActionPrompt_Prompt.cupid:
+          return AmorVoting(
+            targets: _resolveTargets(players, prompt.cupid.candidateIds),
+            secondsLeft: _secondsLeft(update),
+            onPair: (a, b) => _submit(
+              GameAction(
+                lobbyCode: widget.lobbyCode,
+                cupid: CupidAction(player1Id: a, player2Id: b),
+              ),
+              phase,
+            ),
+          );
         default:
           return null; // hunter not handled on this screen yet
       }
@@ -322,6 +337,14 @@ class _NightStartState extends State<NightStart>
 
     // already acted (e.g. the witch) or nothing to do -> plain night scene
     return null;
+  }
+
+  // Resolves a player's display name from an id using the latest player list.
+  String _nameOf(List<PlayerStatus> players, String id) {
+    for (final p in players) {
+      if (p.id == id) return p.name;
+    }
+    return id;
   }
 
   // Players that may be targeted. Uses the server-provided candidate list when
@@ -515,7 +538,12 @@ class _NightStartState extends State<NightStart>
                     Positioned(
                       left: 16,
                       bottom: 16,
-                      child: RoleRevealCard(role: selfRoleOf(update)),
+                      child: RoleRevealCard(
+                        role: selfRoleOf(update),
+                        partnerName: update.loverPartnerId.isNotEmpty
+                            ? _nameOf(_lastPlayers, update.loverPartnerId)
+                            : null,
+                      ),
                     ),
                   ],
                 ),

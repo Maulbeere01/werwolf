@@ -806,6 +806,7 @@ class GameUpdate extends $pb.GeneratedMessage {
     $2.Timestamp? phaseEndsAt,
     PauseState? pause,
     $core.bool? youAreSabotaged,
+    $core.String? loverPartnerId,
   }) {
     final $result = create();
     if (currentPhase != null) {
@@ -838,6 +839,9 @@ class GameUpdate extends $pb.GeneratedMessage {
     if (youAreSabotaged != null) {
       $result.youAreSabotaged = youAreSabotaged;
     }
+    if (loverPartnerId != null) {
+      $result.loverPartnerId = loverPartnerId;
+    }
     return $result;
   }
   GameUpdate._() : super();
@@ -855,6 +859,7 @@ class GameUpdate extends $pb.GeneratedMessage {
     ..aOM<$2.Timestamp>(12, _omitFieldNames ? '' : 'phaseEndsAt', subBuilder: $2.Timestamp.create)
     ..aOM<PauseState>(13, _omitFieldNames ? '' : 'pause', subBuilder: PauseState.create)
     ..aOB(14, _omitFieldNames ? '' : 'youAreSabotaged')
+    ..aOS(15, _omitFieldNames ? '' : 'loverPartnerId')
     ..hasRequiredFields = false
   ;
 
@@ -975,6 +980,17 @@ class GameUpdate extends $pb.GeneratedMessage {
   $core.bool hasYouAreSabotaged() => $_has(9);
   @$pb.TagNumber(14)
   void clearYouAreSabotaged() => clearField(14);
+
+  /// set only in a lover's own snapshot: the id of the player they are in love
+  /// with (empty for everyone else). Lets each lover privately know their partner.
+  @$pb.TagNumber(15)
+  $core.String get loverPartnerId => $_getSZ(10);
+  @$pb.TagNumber(15)
+  set loverPartnerId($core.String v) { $_setString(10, v); }
+  @$pb.TagNumber(15)
+  $core.bool hasLoverPartnerId() => $_has(10);
+  @$pb.TagNumber(15)
+  void clearLoverPartnerId() => clearField(15);
 }
 
 class PlayerStatus extends $pb.GeneratedMessage {
@@ -1677,6 +1693,7 @@ enum ActionPrompt_Prompt {
   fox, 
   hunter, 
   saboteur, 
+  cupid, 
   notSet
 }
 
@@ -1688,6 +1705,7 @@ class ActionPrompt extends $pb.GeneratedMessage {
     FoxPrompt? fox,
     HunterPrompt? hunter,
     SaboteurPrompt? saboteur,
+    CupidPrompt? cupid,
   }) {
     final $result = create();
     if (werewolf != null) {
@@ -1708,6 +1726,9 @@ class ActionPrompt extends $pb.GeneratedMessage {
     if (saboteur != null) {
       $result.saboteur = saboteur;
     }
+    if (cupid != null) {
+      $result.cupid = cupid;
+    }
     return $result;
   }
   ActionPrompt._() : super();
@@ -1721,16 +1742,18 @@ class ActionPrompt extends $pb.GeneratedMessage {
     4 : ActionPrompt_Prompt.fox,
     5 : ActionPrompt_Prompt.hunter,
     6 : ActionPrompt_Prompt.saboteur,
+    7 : ActionPrompt_Prompt.cupid,
     0 : ActionPrompt_Prompt.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ActionPrompt', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
-    ..oo(0, [1, 2, 3, 4, 5, 6])
+    ..oo(0, [1, 2, 3, 4, 5, 6, 7])
     ..aOM<WerewolfPrompt>(1, _omitFieldNames ? '' : 'werewolf', subBuilder: WerewolfPrompt.create)
     ..aOM<SeerPrompt>(2, _omitFieldNames ? '' : 'seer', subBuilder: SeerPrompt.create)
     ..aOM<WitchPrompt>(3, _omitFieldNames ? '' : 'witch', subBuilder: WitchPrompt.create)
     ..aOM<FoxPrompt>(4, _omitFieldNames ? '' : 'fox', subBuilder: FoxPrompt.create)
     ..aOM<HunterPrompt>(5, _omitFieldNames ? '' : 'hunter', subBuilder: HunterPrompt.create)
     ..aOM<SaboteurPrompt>(6, _omitFieldNames ? '' : 'saboteur', subBuilder: SaboteurPrompt.create)
+    ..aOM<CupidPrompt>(7, _omitFieldNames ? '' : 'cupid', subBuilder: CupidPrompt.create)
     ..hasRequiredFields = false
   ;
 
@@ -1823,6 +1846,17 @@ class ActionPrompt extends $pb.GeneratedMessage {
   void clearSaboteur() => clearField(6);
   @$pb.TagNumber(6)
   SaboteurPrompt ensureSaboteur() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  CupidPrompt get cupid => $_getN(6);
+  @$pb.TagNumber(7)
+  set cupid(CupidPrompt v) { setField(7, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasCupid() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCupid() => clearField(7);
+  @$pb.TagNumber(7)
+  CupidPrompt ensureCupid() => $_ensure(6);
 }
 
 class WerewolfPrompt extends $pb.GeneratedMessage {
@@ -2118,6 +2152,50 @@ class SaboteurPrompt extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static SaboteurPrompt getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SaboteurPrompt>(create);
   static SaboteurPrompt? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.String> get candidateIds => $_getList(0);
+}
+
+class CupidPrompt extends $pb.GeneratedMessage {
+  factory CupidPrompt({
+    $core.Iterable<$core.String>? candidateIds,
+  }) {
+    final $result = create();
+    if (candidateIds != null) {
+      $result.candidateIds.addAll(candidateIds);
+    }
+    return $result;
+  }
+  CupidPrompt._() : super();
+  factory CupidPrompt.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CupidPrompt.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CupidPrompt', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
+    ..pPS(1, _omitFieldNames ? '' : 'candidateIds')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  CupidPrompt clone() => CupidPrompt()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  CupidPrompt copyWith(void Function(CupidPrompt) updates) => super.copyWith((message) => updates(message as CupidPrompt)) as CupidPrompt;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CupidPrompt create() => CupidPrompt._();
+  CupidPrompt createEmptyInstance() => create();
+  static $pb.PbList<CupidPrompt> createRepeated() => $pb.PbList<CupidPrompt>();
+  @$core.pragma('dart2js:noInline')
+  static CupidPrompt getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CupidPrompt>(create);
+  static CupidPrompt? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.List<$core.String> get candidateIds => $_getList(0);
@@ -2601,6 +2679,7 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   factory VoteResultEvent({
     $core.String? eliminatedPlayerId,
     $core.bool? tied,
+    $core.Iterable<$core.String>? alsoDiedIds,
   }) {
     final $result = create();
     if (eliminatedPlayerId != null) {
@@ -2608,6 +2687,9 @@ class VoteResultEvent extends $pb.GeneratedMessage {
     }
     if (tied != null) {
       $result.tied = tied;
+    }
+    if (alsoDiedIds != null) {
+      $result.alsoDiedIds.addAll(alsoDiedIds);
     }
     return $result;
   }
@@ -2618,6 +2700,7 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'VoteResultEvent', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eliminatedPlayerId')
     ..aOB(2, _omitFieldNames ? '' : 'tied')
+    ..pPS(3, _omitFieldNames ? '' : 'alsoDiedIds')
     ..hasRequiredFields = false
   ;
 
@@ -2659,6 +2742,10 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   $core.bool hasTied() => $_has(1);
   @$pb.TagNumber(2)
   void clearTied() => clearField(2);
+
+  /// lover(s) who died of heartbreak together with the lynched player
+  @$pb.TagNumber(3)
+  $core.List<$core.String> get alsoDiedIds => $_getList(2);
 }
 
 class HunterShotEvent extends $pb.GeneratedMessage {

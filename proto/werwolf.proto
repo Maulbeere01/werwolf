@@ -66,6 +66,7 @@ enum Phase {
   DAY_VOTING = 10;
   HUNTER_REVENGE = 11;
   GAME_END = 12;
+  NIGHT_CUPID = 13;
 }
 
 enum EliminationCause {
@@ -74,6 +75,7 @@ enum EliminationCause {
   KILLED_BY_WITCH = 2;
   VOTED_OUT = 3;
   CAUSE_HUNTER_REVENGE = 4;
+  CAUSE_HEARTBREAK = 5;
 }
 
 // user
@@ -160,6 +162,10 @@ message GameUpdate {
   // true only for the player the saboteur silenced: they sit out this day's
   // discussion and vote (their day vote is discarded server-side)
   bool you_are_sabotaged = 14;
+
+  // set only in a lover's own snapshot: the id of the player they are in love
+  // with (empty for everyone else). Lets each lover privately know their partner.
+  string lover_partner_id = 15;
 }
 
 message PlayerStatus {
@@ -225,6 +231,7 @@ message ActionPrompt {
     FoxPrompt      fox      = 4;
     HunterPrompt   hunter   = 5;
     SaboteurPrompt saboteur = 6;
+    CupidPrompt    cupid    = 7;
   }
 }
 
@@ -251,6 +258,10 @@ message HunterPrompt {
 }
 
 message SaboteurPrompt {
+  repeated string candidate_ids = 1;
+}
+
+message CupidPrompt {
   repeated string candidate_ids = 1;
 }
 
@@ -298,6 +309,7 @@ message NoDeathEvent {}
 message VoteResultEvent {
   string eliminated_player_id = 1; // empty when tied
   bool tied = 2;
+  repeated string also_died_ids = 3;
 }
 
 message HunterShotEvent {

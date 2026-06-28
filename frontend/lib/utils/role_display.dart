@@ -10,6 +10,7 @@ String roleCardAsset(Role role) => switch (role) {
       Role.WITCH => 'assets/PNGs/Hexe.png',
       Role.FOX => 'assets/PNGs/Fuchs.png',
       Role.SABOTEUR => 'assets/PNGs/sabateur.png',
+      Role.CUPID => 'assets/PNGs/Armor.png',
       _ => 'assets/PNGs/villager.png',
     };
 
@@ -33,6 +34,7 @@ String roleName(Role role) => switch (role) {
       Role.VILLAGE_IDIOT => 'Dorftrottel',
       Role.HUNTER => 'Jäger',
       Role.SABOTEUR => 'Saboteur',
+      Role.CUPID => 'Amor',
       _ => 'Unbekannt',
     };
 

@@ -5,8 +5,11 @@ import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -38,6 +41,7 @@ public class GameLoopService {
     // (night -> day -> night) until a win condition ends it (see checkWinner /
     // concludeGame); phases without a living holder are skipped (see shouldSkip).
     static final List<Phase> CYCLE = List.of(
+            Phase.NIGHT_CUPID,
             Phase.NIGHT_WEREWOLVES,
             Phase.NIGHT_SEER,
             Phase.NIGHT_WITCH,
@@ -67,6 +71,7 @@ public class GameLoopService {
     // placeholder durations (seconds)
     static final Map<Phase, Long> PHASE_DURATIONS = Map.ofEntries(
             Map.entry(Phase.NIGHT_START,      10L),
+            Map.entry(Phase.NIGHT_CUPID,      40L),
             Map.entry(Phase.NIGHT_WEREWOLVES, WEREWOLF_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_SEER,       SEER_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_WITCH,      WITCH_PHASE_SECONDS),
@@ -139,6 +144,9 @@ public class GameLoopService {
     // village doesn't already know
     private boolean shouldSkip(GameState state, Phase phase) {
         return switch (phase) {
+            // cupid only ever wakes once (the first night). cupidDone is set the
+            // moment the phase runs, so even a timeout without a pick won't repeat it
+            case NIGHT_CUPID -> countAlive(state, Role.CUPID) == 0 || state.cupidDone;
             case NIGHT_WEREWOLVES -> countAlive(state, Role.WEREWOLF) == 0;
             case NIGHT_SEER -> countAlive(state, Role.SEER) == 0;
             case NIGHT_WITCH -> countAlive(state, Role.WITCH) == 0
@@ -278,6 +286,14 @@ public class GameLoopService {
     // DAY_VOTING end, etc. Each case sends private info to the relevant role via sendTo()
     private void onEnter(GameState state, Lobby lobby) {
         switch (state.phase) {
+            case NIGHT_CUPID -> {
+                // cupid wakes exactly once; mark it so the phase never repeats
+                state.cupidDone = true;
+                notifyByRole(state, lobby, Role.CUPID,
+                        ActionPrompt.newBuilder().setCupid(CupidPrompt.newBuilder()
+                                .addAllCandidateIds(aliveAllIds(state))
+                                .build()).build());
+            }
             case NIGHT_WEREWOLVES -> {
                 state.werewolfVotes.clear(); // fresh tally each night
                 state.deadPlayers.clear();   // discard stale day-vote entries before the new night
@@ -383,6 +399,14 @@ public class GameLoopService {
                 .toList();
     }
 
+    // every living player; cupid may pair any two of them (including itself)
+    private List<String> aliveAllIds(GameState state) {
+        return state.players.values().stream()
+                .filter(p -> p.alive)
+                .map(p -> p.id)
+                .toList();
+    }
+
     private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {
         // Only record the prompt; it is delivered via the full personalised
         // snapshot that tickLoop broadcasts right after onEnter. We deliberately
@@ -449,10 +473,25 @@ public class GameLoopService {
                 if (!state.deadPlayers.contains(eliminatedId)) {
                     state.deadPlayers.add(eliminatedId);
                 }
+                // a lynched lover dies together with their partner (heartbreak);
+                // both deaths are announced to the village in the vote result
+                List<String> alsoDied = new ArrayList<>();
+                String partner = loverPartnerOf(state, eliminatedId);
+                if (partner != null) {
+                    Player lp = state.players.get(partner);
+                    if (lp != null && lp.alive) {
+                        lp.alive = false;
+                        alsoDied.add(partner);
+                        if (!state.deadPlayers.contains(partner)) {
+                            state.deadPlayers.add(partner);
+                        }
+                    }
+                }
                 announcement = PublicAnnouncement.newBuilder()
                         .setVoteResult(VoteResultEvent.newBuilder()
                                 .setEliminatedPlayerId(eliminatedId)
                                 .setTied(false)
+                                .addAllAlsoDiedIds(alsoDied)
                                 .build())
                         .build();
             }
@@ -467,21 +506,38 @@ public class GameLoopService {
     // player) and announce it. As with the day vote, the announcement rides along
     // on the snapshot sent right after this phase transition.
     private void resolveNightDeaths(GameState state) {
-        List<PlayerDeath> killedThisNight = new ArrayList<>();
+        // Seed each queued victim's cause: the werewolves' target is
+        // attackedThisNight, anyone else queued during the night was the witch's
+        // poison. Lover chaining (below) appends more victims with HEARTBREAK.
+        Map<String, EliminationCause> causes = new LinkedHashMap<>();
         for (String id : state.deadPlayers) {
+            causes.putIfAbsent(id, id.equals(state.attackedThisNight)
+                    ? EliminationCause.KILLED_BY_WEREWOLVES
+                    : EliminationCause.KILLED_BY_WITCH);
+        }
+
+        // Work through the victims as a queue: killing a lover drags their
+        // partner in, which appends to the queue. Using a queue (not a for-each
+        // over deadPlayers) keeps that safe and terminates once everyone is dead.
+        List<PlayerDeath> killedThisNight = new ArrayList<>();
+        Deque<String> queue = new ArrayDeque<>(state.deadPlayers);
+        while (!queue.isEmpty()) {
+            String id = queue.poll();
             Player p = state.players.get(id);
-            if (p != null && p.alive) {
-                p.alive = false;
-                handleLoversDeath(state, id);
-                // the werewolves' victim is attackedThisNight; anyone else who
-                // died this night was poisoned by the witch
-                EliminationCause cause = id.equals(state.attackedThisNight)
-                        ? EliminationCause.KILLED_BY_WEREWOLVES
-                        : EliminationCause.KILLED_BY_WITCH;
-                killedThisNight.add(PlayerDeath.newBuilder()
-                        .setPlayerId(id)
-                        .setCause(cause)
-                        .build());
+            if (p == null || !p.alive) continue;
+            p.alive = false;
+            killedThisNight.add(PlayerDeath.newBuilder()
+                    .setPlayerId(id)
+                    .setCause(causes.getOrDefault(id, EliminationCause.CAUSE_UNSPECIFIED))
+                    .build());
+
+            String partner = loverPartnerOf(state, id);
+            if (partner != null && !causes.containsKey(partner)) {
+                Player lp = state.players.get(partner);
+                if (lp != null && lp.alive) {
+                    causes.put(partner, EliminationCause.CAUSE_HEARTBREAK);
+                    queue.add(partner);
+                }
             }
         }
         state.deadPlayers.clear();
@@ -501,17 +557,13 @@ public class GameLoopService {
         state.lastAnnouncement = announcement;
     }
 
-    private void handleLoversDeath(GameState state, String deadId) {
-
-        if (state.loverA == null || state.loverB == null) return;
-
-        if (deadId.equals(state.loverA) && state.players.get(state.loverB).alive) {
-            state.deadPlayers.add(state.loverB);
-        }
-
-        if (deadId.equals(state.loverB) && state.players.get(state.loverA).alive) {
-            state.deadPlayers.add(state.loverA);
-        }
+    // The partner a player is in love with (cupid's pairing), or null if this
+    // player is not one of the two lovers.
+    private String loverPartnerOf(GameState state, String id) {
+        if (state.loverA == null || state.loverB == null) return null;
+        if (id.equals(state.loverA)) return state.loverB;
+        if (id.equals(state.loverB)) return state.loverA;
+        return null;
     }
 
 

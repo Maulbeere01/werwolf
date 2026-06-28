@@ -28,7 +28,7 @@ class RoleOption {
 const List<RoleOption> kRoleOptions = [
   RoleOption(role: Role.SEER, label: 'Seher'),
   RoleOption(role: Role.WITCH, label: 'Hexe'),
-  RoleOption(label: 'Amor', comingSoon: true),
+  RoleOption(role: Role.CUPID, label: 'Amor'),
   RoleOption(role: Role.HUNTER, label: 'Jäger', comingSoon: true),
   RoleOption(role: Role.FOX, label: 'Fuchs'),
   RoleOption(role: Role.SABOTEUR, label: 'Saboteur'),

@@ -58,6 +58,7 @@ class Phase extends $pb.ProtobufEnum {
   static const Phase DAY_VOTING = Phase._(10, _omitEnumNames ? '' : 'DAY_VOTING');
   static const Phase HUNTER_REVENGE = Phase._(11, _omitEnumNames ? '' : 'HUNTER_REVENGE');
   static const Phase GAME_END = Phase._(12, _omitEnumNames ? '' : 'GAME_END');
+  static const Phase NIGHT_CUPID = Phase._(13, _omitEnumNames ? '' : 'NIGHT_CUPID');
 
   static const $core.List<Phase> values = <Phase> [
     PHASE_UNSPECIFIED,
@@ -73,6 +74,7 @@ class Phase extends $pb.ProtobufEnum {
     DAY_VOTING,
     HUNTER_REVENGE,
     GAME_END,
+    NIGHT_CUPID,
   ];
 
   static final $core.Map<$core.int, Phase> _byValue = $pb.ProtobufEnum.initByValue(values);
@@ -87,6 +89,7 @@ class EliminationCause extends $pb.ProtobufEnum {
   static const EliminationCause KILLED_BY_WITCH = EliminationCause._(2, _omitEnumNames ? '' : 'KILLED_BY_WITCH');
   static const EliminationCause VOTED_OUT = EliminationCause._(3, _omitEnumNames ? '' : 'VOTED_OUT');
   static const EliminationCause CAUSE_HUNTER_REVENGE = EliminationCause._(4, _omitEnumNames ? '' : 'CAUSE_HUNTER_REVENGE');
+  static const EliminationCause CAUSE_HEARTBREAK = EliminationCause._(5, _omitEnumNames ? '' : 'CAUSE_HEARTBREAK');
 
   static const $core.List<EliminationCause> values = <EliminationCause> [
     CAUSE_UNSPECIFIED,
@@ -94,6 +97,7 @@ class EliminationCause extends $pb.ProtobufEnum {
     KILLED_BY_WITCH,
     VOTED_OUT,
     CAUSE_HUNTER_REVENGE,
+    CAUSE_HEARTBREAK,
   ];
 
   static final $core.Map<$core.int, EliminationCause> _byValue = $pb.ProtobufEnum.initByValue(values);

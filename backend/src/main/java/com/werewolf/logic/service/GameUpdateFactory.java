@@ -56,6 +56,14 @@ public final class GameUpdateFactory {
         // "you are sabotaged" screen instead of the discussion/vote UI
         b.setYouAreSabotaged(userId.equals(state.sabotagedPlayerId));
 
+        // privately tell each lover who their partner is (only in their own
+        // snapshot, so nobody else learns the pairing)
+        if (userId.equals(state.loverA)) {
+            b.setLoverPartnerId(state.loverB);
+        } else if (userId.equals(state.loverB)) {
+            b.setLoverPartnerId(state.loverA);
+        }
+
         return b.build();
     }
 
