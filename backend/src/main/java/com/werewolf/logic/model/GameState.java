@@ -13,6 +13,11 @@ public class GameState {
     public Map<String, Player> players = new HashMap<>();
     public String lobbyCode;
     public Phase phase = Phase.LOBBY;
+
+    // Cupid
+    public String loverA;
+    public String loverB;
+
     // Player IDs marked for death during the current night. Witch can still remove entries
     // here before DAY_RESULT. At DAY_RESULT, process this list to set player.alive = false
     // and clear it for the next round
@@ -33,6 +38,8 @@ public class GameState {
 
     // The player the werewolves attacked this night; the witch may heal this id
     public String attackedThisNight;
+
+    public String sabotagedPlayerId;
 
     // Committed werewolf night votes for NIGHT_WEREWOLVES: voterId -> targetId.
     // A vote is final once placed (commit) and is resolved into attackedThisNight

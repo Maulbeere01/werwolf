@@ -42,6 +42,7 @@ public class GameLoopService {
             Phase.NIGHT_SEER,
             Phase.NIGHT_WITCH,
             Phase.NIGHT_FOX,
+            Phase.NIGHT_SABOTEUR,
             Phase.DAY_RESULT,
             Phase.DAY_DISCUSSION,
             Phase.DAY_VOTING,
@@ -69,6 +70,7 @@ public class GameLoopService {
             Map.entry(Phase.NIGHT_SEER,       SEER_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_WITCH,      WITCH_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_FOX,        10L),
+            Map.entry(Phase.NIGHT_SABOTEUR, 40L),
             Map.entry(Phase.DAY_RESULT,       10L),
             Map.entry(Phase.DAY_DISCUSSION,   10L),   // increase timer to 30 seconds
             Map.entry(Phase.DAY_VOTING,       DAY_VOTE_PHASE_SECONDS),
@@ -141,6 +143,7 @@ public class GameLoopService {
             case NIGHT_WITCH -> countAlive(state, Role.WITCH) == 0
                     || (!state.witchHasHealPotion && !state.witchHasPoisonPotion);
             case NIGHT_FOX -> countAlive(state, Role.FOX) == 0;
+            case NIGHT_SABOTEUR -> countAlive(state, Role.SABOTEUR) == 0;
             // the hunter only takes revenge when a hunter is in the game AND dead;
             // a living hunter must never be prompted to shoot
             case HUNTER_REVENGE -> !roleInGame(state, Role.HUNTER) || countAlive(state, Role.HUNTER) > 0;
@@ -291,6 +294,23 @@ public class GameLoopService {
             }
             case NIGHT_FOX -> notifyByRole(state, lobby, Role.FOX,
                     ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder().build()).build());
+
+            case NIGHT_SABOTEUR -> {
+
+                state.sabotagedPlayerId = null;
+
+                notifyByRole(
+                        state,
+                        lobby,
+                        Role.SABOTEUR,
+                        ActionPrompt.newBuilder()
+                                .setSaboteur(
+                                        SaboteurPrompt.newBuilder()
+                                                .addAllCandidateIds(
+                                                        aliveTargetIds(state, Role.SABOTEUR))
+                                                .build())
+                                .build());
+            }
             case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
                     ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
 
@@ -368,9 +388,13 @@ public class GameLoopService {
         long alivePlayers = state.players.values().stream()
                 .filter(p -> p.alive).count();
 
+        Map<String, String> effectiveVotes = new HashMap<>(state.votes);
+        if (state.sabotagedPlayerId != null) {
+            effectiveVotes.remove(state.sabotagedPlayerId);
+        }
         // abstentions (skip votes) have an empty target and elect nobody; only
         // real votes for an actual player are tallied here.
-        Map<String, Long> tally = state.votes.values().stream()
+        Map<String, Long> tally = effectiveVotes.values().stream()
                 .filter(id -> id != null && !id.isEmpty())
                 .collect(java.util.stream.Collectors.groupingBy(
                         id -> id, java.util.stream.Collectors.counting()));
@@ -427,6 +451,7 @@ public class GameLoopService {
             Player p = state.players.get(id);
             if (p != null && p.alive) {
                 p.alive = false;
+                handleLoversDeath(state, id);
                 // the werewolves' victim is attackedThisNight; anyone else who
                 // died this night was poisoned by the witch
                 EliminationCause cause = id.equals(state.attackedThisNight)
@@ -453,6 +478,19 @@ public class GameLoopService {
                     .build();
         }
         state.lastAnnouncement = announcement;
+    }
+
+    private void handleLoversDeath(GameState state, String deadId) {
+
+        if (state.loverA == null || state.loverB == null) return;
+
+        if (deadId.equals(state.loverA) && state.players.get(state.loverB).alive) {
+            state.deadPlayers.add(state.loverB);
+        }
+
+        if (deadId.equals(state.loverB) && state.players.get(state.loverA).alive) {
+            state.deadPlayers.add(state.loverA);
+        }
     }
 
 
