@@ -30,7 +30,7 @@ const List<RoleOption> kRoleOptions = [
   RoleOption(role: Role.WITCH, label: 'Hexe'),
   RoleOption(label: 'Amor', comingSoon: true),
   RoleOption(role: Role.HUNTER, label: 'Jäger', comingSoon: true),
-  RoleOption(role: Role.FOX, label: 'Fuchs', comingSoon: true),
+  RoleOption(role: Role.FOX, label: 'Fuchs'),
   RoleOption(label: 'Saboteur', comingSoon: true),
 ];
 

@@ -13,6 +13,7 @@ import 'package:werwolf/utils/role_display.dart';
 import 'package:werwolf/screens/settings_view.dart';
 import 'package:werwolf/voting/witch_voting.dart';
 import 'package:werwolf/voting/seer_voting.dart';
+import 'package:werwolf/voting/fox_voting.dart';
 import 'package:werwolf/voting/werewolf_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
@@ -220,6 +221,17 @@ class _NightStartState extends State<NightStart>
       );
     }
 
+    // The fox's reveal, like the seer's, appears right after acting and stays
+    // until the backend advances the phase (~5s grace). It is only ever present
+    // during the fox phase, so showing it whenever present is safe.
+    if (update.hasYourResults() && update.yourResults.hasFoxReveal()) {
+      return FuchsVoting(
+        targets: const [],
+        reveal: update.yourResults.foxReveal,
+        onInspect: (_) {},
+      );
+    }
+
     // Show the plain night scene for the first 5s of each night phase, so the
     // transition animations/announcements are visible before the action UI.
     if (_overlayReadyAt != null && DateTime.now().isBefore(_overlayReadyAt!)) {
@@ -277,8 +289,20 @@ class _NightStartState extends State<NightStart>
               phase,
             ),
           );
+        case ActionPrompt_Prompt.fox:
+          return FuchsVoting(
+            targets: _resolveTargets(players, prompt.fox.candidateIds),
+            secondsLeft: _secondsLeft(update),
+            onInspect: (ids) => _submit(
+              GameAction(
+                lobbyCode: widget.lobbyCode,
+                fox: FoxAction(targetIds: ids),
+              ),
+              phase,
+            ),
+          );
         default:
-          return null; // fox / hunter not handled on this screen yet
+          return null; // hunter not handled on this screen yet
       }
     }
 

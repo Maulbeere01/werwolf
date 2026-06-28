@@ -7,7 +7,8 @@ import 'package:werwolf/generated/werwolf.pb.dart';
 String roleCardAsset(Role role) => switch (role) {
       Role.SEER => 'assets/PNGs/Seher.png',
       Role.WEREWOLF => 'assets/PNGs/wolf.png',
-      Role.WITCH => 'assets/PNGs/Armor.png',
+      Role.WITCH => 'assets/PNGs/Hexe.png',
+      Role.FOX => 'assets/PNGs/Fuchs.png',
       _ => 'assets/PNGs/villager.png',
     };
 

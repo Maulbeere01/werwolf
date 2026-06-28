@@ -25,6 +25,8 @@ const Role$json = {
     {'1': 'FOX', '2': 5},
     {'1': 'VILLAGE_IDIOT', '2': 6},
     {'1': 'HUNTER', '2': 7},
+    {'1': 'CUPID', '2': 8},
+    {'1': 'SABOTEUR', '2': 9},
   ],
 };
 
@@ -32,7 +34,7 @@ const Role$json = {
 final $typed_data.Uint8List roleDescriptor = $convert.base64Decode(
     'CgRSb2xlEhQKEFJPTEVfVU5TUEVDSUZJRUQQABIMCghXRVJFV09MRhABEgwKCFZJTExBR0VSEA'
     'ISCAoEU0VFUhADEgkKBVdJVENIEAQSBwoDRk9YEAUSEQoNVklMTEFHRV9JRElPVBAGEgoKBkhV'
-    'TlRFUhAH');
+    'TlRFUhAHEgkKBUNVUElEEAgSDAoIU0FCT1RFVVIQCQ==');
 
 @$core.Deprecated('Use phaseDescriptor instead')
 const Phase$json = {
@@ -45,11 +47,12 @@ const Phase$json = {
     {'1': 'NIGHT_SEER', '2': 4},
     {'1': 'NIGHT_WITCH', '2': 5},
     {'1': 'NIGHT_FOX', '2': 6},
-    {'1': 'DAY_RESULT', '2': 7},
-    {'1': 'DAY_DISCUSSION', '2': 8},
-    {'1': 'DAY_VOTING', '2': 9},
-    {'1': 'HUNTER_REVENGE', '2': 10},
-    {'1': 'GAME_END', '2': 11},
+    {'1': 'NIGHT_SABOTEUR', '2': 7},
+    {'1': 'DAY_RESULT', '2': 8},
+    {'1': 'DAY_DISCUSSION', '2': 9},
+    {'1': 'DAY_VOTING', '2': 10},
+    {'1': 'HUNTER_REVENGE', '2': 11},
+    {'1': 'GAME_END', '2': 12},
   ],
 };
 
@@ -57,8 +60,9 @@ const Phase$json = {
 final $typed_data.Uint8List phaseDescriptor = $convert.base64Decode(
     'CgVQaGFzZRIVChFQSEFTRV9VTlNQRUNJRklFRBAAEgkKBUxPQkJZEAESDwoLTklHSFRfU1RBUl'
     'QQAhIUChBOSUdIVF9XRVJFV09MVkVTEAMSDgoKTklHSFRfU0VFUhAEEg8KC05JR0hUX1dJVENI'
-    'EAUSDQoJTklHSFRfRk9YEAYSDgoKREFZX1JFU1VMVBAHEhIKDkRBWV9ESVNDVVNTSU9OEAgSDg'
-    'oKREFZX1ZPVElORxAJEhIKDkhVTlRFUl9SRVZFTkdFEAoSDAoIR0FNRV9FTkQQCw==');
+    'EAUSDQoJTklHSFRfRk9YEAYSEgoOTklHSFRfU0FCT1RFVVIQBxIOCgpEQVlfUkVTVUxUEAgSEg'
+    'oOREFZX0RJU0NVU1NJT04QCRIOCgpEQVlfVk9USU5HEAoSEgoOSFVOVEVSX1JFVkVOR0UQCxIM'
+    'CghHQU1FX0VORBAM');
 
 @$core.Deprecated('Use eliminationCauseDescriptor instead')
 const EliminationCause$json = {
@@ -312,6 +316,8 @@ const GameAction$json = {
     {'1': 'seer', '3': 4, '4': 1, '5': 11, '6': '.werewolf.SeerAction', '9': 0, '10': 'seer'},
     {'1': 'fox', '3': 5, '4': 1, '5': 11, '6': '.werewolf.FoxAction', '9': 0, '10': 'fox'},
     {'1': 'hunter', '3': 6, '4': 1, '5': 11, '6': '.werewolf.HunterAction', '9': 0, '10': 'hunter'},
+    {'1': 'cupid', '3': 7, '4': 1, '5': 11, '6': '.werewolf.CupidAction', '9': 0, '10': 'cupid'},
+    {'1': 'saboteur', '3': 8, '4': 1, '5': 11, '6': '.werewolf.SaboteurAction', '9': 0, '10': 'saboteur'},
   ],
   '8': [
     {'1': 'action'},
@@ -324,8 +330,23 @@ final $typed_data.Uint8List gameActionDescriptor = $convert.base64Decode(
     'gLMhQud2VyZXdvbGYuVm90ZUFjdGlvbkgAUgR2b3RlEi0KBXdpdGNoGAMgASgLMhUud2VyZXdv'
     'bGYuV2l0Y2hBY3Rpb25IAFIFd2l0Y2gSKgoEc2VlchgEIAEoCzIULndlcmV3b2xmLlNlZXJBY3'
     'Rpb25IAFIEc2VlchInCgNmb3gYBSABKAsyEy53ZXJld29sZi5Gb3hBY3Rpb25IAFIDZm94EjAK'
-    'Bmh1bnRlchgGIAEoCzIWLndlcmV3b2xmLkh1bnRlckFjdGlvbkgAUgZodW50ZXJCCAoGYWN0aW'
-    '9u');
+    'Bmh1bnRlchgGIAEoCzIWLndlcmV3b2xmLkh1bnRlckFjdGlvbkgAUgZodW50ZXISLQoFY3VwaW'
+    'QYByABKAsyFS53ZXJld29sZi5DdXBpZEFjdGlvbkgAUgVjdXBpZBI2CghzYWJvdGV1chgIIAEo'
+    'CzIYLndlcmV3b2xmLlNhYm90ZXVyQWN0aW9uSABSCHNhYm90ZXVyQggKBmFjdGlvbg==');
+
+@$core.Deprecated('Use cupidActionDescriptor instead')
+const CupidAction$json = {
+  '1': 'CupidAction',
+  '2': [
+    {'1': 'player1_id', '3': 1, '4': 1, '5': 9, '10': 'player1Id'},
+    {'1': 'player2_id', '3': 2, '4': 1, '5': 9, '10': 'player2Id'},
+  ],
+};
+
+/// Descriptor for `CupidAction`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cupidActionDescriptor = $convert.base64Decode(
+    'CgtDdXBpZEFjdGlvbhIdCgpwbGF5ZXIxX2lkGAEgASgJUglwbGF5ZXIxSWQSHQoKcGxheWVyMl'
+    '9pZBgCIAEoCVIJcGxheWVyMklk');
 
 @$core.Deprecated('Use voteActionDescriptor instead')
 const VoteAction$json = {
@@ -377,6 +398,18 @@ const FoxAction$json = {
 final $typed_data.Uint8List foxActionDescriptor = $convert.base64Decode(
     'CglGb3hBY3Rpb24SHQoKdGFyZ2V0X2lkcxgBIAMoCVIJdGFyZ2V0SWRz');
 
+@$core.Deprecated('Use saboteurActionDescriptor instead')
+const SaboteurAction$json = {
+  '1': 'SaboteurAction',
+  '2': [
+    {'1': 'target_id', '3': 1, '4': 1, '5': 9, '10': 'targetId'},
+  ],
+};
+
+/// Descriptor for `SaboteurAction`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List saboteurActionDescriptor = $convert.base64Decode(
+    'Cg5TYWJvdGV1ckFjdGlvbhIbCgl0YXJnZXRfaWQYASABKAlSCHRhcmdldElk');
+
 @$core.Deprecated('Use hunterActionDescriptor instead')
 const HunterAction$json = {
   '1': 'HunterAction',
@@ -398,6 +431,7 @@ const ActionPrompt$json = {
     {'1': 'witch', '3': 3, '4': 1, '5': 11, '6': '.werewolf.WitchPrompt', '9': 0, '10': 'witch'},
     {'1': 'fox', '3': 4, '4': 1, '5': 11, '6': '.werewolf.FoxPrompt', '9': 0, '10': 'fox'},
     {'1': 'hunter', '3': 5, '4': 1, '5': 11, '6': '.werewolf.HunterPrompt', '9': 0, '10': 'hunter'},
+    {'1': 'saboteur', '3': 6, '4': 1, '5': 11, '6': '.werewolf.SaboteurPrompt', '9': 0, '10': 'saboteur'},
   ],
   '8': [
     {'1': 'prompt'},
@@ -410,7 +444,8 @@ final $typed_data.Uint8List actionPromptDescriptor = $convert.base64Decode(
     '1wdEgAUgh3ZXJld29sZhIqCgRzZWVyGAIgASgLMhQud2VyZXdvbGYuU2VlclByb21wdEgAUgRz'
     'ZWVyEi0KBXdpdGNoGAMgASgLMhUud2VyZXdvbGYuV2l0Y2hQcm9tcHRIAFIFd2l0Y2gSJwoDZm'
     '94GAQgASgLMhMud2VyZXdvbGYuRm94UHJvbXB0SABSA2ZveBIwCgZodW50ZXIYBSABKAsyFi53'
-    'ZXJld29sZi5IdW50ZXJQcm9tcHRIAFIGaHVudGVyQggKBnByb21wdA==');
+    'ZXJld29sZi5IdW50ZXJQcm9tcHRIAFIGaHVudGVyEjYKCHNhYm90ZXVyGAYgASgLMhgud2VyZX'
+    'dvbGYuU2Fib3RldXJQcm9tcHRIAFIIc2Fib3RldXJCCAoGcHJvbXB0');
 
 @$core.Deprecated('Use werewolfPromptDescriptor instead')
 const WerewolfPrompt$json = {
@@ -475,6 +510,18 @@ const HunterPrompt$json = {
 /// Descriptor for `HunterPrompt`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List hunterPromptDescriptor = $convert.base64Decode(
     'CgxIdW50ZXJQcm9tcHQSIwoNY2FuZGlkYXRlX2lkcxgBIAMoCVIMY2FuZGlkYXRlSWRz');
+
+@$core.Deprecated('Use saboteurPromptDescriptor instead')
+const SaboteurPrompt$json = {
+  '1': 'SaboteurPrompt',
+  '2': [
+    {'1': 'candidate_ids', '3': 1, '4': 3, '5': 9, '10': 'candidateIds'},
+  ],
+};
+
+/// Descriptor for `SaboteurPrompt`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List saboteurPromptDescriptor = $convert.base64Decode(
+    'Cg5TYWJvdGV1clByb21wdBIjCg1jYW5kaWRhdGVfaWRzGAEgAygJUgxjYW5kaWRhdGVJZHM=');
 
 @$core.Deprecated('Use actionResultDescriptor instead')
 const ActionResult$json = {

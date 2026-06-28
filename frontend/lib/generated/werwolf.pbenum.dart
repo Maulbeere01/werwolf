@@ -22,6 +22,8 @@ class Role extends $pb.ProtobufEnum {
   static const Role FOX = Role._(5, _omitEnumNames ? '' : 'FOX');
   static const Role VILLAGE_IDIOT = Role._(6, _omitEnumNames ? '' : 'VILLAGE_IDIOT');
   static const Role HUNTER = Role._(7, _omitEnumNames ? '' : 'HUNTER');
+  static const Role CUPID = Role._(8, _omitEnumNames ? '' : 'CUPID');
+  static const Role SABOTEUR = Role._(9, _omitEnumNames ? '' : 'SABOTEUR');
 
   static const $core.List<Role> values = <Role> [
     ROLE_UNSPECIFIED,
@@ -32,6 +34,8 @@ class Role extends $pb.ProtobufEnum {
     FOX,
     VILLAGE_IDIOT,
     HUNTER,
+    CUPID,
+    SABOTEUR,
   ];
 
   static final $core.Map<$core.int, Role> _byValue = $pb.ProtobufEnum.initByValue(values);
@@ -48,11 +52,12 @@ class Phase extends $pb.ProtobufEnum {
   static const Phase NIGHT_SEER = Phase._(4, _omitEnumNames ? '' : 'NIGHT_SEER');
   static const Phase NIGHT_WITCH = Phase._(5, _omitEnumNames ? '' : 'NIGHT_WITCH');
   static const Phase NIGHT_FOX = Phase._(6, _omitEnumNames ? '' : 'NIGHT_FOX');
-  static const Phase DAY_RESULT = Phase._(7, _omitEnumNames ? '' : 'DAY_RESULT');
-  static const Phase DAY_DISCUSSION = Phase._(8, _omitEnumNames ? '' : 'DAY_DISCUSSION');
-  static const Phase DAY_VOTING = Phase._(9, _omitEnumNames ? '' : 'DAY_VOTING');
-  static const Phase HUNTER_REVENGE = Phase._(10, _omitEnumNames ? '' : 'HUNTER_REVENGE');
-  static const Phase GAME_END = Phase._(11, _omitEnumNames ? '' : 'GAME_END');
+  static const Phase NIGHT_SABOTEUR = Phase._(7, _omitEnumNames ? '' : 'NIGHT_SABOTEUR');
+  static const Phase DAY_RESULT = Phase._(8, _omitEnumNames ? '' : 'DAY_RESULT');
+  static const Phase DAY_DISCUSSION = Phase._(9, _omitEnumNames ? '' : 'DAY_DISCUSSION');
+  static const Phase DAY_VOTING = Phase._(10, _omitEnumNames ? '' : 'DAY_VOTING');
+  static const Phase HUNTER_REVENGE = Phase._(11, _omitEnumNames ? '' : 'HUNTER_REVENGE');
+  static const Phase GAME_END = Phase._(12, _omitEnumNames ? '' : 'GAME_END');
 
   static const $core.List<Phase> values = <Phase> [
     PHASE_UNSPECIFIED,
@@ -62,6 +67,7 @@ class Phase extends $pb.ProtobufEnum {
     NIGHT_SEER,
     NIGHT_WITCH,
     NIGHT_FOX,
+    NIGHT_SABOTEUR,
     DAY_RESULT,
     DAY_DISCUSSION,
     DAY_VOTING,

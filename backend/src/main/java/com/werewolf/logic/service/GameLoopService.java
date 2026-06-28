@@ -62,6 +62,7 @@ public class GameLoopService {
     // the seer and the witch each get 40s to make their choice
     static final long SEER_PHASE_SECONDS = 40;
     static final long WITCH_PHASE_SECONDS = 40;
+    static final long FOX_PHASE_SECONDS = 40;
 
     // placeholder durations (seconds)
     static final Map<Phase, Long> PHASE_DURATIONS = Map.ofEntries(
@@ -69,7 +70,7 @@ public class GameLoopService {
             Map.entry(Phase.NIGHT_WEREWOLVES, WEREWOLF_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_SEER,       SEER_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_WITCH,      WITCH_PHASE_SECONDS),
-            Map.entry(Phase.NIGHT_FOX,        10L),
+            Map.entry(Phase.NIGHT_FOX,        FOX_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_SABOTEUR, 40L),
             Map.entry(Phase.DAY_RESULT,       10L),
             Map.entry(Phase.DAY_DISCUSSION,   10L),   // increase timer to 30 seconds
@@ -142,7 +143,11 @@ public class GameLoopService {
             case NIGHT_SEER -> countAlive(state, Role.SEER) == 0;
             case NIGHT_WITCH -> countAlive(state, Role.WITCH) == 0
                     || (!state.witchHasHealPotion && !state.witchHasPoisonPotion);
-            case NIGHT_FOX -> countAlive(state, Role.FOX) == 0;
+            // the fox acts only while it still has its power AND at least five
+            // players are alive (so peeking at three still leaves real ambiguity)
+            case NIGHT_FOX -> countAlive(state, Role.FOX) == 0
+                    || !state.foxHasPower
+                    || countAliveTotal(state) < 5;
             case NIGHT_SABOTEUR -> countAlive(state, Role.SABOTEUR) == 0;
             // the hunter only takes revenge when a hunter is in the game AND dead;
             // a living hunter must never be prompted to shoot
@@ -157,6 +162,10 @@ public class GameLoopService {
 
     private long countAlive(GameState state, Role role) {
         return state.players.values().stream().filter(p -> p.role == role && p.alive).count();
+    }
+
+    private long countAliveTotal(GameState state) {
+        return state.players.values().stream().filter(p -> p.alive).count();
     }
 
     public void stop(String lobbyCode) {
@@ -293,7 +302,9 @@ public class GameLoopService {
                                 .build()).build());
             }
             case NIGHT_FOX -> notifyByRole(state, lobby, Role.FOX,
-                    ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder().build()).build());
+                    ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder()
+                            .addAllCandidateIds(aliveTargetIds(state, Role.FOX))
+                            .build()).build());
 
             case NIGHT_SABOTEUR -> {
 
