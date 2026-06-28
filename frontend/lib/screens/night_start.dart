@@ -14,6 +14,7 @@ import 'package:werwolf/screens/settings_view.dart';
 import 'package:werwolf/voting/witch_voting.dart';
 import 'package:werwolf/voting/seer_voting.dart';
 import 'package:werwolf/voting/fox_voting.dart';
+import 'package:werwolf/voting/saboteur_voting.dart';
 import 'package:werwolf/voting/werewolf_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
@@ -108,7 +109,8 @@ class _NightStartState extends State<NightStart>
       phase == Phase.NIGHT_WEREWOLVES ||
       phase == Phase.NIGHT_SEER ||
       phase == Phase.NIGHT_WITCH ||
-      phase == Phase.NIGHT_FOX;
+      phase == Phase.NIGHT_FOX ||
+      phase == Phase.NIGHT_SABOTEUR;
 
   // When a new night phase begins, start its 5s intro delay (once per phase).
   void _maybeStartIntro(Phase phase) {
@@ -297,6 +299,18 @@ class _NightStartState extends State<NightStart>
               GameAction(
                 lobbyCode: widget.lobbyCode,
                 fox: FoxAction(targetIds: ids),
+              ),
+              phase,
+            ),
+          );
+        case ActionPrompt_Prompt.saboteur:
+          return SaboteurVoting(
+            targets: _resolveTargets(players, prompt.saboteur.candidateIds),
+            secondsLeft: _secondsLeft(update),
+            onSabotage: (id) => _submit(
+              GameAction(
+                lobbyCode: widget.lobbyCode,
+                saboteur: SaboteurAction(targetId: id),
               ),
               phase,
             ),

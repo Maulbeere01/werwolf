@@ -805,6 +805,7 @@ class GameUpdate extends $pb.GeneratedMessage {
     PublicAnnouncement? announcement,
     $2.Timestamp? phaseEndsAt,
     PauseState? pause,
+    $core.bool? youAreSabotaged,
   }) {
     final $result = create();
     if (currentPhase != null) {
@@ -834,6 +835,9 @@ class GameUpdate extends $pb.GeneratedMessage {
     if (pause != null) {
       $result.pause = pause;
     }
+    if (youAreSabotaged != null) {
+      $result.youAreSabotaged = youAreSabotaged;
+    }
     return $result;
   }
   GameUpdate._() : super();
@@ -850,6 +854,7 @@ class GameUpdate extends $pb.GeneratedMessage {
     ..aOM<PublicAnnouncement>(11, _omitFieldNames ? '' : 'announcement', subBuilder: PublicAnnouncement.create)
     ..aOM<$2.Timestamp>(12, _omitFieldNames ? '' : 'phaseEndsAt', subBuilder: $2.Timestamp.create)
     ..aOM<PauseState>(13, _omitFieldNames ? '' : 'pause', subBuilder: PauseState.create)
+    ..aOB(14, _omitFieldNames ? '' : 'youAreSabotaged')
     ..hasRequiredFields = false
   ;
 
@@ -959,6 +964,17 @@ class GameUpdate extends $pb.GeneratedMessage {
   void clearPause() => clearField(13);
   @$pb.TagNumber(13)
   PauseState ensurePause() => $_ensure(8);
+
+  /// true only for the player the saboteur silenced: they sit out this day's
+  /// discussion and vote (their day vote is discarded server-side)
+  @$pb.TagNumber(14)
+  $core.bool get youAreSabotaged => $_getBF(9);
+  @$pb.TagNumber(14)
+  set youAreSabotaged($core.bool v) { $_setBool(9, v); }
+  @$pb.TagNumber(14)
+  $core.bool hasYouAreSabotaged() => $_has(9);
+  @$pb.TagNumber(14)
+  void clearYouAreSabotaged() => clearField(14);
 }
 
 class PlayerStatus extends $pb.GeneratedMessage {

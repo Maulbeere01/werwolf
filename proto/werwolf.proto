@@ -156,6 +156,10 @@ message GameUpdate {
   PublicAnnouncement announcement = 11;
   google.protobuf.Timestamp phase_ends_at = 12;
   PauseState pause = 13;
+
+  // true only for the player the saboteur silenced: they sit out this day's
+  // discussion and vote (their day vote is discarded server-side)
+  bool you_are_sabotaged = 14;
 }
 
 message PlayerStatus {

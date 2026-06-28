@@ -51,6 +51,11 @@ public final class GameUpdateFactory {
                     .build());
         }
 
+        // the saboteur's victim sits out this day (set going into the day phases,
+        // cleared once the day vote resolves); tells their client to show the
+        // "you are sabotaged" screen instead of the discussion/vote UI
+        b.setYouAreSabotaged(userId.equals(state.sabotagedPlayerId));
+
         return b.build();
     }
 

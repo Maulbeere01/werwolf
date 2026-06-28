@@ -31,7 +31,7 @@ const List<RoleOption> kRoleOptions = [
   RoleOption(label: 'Amor', comingSoon: true),
   RoleOption(role: Role.HUNTER, label: 'Jäger', comingSoon: true),
   RoleOption(role: Role.FOX, label: 'Fuchs'),
-  RoleOption(label: 'Saboteur', comingSoon: true),
+  RoleOption(role: Role.SABOTEUR, label: 'Saboteur'),
 ];
 
 class CreateGame extends StatefulWidget {

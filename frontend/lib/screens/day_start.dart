@@ -17,6 +17,7 @@ import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
 import 'package:werwolf/widgets/end_screen.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
+import 'package:werwolf/widgets/sabotage_notice.dart';
 
 class DayStart extends StatefulWidget {
   final String lobbyCode;
@@ -83,7 +84,8 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       phase == Phase.NIGHT_WEREWOLVES ||
       phase == Phase.NIGHT_SEER ||
       phase == Phase.NIGHT_WITCH ||
-      phase == Phase.NIGHT_FOX;
+      phase == Phase.NIGHT_FOX ||
+      phase == Phase.NIGHT_SABOTEUR;
 
   // Drives the transitions out of the day screen:
   //  - GAME_END  -> the end screen (a win condition was met)
@@ -267,6 +269,8 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
   // dead players, who no longer take part.
   Widget? _buildVoteOverlay(GameUpdate update) {
     if (update.currentPhase != Phase.DAY_VOTING) return null;
+    // the sabotaged player takes no part in the vote (see _buildSabotageOverlay)
+    if (update.youAreSabotaged) return null;
 
     final self = AuthState.userId ?? '';
     final players = update.players;
@@ -285,6 +289,16 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       secondsLeft: _secondsLeft(update),
       onVote: _submitVote,
     );
+  }
+
+  // The sabotaged player sits out the whole day: during the discussion and the
+  // vote they see the sabotage notice instead of the normal day UI. A dead
+  // player is handled by the DeathGate and never reaches here.
+  Widget? _buildSabotageOverlay(GameUpdate update) {
+    if (!update.youAreSabotaged) return null;
+    final phase = update.currentPhase;
+    if (phase != Phase.DAY_DISCUSSION && phase != Phase.DAY_VOTING) return null;
+    return SabotageNotice(secondsLeft: _secondsLeft(update));
   }
 
   // How many OTHER players voted for each target (live, public). Own vote is
@@ -395,6 +409,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
           final announcement =
               update.hasAnnouncement() ? _announcementText(update.announcement) : '';
           final voteOverlay = _buildVoteOverlay(update);
+          final sabotageOverlay = _buildSabotageOverlay(update);
 
           return Stack(
             children: [
@@ -539,6 +554,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
 
               // day vote screen, shown on top during DAY_VOTING
               if (voteOverlay != null) Positioned.fill(child: voteOverlay),
+
+              // sabotage notice, shown on top for the silenced player all day
+              if (sabotageOverlay != null)
+                Positioned.fill(child: sabotageOverlay),
             ],
           );
         },

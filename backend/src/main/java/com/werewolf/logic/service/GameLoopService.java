@@ -396,13 +396,23 @@ public class GameLoopService {
     // nobody dies. The result is stored in lastAnnouncement and delivered to every
     // player through the snapshot that follows this phase transition.
     private void resolveDayVote(GameState state) {
-        long alivePlayers = state.players.values().stream()
-                .filter(p -> p.alive).count();
+        // the sabotaged player sits this day out: they cast no vote and don't
+        // count towards the half-of-the-living threshold for a lynch either,
+        String sabotaged = state.sabotagedPlayerId;
+        long eligibleVoters = state.players.values().stream()
+                .filter(p -> p.alive)
+                .filter(p -> !p.id.equals(sabotaged))
+                .count();
 
         Map<String, String> effectiveVotes = new HashMap<>(state.votes);
-        if (state.sabotagedPlayerId != null) {
-            effectiveVotes.remove(state.sabotagedPlayerId);
+        if (sabotaged != null) {
+            // defensive: the sabotaged player's vote is already rejected on the
+            // way in (DayVotingAbility), but drop any stray entry from the tally
+            effectiveVotes.remove(sabotaged);
         }
+        // consume the sabotage so it only affects this one day vote (and a dead
+        // saboteur, whose night phase is skipped, can't keep silencing)
+        state.sabotagedPlayerId = null;
         // abstentions (skip votes) have an empty target and elect nobody; only
         // real votes for an actual player are tallied here.
         Map<String, Long> tally = effectiveVotes.values().stream()
@@ -410,10 +420,10 @@ public class GameLoopService {
                 .collect(java.util.stream.Collectors.groupingBy(
                         id -> id, java.util.stream.Collectors.counting()));
 
-        // at least half of the living players must have voted for a real player
-        // (skips do NOT count) for a lynch to be possible
+        // at least half of the eligible (living, non-sabotaged) players must have
+        // voted for a real player (skips do NOT count) for a lynch to be possible
         long votesForSomeone = tally.values().stream().mapToLong(Long::longValue).sum();
-        boolean halfVotedForSomeone = votesForSomeone * 2L >= alivePlayers;
+        boolean halfVotedForSomeone = votesForSomeone * 2L >= eligibleVoters;
 
         PublicAnnouncement announcement;
         if (tally.isEmpty() || !halfVotedForSomeone) {

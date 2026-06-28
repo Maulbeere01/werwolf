@@ -263,6 +263,7 @@ const GameUpdate$json = {
     {'1': 'announcement', '3': 11, '4': 1, '5': 11, '6': '.werewolf.PublicAnnouncement', '10': 'announcement'},
     {'1': 'phase_ends_at', '3': 12, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'phaseEndsAt'},
     {'1': 'pause', '3': 13, '4': 1, '5': 11, '6': '.werewolf.PauseState', '10': 'pause'},
+    {'1': 'you_are_sabotaged', '3': 14, '4': 1, '5': 8, '10': 'youAreSabotaged'},
   ],
   '9': [
     {'1': 2, '2': 3},
@@ -283,7 +284,8 @@ final $typed_data.Uint8List gameUpdateDescriptor = $convert.base64Decode(
     'bm5vdW5jZW1lbnQYCyABKAsyHC53ZXJld29sZi5QdWJsaWNBbm5vdW5jZW1lbnRSDGFubm91bm'
     'NlbWVudBI+Cg1waGFzZV9lbmRzX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFt'
     'cFILcGhhc2VFbmRzQXQSKgoFcGF1c2UYDSABKAsyFC53ZXJld29sZi5QYXVzZVN0YXRlUgVwYX'
-    'VzZUoECAIQA0oECAMQBEoECAUQBkoECAYQBw==');
+    'VzZRIqChF5b3VfYXJlX3NhYm90YWdlZBgOIAEoCFIPeW91QXJlU2Fib3RhZ2VkSgQIAhADSgQI'
+    'AxAESgQIBRAGSgQIBhAH');
 
 @$core.Deprecated('Use playerStatusDescriptor instead')
 const PlayerStatus$json = {

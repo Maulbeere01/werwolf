@@ -39,6 +39,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
             Phase.NIGHT_SEER,       GameAction.ActionCase.SEER,
             Phase.NIGHT_WITCH,      GameAction.ActionCase.WITCH,
             Phase.NIGHT_FOX,        GameAction.ActionCase.FOX,
+            Phase.NIGHT_SABOTEUR,   GameAction.ActionCase.SABOTEUR,
             Phase.DAY_VOTING,       GameAction.ActionCase.VOTE,
             Phase.HUNTER_REVENGE,   GameAction.ActionCase.HUNTER
     );
