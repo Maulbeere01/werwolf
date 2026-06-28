@@ -805,6 +805,8 @@ class GameUpdate extends $pb.GeneratedMessage {
     PublicAnnouncement? announcement,
     $2.Timestamp? phaseEndsAt,
     PauseState? pause,
+    $core.bool? youAreSabotaged,
+    $core.String? loverPartnerId,
   }) {
     final $result = create();
     if (currentPhase != null) {
@@ -834,6 +836,12 @@ class GameUpdate extends $pb.GeneratedMessage {
     if (pause != null) {
       $result.pause = pause;
     }
+    if (youAreSabotaged != null) {
+      $result.youAreSabotaged = youAreSabotaged;
+    }
+    if (loverPartnerId != null) {
+      $result.loverPartnerId = loverPartnerId;
+    }
     return $result;
   }
   GameUpdate._() : super();
@@ -850,6 +858,8 @@ class GameUpdate extends $pb.GeneratedMessage {
     ..aOM<PublicAnnouncement>(11, _omitFieldNames ? '' : 'announcement', subBuilder: PublicAnnouncement.create)
     ..aOM<$2.Timestamp>(12, _omitFieldNames ? '' : 'phaseEndsAt', subBuilder: $2.Timestamp.create)
     ..aOM<PauseState>(13, _omitFieldNames ? '' : 'pause', subBuilder: PauseState.create)
+    ..aOB(14, _omitFieldNames ? '' : 'youAreSabotaged')
+    ..aOS(15, _omitFieldNames ? '' : 'loverPartnerId')
     ..hasRequiredFields = false
   ;
 
@@ -959,6 +969,28 @@ class GameUpdate extends $pb.GeneratedMessage {
   void clearPause() => clearField(13);
   @$pb.TagNumber(13)
   PauseState ensurePause() => $_ensure(8);
+
+  /// true only for the player the saboteur silenced: they sit out this day's
+  /// discussion and vote (their day vote is discarded server-side)
+  @$pb.TagNumber(14)
+  $core.bool get youAreSabotaged => $_getBF(9);
+  @$pb.TagNumber(14)
+  set youAreSabotaged($core.bool v) { $_setBool(9, v); }
+  @$pb.TagNumber(14)
+  $core.bool hasYouAreSabotaged() => $_has(9);
+  @$pb.TagNumber(14)
+  void clearYouAreSabotaged() => clearField(14);
+
+  /// set only in a lover's own snapshot: the id of the player they are in love
+  /// with (empty for everyone else). Lets each lover privately know their partner.
+  @$pb.TagNumber(15)
+  $core.String get loverPartnerId => $_getSZ(10);
+  @$pb.TagNumber(15)
+  set loverPartnerId($core.String v) { $_setString(10, v); }
+  @$pb.TagNumber(15)
+  $core.bool hasLoverPartnerId() => $_has(10);
+  @$pb.TagNumber(15)
+  void clearLoverPartnerId() => clearField(15);
 }
 
 class PlayerStatus extends $pb.GeneratedMessage {
@@ -1101,6 +1133,8 @@ enum GameAction_Action {
   seer, 
   fox, 
   hunter, 
+  cupid, 
+  saboteur, 
   notSet
 }
 
@@ -1112,6 +1146,8 @@ class GameAction extends $pb.GeneratedMessage {
     SeerAction? seer,
     FoxAction? fox,
     HunterAction? hunter,
+    CupidAction? cupid,
+    SaboteurAction? saboteur,
   }) {
     final $result = create();
     if (lobbyCode != null) {
@@ -1132,6 +1168,12 @@ class GameAction extends $pb.GeneratedMessage {
     if (hunter != null) {
       $result.hunter = hunter;
     }
+    if (cupid != null) {
+      $result.cupid = cupid;
+    }
+    if (saboteur != null) {
+      $result.saboteur = saboteur;
+    }
     return $result;
   }
   GameAction._() : super();
@@ -1144,16 +1186,20 @@ class GameAction extends $pb.GeneratedMessage {
     4 : GameAction_Action.seer,
     5 : GameAction_Action.fox,
     6 : GameAction_Action.hunter,
+    7 : GameAction_Action.cupid,
+    8 : GameAction_Action.saboteur,
     0 : GameAction_Action.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GameAction', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
-    ..oo(0, [2, 3, 4, 5, 6])
+    ..oo(0, [2, 3, 4, 5, 6, 7, 8])
     ..aOS(1, _omitFieldNames ? '' : 'lobbyCode')
     ..aOM<VoteAction>(2, _omitFieldNames ? '' : 'vote', subBuilder: VoteAction.create)
     ..aOM<WitchAction>(3, _omitFieldNames ? '' : 'witch', subBuilder: WitchAction.create)
     ..aOM<SeerAction>(4, _omitFieldNames ? '' : 'seer', subBuilder: SeerAction.create)
     ..aOM<FoxAction>(5, _omitFieldNames ? '' : 'fox', subBuilder: FoxAction.create)
     ..aOM<HunterAction>(6, _omitFieldNames ? '' : 'hunter', subBuilder: HunterAction.create)
+    ..aOM<CupidAction>(7, _omitFieldNames ? '' : 'cupid', subBuilder: CupidAction.create)
+    ..aOM<SaboteurAction>(8, _omitFieldNames ? '' : 'saboteur', subBuilder: SaboteurAction.create)
     ..hasRequiredFields = false
   ;
 
@@ -1244,6 +1290,92 @@ class GameAction extends $pb.GeneratedMessage {
   void clearHunter() => clearField(6);
   @$pb.TagNumber(6)
   HunterAction ensureHunter() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  CupidAction get cupid => $_getN(6);
+  @$pb.TagNumber(7)
+  set cupid(CupidAction v) { setField(7, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasCupid() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCupid() => clearField(7);
+  @$pb.TagNumber(7)
+  CupidAction ensureCupid() => $_ensure(6);
+
+  @$pb.TagNumber(8)
+  SaboteurAction get saboteur => $_getN(7);
+  @$pb.TagNumber(8)
+  set saboteur(SaboteurAction v) { setField(8, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasSaboteur() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearSaboteur() => clearField(8);
+  @$pb.TagNumber(8)
+  SaboteurAction ensureSaboteur() => $_ensure(7);
+}
+
+class CupidAction extends $pb.GeneratedMessage {
+  factory CupidAction({
+    $core.String? player1Id,
+    $core.String? player2Id,
+  }) {
+    final $result = create();
+    if (player1Id != null) {
+      $result.player1Id = player1Id;
+    }
+    if (player2Id != null) {
+      $result.player2Id = player2Id;
+    }
+    return $result;
+  }
+  CupidAction._() : super();
+  factory CupidAction.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CupidAction.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CupidAction', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'player1Id')
+    ..aOS(2, _omitFieldNames ? '' : 'player2Id')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  CupidAction clone() => CupidAction()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  CupidAction copyWith(void Function(CupidAction) updates) => super.copyWith((message) => updates(message as CupidAction)) as CupidAction;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CupidAction create() => CupidAction._();
+  CupidAction createEmptyInstance() => create();
+  static $pb.PbList<CupidAction> createRepeated() => $pb.PbList<CupidAction>();
+  @$core.pragma('dart2js:noInline')
+  static CupidAction getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CupidAction>(create);
+  static CupidAction? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get player1Id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set player1Id($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasPlayer1Id() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPlayer1Id() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get player2Id => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set player2Id($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPlayer2Id() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPlayer2Id() => clearField(2);
 }
 
 class VoteAction extends $pb.GeneratedMessage {
@@ -1454,6 +1586,56 @@ class FoxAction extends $pb.GeneratedMessage {
   $core.List<$core.String> get targetIds => $_getList(0);
 }
 
+class SaboteurAction extends $pb.GeneratedMessage {
+  factory SaboteurAction({
+    $core.String? targetId,
+  }) {
+    final $result = create();
+    if (targetId != null) {
+      $result.targetId = targetId;
+    }
+    return $result;
+  }
+  SaboteurAction._() : super();
+  factory SaboteurAction.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SaboteurAction.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SaboteurAction', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'targetId')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  SaboteurAction clone() => SaboteurAction()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  SaboteurAction copyWith(void Function(SaboteurAction) updates) => super.copyWith((message) => updates(message as SaboteurAction)) as SaboteurAction;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SaboteurAction create() => SaboteurAction._();
+  SaboteurAction createEmptyInstance() => create();
+  static $pb.PbList<SaboteurAction> createRepeated() => $pb.PbList<SaboteurAction>();
+  @$core.pragma('dart2js:noInline')
+  static SaboteurAction getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SaboteurAction>(create);
+  static SaboteurAction? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get targetId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set targetId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasTargetId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTargetId() => clearField(1);
+}
+
 class HunterAction extends $pb.GeneratedMessage {
   factory HunterAction({
     $core.String? targetId,
@@ -1510,6 +1692,8 @@ enum ActionPrompt_Prompt {
   witch, 
   fox, 
   hunter, 
+  saboteur, 
+  cupid, 
   notSet
 }
 
@@ -1520,6 +1704,8 @@ class ActionPrompt extends $pb.GeneratedMessage {
     WitchPrompt? witch,
     FoxPrompt? fox,
     HunterPrompt? hunter,
+    SaboteurPrompt? saboteur,
+    CupidPrompt? cupid,
   }) {
     final $result = create();
     if (werewolf != null) {
@@ -1537,6 +1723,12 @@ class ActionPrompt extends $pb.GeneratedMessage {
     if (hunter != null) {
       $result.hunter = hunter;
     }
+    if (saboteur != null) {
+      $result.saboteur = saboteur;
+    }
+    if (cupid != null) {
+      $result.cupid = cupid;
+    }
     return $result;
   }
   ActionPrompt._() : super();
@@ -1549,15 +1741,19 @@ class ActionPrompt extends $pb.GeneratedMessage {
     3 : ActionPrompt_Prompt.witch,
     4 : ActionPrompt_Prompt.fox,
     5 : ActionPrompt_Prompt.hunter,
+    6 : ActionPrompt_Prompt.saboteur,
+    7 : ActionPrompt_Prompt.cupid,
     0 : ActionPrompt_Prompt.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ActionPrompt', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
-    ..oo(0, [1, 2, 3, 4, 5])
+    ..oo(0, [1, 2, 3, 4, 5, 6, 7])
     ..aOM<WerewolfPrompt>(1, _omitFieldNames ? '' : 'werewolf', subBuilder: WerewolfPrompt.create)
     ..aOM<SeerPrompt>(2, _omitFieldNames ? '' : 'seer', subBuilder: SeerPrompt.create)
     ..aOM<WitchPrompt>(3, _omitFieldNames ? '' : 'witch', subBuilder: WitchPrompt.create)
     ..aOM<FoxPrompt>(4, _omitFieldNames ? '' : 'fox', subBuilder: FoxPrompt.create)
     ..aOM<HunterPrompt>(5, _omitFieldNames ? '' : 'hunter', subBuilder: HunterPrompt.create)
+    ..aOM<SaboteurPrompt>(6, _omitFieldNames ? '' : 'saboteur', subBuilder: SaboteurPrompt.create)
+    ..aOM<CupidPrompt>(7, _omitFieldNames ? '' : 'cupid', subBuilder: CupidPrompt.create)
     ..hasRequiredFields = false
   ;
 
@@ -1639,6 +1835,28 @@ class ActionPrompt extends $pb.GeneratedMessage {
   void clearHunter() => clearField(5);
   @$pb.TagNumber(5)
   HunterPrompt ensureHunter() => $_ensure(4);
+
+  @$pb.TagNumber(6)
+  SaboteurPrompt get saboteur => $_getN(5);
+  @$pb.TagNumber(6)
+  set saboteur(SaboteurPrompt v) { setField(6, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasSaboteur() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSaboteur() => clearField(6);
+  @$pb.TagNumber(6)
+  SaboteurPrompt ensureSaboteur() => $_ensure(5);
+
+  @$pb.TagNumber(7)
+  CupidPrompt get cupid => $_getN(6);
+  @$pb.TagNumber(7)
+  set cupid(CupidPrompt v) { setField(7, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasCupid() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCupid() => clearField(7);
+  @$pb.TagNumber(7)
+  CupidPrompt ensureCupid() => $_ensure(6);
 }
 
 class WerewolfPrompt extends $pb.GeneratedMessage {
@@ -1890,6 +2108,94 @@ class HunterPrompt extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static HunterPrompt getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<HunterPrompt>(create);
   static HunterPrompt? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.String> get candidateIds => $_getList(0);
+}
+
+class SaboteurPrompt extends $pb.GeneratedMessage {
+  factory SaboteurPrompt({
+    $core.Iterable<$core.String>? candidateIds,
+  }) {
+    final $result = create();
+    if (candidateIds != null) {
+      $result.candidateIds.addAll(candidateIds);
+    }
+    return $result;
+  }
+  SaboteurPrompt._() : super();
+  factory SaboteurPrompt.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SaboteurPrompt.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SaboteurPrompt', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
+    ..pPS(1, _omitFieldNames ? '' : 'candidateIds')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  SaboteurPrompt clone() => SaboteurPrompt()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  SaboteurPrompt copyWith(void Function(SaboteurPrompt) updates) => super.copyWith((message) => updates(message as SaboteurPrompt)) as SaboteurPrompt;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SaboteurPrompt create() => SaboteurPrompt._();
+  SaboteurPrompt createEmptyInstance() => create();
+  static $pb.PbList<SaboteurPrompt> createRepeated() => $pb.PbList<SaboteurPrompt>();
+  @$core.pragma('dart2js:noInline')
+  static SaboteurPrompt getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SaboteurPrompt>(create);
+  static SaboteurPrompt? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.List<$core.String> get candidateIds => $_getList(0);
+}
+
+class CupidPrompt extends $pb.GeneratedMessage {
+  factory CupidPrompt({
+    $core.Iterable<$core.String>? candidateIds,
+  }) {
+    final $result = create();
+    if (candidateIds != null) {
+      $result.candidateIds.addAll(candidateIds);
+    }
+    return $result;
+  }
+  CupidPrompt._() : super();
+  factory CupidPrompt.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CupidPrompt.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CupidPrompt', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
+    ..pPS(1, _omitFieldNames ? '' : 'candidateIds')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  CupidPrompt clone() => CupidPrompt()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  CupidPrompt copyWith(void Function(CupidPrompt) updates) => super.copyWith((message) => updates(message as CupidPrompt)) as CupidPrompt;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CupidPrompt create() => CupidPrompt._();
+  CupidPrompt createEmptyInstance() => create();
+  static $pb.PbList<CupidPrompt> createRepeated() => $pb.PbList<CupidPrompt>();
+  @$core.pragma('dart2js:noInline')
+  static CupidPrompt getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CupidPrompt>(create);
+  static CupidPrompt? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.List<$core.String> get candidateIds => $_getList(0);
@@ -2269,7 +2575,6 @@ class NightDeathEvent extends $pb.GeneratedMessage {
   static NightDeathEvent getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<NightDeathEvent>(create);
   static NightDeathEvent? _defaultInstance;
 
-  /// every player who died during the night (werewolf victim and/or witch poison)
   @$pb.TagNumber(1)
   $core.List<PlayerDeath> get deaths => $_getList(0);
 }
@@ -2374,6 +2679,7 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   factory VoteResultEvent({
     $core.String? eliminatedPlayerId,
     $core.bool? tied,
+    $core.Iterable<$core.String>? alsoDiedIds,
   }) {
     final $result = create();
     if (eliminatedPlayerId != null) {
@@ -2381,6 +2687,9 @@ class VoteResultEvent extends $pb.GeneratedMessage {
     }
     if (tied != null) {
       $result.tied = tied;
+    }
+    if (alsoDiedIds != null) {
+      $result.alsoDiedIds.addAll(alsoDiedIds);
     }
     return $result;
   }
@@ -2391,6 +2700,7 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'VoteResultEvent', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eliminatedPlayerId')
     ..aOB(2, _omitFieldNames ? '' : 'tied')
+    ..pPS(3, _omitFieldNames ? '' : 'alsoDiedIds')
     ..hasRequiredFields = false
   ;
 
@@ -2432,6 +2742,10 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   $core.bool hasTied() => $_has(1);
   @$pb.TagNumber(2)
   void clearTied() => clearField(2);
+
+  /// lover(s) who died of heartbreak together with the lynched player
+  @$pb.TagNumber(3)
+  $core.List<$core.String> get alsoDiedIds => $_getList(2);
 }
 
 class HunterShotEvent extends $pb.GeneratedMessage {

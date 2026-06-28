@@ -48,6 +48,8 @@ enum Role {
   FOX = 5;
   VILLAGE_IDIOT = 6;
   HUNTER = 7;
+  CUPID = 8;
+  SABOTEUR = 9;
 }
 
 enum Phase {
@@ -58,11 +60,13 @@ enum Phase {
   NIGHT_SEER = 4;
   NIGHT_WITCH = 5;
   NIGHT_FOX = 6;
-  DAY_RESULT = 7;
-  DAY_DISCUSSION = 8;
-  DAY_VOTING = 9;
-  HUNTER_REVENGE = 10;
-  GAME_END = 11;
+  NIGHT_SABOTEUR = 7;
+  DAY_RESULT = 8;
+  DAY_DISCUSSION = 9;
+  DAY_VOTING = 10;
+  HUNTER_REVENGE = 11;
+  GAME_END = 12;
+  NIGHT_CUPID = 13;
 }
 
 enum EliminationCause {
@@ -71,6 +75,7 @@ enum EliminationCause {
   KILLED_BY_WITCH = 2;
   VOTED_OUT = 3;
   CAUSE_HUNTER_REVENGE = 4;
+  CAUSE_HEARTBREAK = 5;
 }
 
 // user
@@ -153,6 +158,14 @@ message GameUpdate {
   PublicAnnouncement announcement = 11;
   google.protobuf.Timestamp phase_ends_at = 12;
   PauseState pause = 13;
+
+  // true only for the player the saboteur silenced: they sit out this day's
+  // discussion and vote (their day vote is discarded server-side)
+  bool you_are_sabotaged = 14;
+
+  // set only in a lover's own snapshot: the id of the player they are in love
+  // with (empty for everyone else). Lets each lover privately know their partner.
+  string lover_partner_id = 15;
 }
 
 message PlayerStatus {
@@ -173,7 +186,14 @@ message GameAction {
     SeerAction seer = 4;
     FoxAction fox = 5;
     HunterAction hunter = 6;
+    CupidAction cupid = 7;
+    SaboteurAction saboteur = 8;
   }
+}
+
+message CupidAction {
+  string player1_id = 1;
+  string player2_id = 2;
 }
 
 message VoteAction {
@@ -193,6 +213,10 @@ message FoxAction {
   repeated string target_ids = 1;
 }
 
+message SaboteurAction {
+  string target_id = 1;
+}
+
 message HunterAction {
   string target_id = 1;
 }
@@ -206,6 +230,8 @@ message ActionPrompt {
     WitchPrompt    witch    = 3;
     FoxPrompt      fox      = 4;
     HunterPrompt   hunter   = 5;
+    SaboteurPrompt saboteur = 6;
+    CupidPrompt    cupid    = 7;
   }
 }
 
@@ -228,6 +254,14 @@ message FoxPrompt {
 }
 
 message HunterPrompt {
+  repeated string candidate_ids = 1;
+}
+
+message SaboteurPrompt {
+  repeated string candidate_ids = 1;
+}
+
+message CupidPrompt {
   repeated string candidate_ids = 1;
 }
 
@@ -275,6 +309,7 @@ message NoDeathEvent {}
 message VoteResultEvent {
   string eliminated_player_id = 1; // empty when tied
   bool tied = 2;
+  repeated string also_died_ids = 3;
 }
 
 message HunterShotEvent {

@@ -31,6 +31,9 @@ public class DayVotingAbility {
         Player voter = state.players.get(voterId);
         if (voter == null || !voter.alive) return;
 
+        // the sabotaged player sits this day out and casts no vote at all
+        if (voterId.equals(state.sabotagedPlayerId)) return;
+
         // an empty target id means the player abstained (votes for nobody)
         state.votes.put(voterId, action.getTargetId());
 
@@ -42,11 +45,15 @@ public class DayVotingAbility {
                     GameUpdateFactory.snapshot(state, lobby, p.id)));
         }
 
-        long alivePlayers = state.players.values().stream()
-                .filter(p -> p.alive).count();
+        // the sabotaged player can't vote, so they must not count towards the
+        // "everyone has voted" threshold or the round would never auto-advance
+        long eligibleVoters = state.players.values().stream()
+                .filter(p -> p.alive)
+                .filter(p -> !p.id.equals(state.sabotagedPlayerId))
+                .count();
 
-        // Frühzeitiger Abschluss: alle lebenden Spieler haben abgestimmt
-        if (state.votes.size() >= alivePlayers) {
+        // Frühzeitiger Abschluss: alle stimmberechtigten Spieler haben abgestimmt
+        if (state.votes.size() >= eligibleVoters) {
             gameLoopService.advanceNow(lobbyCode);
         }
     }

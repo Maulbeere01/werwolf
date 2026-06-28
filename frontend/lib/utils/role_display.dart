@@ -7,7 +7,10 @@ import 'package:werwolf/generated/werwolf.pb.dart';
 String roleCardAsset(Role role) => switch (role) {
       Role.SEER => 'assets/PNGs/Seher.png',
       Role.WEREWOLF => 'assets/PNGs/wolf.png',
-      Role.WITCH => 'assets/PNGs/Armor.png',
+      Role.WITCH => 'assets/PNGs/Hexe.png',
+      Role.FOX => 'assets/PNGs/Fuchs.png',
+      Role.SABOTEUR => 'assets/PNGs/sabateur.png',
+      Role.CUPID => 'assets/PNGs/Armor.png',
       _ => 'assets/PNGs/villager.png',
     };
 
@@ -30,6 +33,8 @@ String roleName(Role role) => switch (role) {
       Role.FOX => 'Fuchs',
       Role.VILLAGE_IDIOT => 'Dorftrottel',
       Role.HUNTER => 'Jäger',
+      Role.SABOTEUR => 'Saboteur',
+      Role.CUPID => 'Amor',
       _ => 'Unbekannt',
     };
 

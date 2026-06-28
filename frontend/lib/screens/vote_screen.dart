@@ -9,10 +9,18 @@ class WahlergebnisScreen extends StatefulWidget {
   /// Revealed role of the hanged player (shown only when [spielerName] is set).
   final String? rolle;
 
+  /// A lover who died of heartbreak together with the hanged player, if any.
+  final String? partnerName;
+
+  /// Revealed role of that lover (shown only when [partnerName] is set).
+  final String? partnerRolle;
+
   const WahlergebnisScreen({
     super.key,
     this.spielerName,
     this.rolle,
+    this.partnerName,
+    this.partnerRolle,
   });
 
   @override
@@ -149,6 +157,32 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
                                     fontFamily: "BagelFatOne",
                                     color: Colors.white,
                                   ),
+                                ),
+                              ],
+                              if (widget.partnerName != null) ...[
+                                const Divider(height: 32, color: Colors.white12),
+                                const Icon(
+                                  Icons.favorite,
+                                  size: 28,
+                                  color: Colors.pinkAccent,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  widget.partnerName!.toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontFamily: "BagelFatOne",
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.partnerRolle != null
+                                      ? "starb aus Liebeskummer · ${widget.partnerRolle!}"
+                                      : "starb aus Liebeskummer",
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14),
                                 ),
                               ],
                             ] else ...[

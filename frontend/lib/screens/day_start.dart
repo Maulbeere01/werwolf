@@ -17,6 +17,7 @@ import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
 import 'package:werwolf/widgets/end_screen.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
+import 'package:werwolf/widgets/sabotage_notice.dart';
 
 class DayStart extends StatefulWidget {
   final String lobbyCode;
@@ -80,10 +81,12 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
 
   static bool _isNightPhase(Phase phase) =>
       phase == Phase.NIGHT_START ||
+      phase == Phase.NIGHT_CUPID ||
       phase == Phase.NIGHT_WEREWOLVES ||
       phase == Phase.NIGHT_SEER ||
       phase == Phase.NIGHT_WITCH ||
-      phase == Phase.NIGHT_FOX;
+      phase == Phase.NIGHT_FOX ||
+      phase == Phase.NIGHT_SABOTEUR;
 
   // Drives the transitions out of the day screen:
   //  - GAME_END  -> the end screen (a win condition was met)
@@ -100,16 +103,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
 
       // if the game ended on a day vote, reveal the lynch result first (the
       if (update.hasAnnouncement() && update.announcement.hasVoteResult()) {
-        final vr = update.announcement.voteResult;
-        final eliminated = (vr.tied || vr.eliminatedPlayerId.isEmpty)
-            ? null
-            : _playerOf(vr.eliminatedPlayerId);
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => WahlergebnisScreen(
-              spielerName: eliminated?.name,
-              rolle: eliminated != null ? roleName(eliminated.role) : null,
-            ),
+            builder: (_) =>
+                _voteResultScreen(update.announcement.voteResult),
           ),
         );
         if (!mounted) return;
@@ -133,21 +130,16 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       // and to the player who was just lynched. A player who died earlier stays
       // on their death screen and is not interrupted by it.
       final hasVote = update.hasAnnouncement() && update.announcement.hasVoteResult();
-      final showReveal = hasVote &&
-          (!selfDead || update.announcement.voteResult.eliminatedPlayerId == self);
+      // the lynched player and a lover who died of heartbreak with them both see
+      // the result reveal before their own death screen
+      final vr = hasVote ? update.announcement.voteResult : null;
+      final showReveal = vr != null &&
+          (!selfDead ||
+              vr.eliminatedPlayerId == self ||
+              vr.alsoDiedIds.contains(self));
       if (showReveal) {
-        final vr = update.announcement.voteResult;
-        final eliminated = (vr.tied || vr.eliminatedPlayerId.isEmpty)
-            ? null
-            : _playerOf(vr.eliminatedPlayerId);
         await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => WahlergebnisScreen(
-              spielerName: eliminated?.name,
-              // the role is revealed on death
-              rolle: eliminated != null ? roleName(eliminated.role) : null,
-            ),
-          ),
+          MaterialPageRoute(builder: (_) => _voteResultScreen(vr)),
         );
       }
 
@@ -237,7 +229,12 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     if (a.hasNoDeath()) return 'Heute Nacht ist niemand gestorben.';
     if (a.hasVoteResult()) {
       if (a.voteResult.tied) return 'Unentschieden: niemand scheidet aus.';
-      return '${_playerName(a.voteResult.eliminatedPlayerId)} scheidet aus.';
+      final lynched = _playerName(a.voteResult.eliminatedPlayerId);
+      if (a.voteResult.alsoDiedIds.isEmpty) return '$lynched scheidet aus.';
+      // a lover was lynched and their partner died of heartbreak
+      final partners =
+          a.voteResult.alsoDiedIds.map(_playerName).join(', ');
+      return '$lynched scheidet aus. $partners stirbt aus Liebeskummer.';
     }
     if (a.hasGameEnd()) {
       return a.gameEnd.winningTeam == Role.WEREWOLF
@@ -261,12 +258,30 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     return null;
   }
 
+  // The day-vote result reveal: the lynched player (with their role, revealed on
+  // death) and, if a lover was lynched, the partner who died of heartbreak.
+  WahlergebnisScreen _voteResultScreen(VoteResultEvent vr) {
+    final eliminated = (vr.tied || vr.eliminatedPlayerId.isEmpty)
+        ? null
+        : _playerOf(vr.eliminatedPlayerId);
+    final partner =
+        vr.alsoDiedIds.isNotEmpty ? _playerOf(vr.alsoDiedIds.first) : null;
+    return WahlergebnisScreen(
+      spielerName: eliminated?.name,
+      rolle: eliminated != null ? roleName(eliminated.role) : null,
+      partnerName: partner?.name,
+      partnerRolle: partner != null ? roleName(partner.role) : null,
+    );
+  }
+
   // The day vote screen, shown to every living player during DAY_VOTING. It
   // stays up for the whole phase (even after voting) so the live tally keeps
   // updating; the vote locks once committed. Null outside the vote phase and for
   // dead players, who no longer take part.
   Widget? _buildVoteOverlay(GameUpdate update) {
     if (update.currentPhase != Phase.DAY_VOTING) return null;
+    // the sabotaged player takes no part in the vote (see _buildSabotageOverlay)
+    if (update.youAreSabotaged) return null;
 
     final self = AuthState.userId ?? '';
     final players = update.players;
@@ -285,6 +300,16 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       secondsLeft: _secondsLeft(update),
       onVote: _submitVote,
     );
+  }
+
+  // The sabotaged player sits out the whole day: during the discussion and the
+  // vote they see the sabotage notice instead of the normal day UI. A dead
+  // player is handled by the DeathGate and never reaches here.
+  Widget? _buildSabotageOverlay(GameUpdate update) {
+    if (!update.youAreSabotaged) return null;
+    final phase = update.currentPhase;
+    if (phase != Phase.DAY_DISCUSSION && phase != Phase.DAY_VOTING) return null;
+    return SabotageNotice(secondsLeft: _secondsLeft(update));
   }
 
   // How many OTHER players voted for each target (live, public). Own vote is
@@ -395,6 +420,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
           final announcement =
               update.hasAnnouncement() ? _announcementText(update.announcement) : '';
           final voteOverlay = _buildVoteOverlay(update);
+          final sabotageOverlay = _buildSabotageOverlay(update);
 
           return Stack(
             children: [
@@ -531,7 +557,12 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
                     Positioned(
                       left: 16,
                       bottom: 16,
-                      child: RoleRevealCard(role: selfRoleOf(update)),
+                      child: RoleRevealCard(
+                        role: selfRoleOf(update),
+                        partnerName: update.loverPartnerId.isNotEmpty
+                            ? _playerName(update.loverPartnerId)
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -539,6 +570,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
 
               // day vote screen, shown on top during DAY_VOTING
               if (voteOverlay != null) Positioned.fill(child: voteOverlay),
+
+              // sabotage notice, shown on top for the silenced player all day
+              if (sabotageOverlay != null)
+                Positioned.fill(child: sabotageOverlay),
             ],
           );
         },

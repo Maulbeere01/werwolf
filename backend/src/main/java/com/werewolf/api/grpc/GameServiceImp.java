@@ -35,10 +35,12 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
 
     //  defines which action type is legal in which phase. Phases absent from this map (NIGHT_START, DAY_DISCUSSION) accept no player actions at all. any performAction call during those phases is rejected.
     private static final Map<Phase, GameAction.ActionCase> PHASE_ACTION_MAP = Map.of(
+            Phase.NIGHT_CUPID,      GameAction.ActionCase.CUPID,
             Phase.NIGHT_WEREWOLVES, GameAction.ActionCase.VOTE,
             Phase.NIGHT_SEER,       GameAction.ActionCase.SEER,
             Phase.NIGHT_WITCH,      GameAction.ActionCase.WITCH,
             Phase.NIGHT_FOX,        GameAction.ActionCase.FOX,
+            Phase.NIGHT_SABOTEUR,   GameAction.ActionCase.SABOTEUR,
             Phase.DAY_VOTING,       GameAction.ActionCase.VOTE,
             Phase.HUNTER_REVENGE,   GameAction.ActionCase.HUNTER
     );

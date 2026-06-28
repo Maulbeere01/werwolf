@@ -27,7 +27,11 @@ class AbilityExecutorTest {
         witchAbility = mock(WitchAbility.class);
         hunterAbility = mock(HunterAbility.class);
 
-        abilityExecutor = new AbilityExecutor(werewolfAbility, seerAbility, witchAbility, hunterAbility, null);
+        // fox / cupid / s
+        // aboteur / dayVoting are not exercised by these tests
+        abilityExecutor = new AbilityExecutor(
+                werewolfAbility, seerAbility, witchAbility, hunterAbility,
+                null, null, null, null);
     }
 
     @Test

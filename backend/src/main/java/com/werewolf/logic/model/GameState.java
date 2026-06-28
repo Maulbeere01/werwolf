@@ -13,6 +13,13 @@ public class GameState {
     public Map<String, Player> players = new HashMap<>();
     public String lobbyCode;
     public Phase phase = Phase.LOBBY;
+
+    // Cupid: the two lovers (chosen on the first night). If one dies, so does the
+    // other. cupidDone guards that cupid only ever wakes once, even on a timeout.
+    public String loverA;
+    public String loverB;
+    public boolean cupidDone = false;
+
     // Player IDs marked for death during the current night. Witch can still remove entries
     // here before DAY_RESULT. At DAY_RESULT, process this list to set player.alive = false
     // and clear it for the next round
@@ -34,6 +41,8 @@ public class GameState {
     // The player the werewolves attacked this night; the witch may heal this id
     public String attackedThisNight;
 
+    public String sabotagedPlayerId;
+
     // Committed werewolf night votes for NIGHT_WEREWOLVES: voterId -> targetId.
     // A vote is final once placed (commit) and is resolved into attackedThisNight
     // when the phase ends. Cleared when the phase starts.
@@ -45,6 +54,10 @@ public class GameState {
     // Witch potion state: each potion can only be used once per game.
     public boolean witchHasHealPotion = true;
     public boolean witchHasPoisonPotion = true;
+
+    // The fox keeps its power until a night where none of its three
+    // targets was a werewolf; from then on the NIGHT_FOX phase is skipped.
+    public boolean foxHasPower = true;
 
     // The team that has met its win condition once the game reaches GAME_END
     // (WEREWOLF or VILLAGER); null while the game is still running.
