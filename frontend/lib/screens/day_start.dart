@@ -13,6 +13,7 @@ import 'package:werwolf/utils/role_display.dart';
 import 'package:werwolf/screens/settings_view.dart';
 import 'package:werwolf/screens/vote_screen.dart';
 import 'package:werwolf/voting/village_voting.dart';
+import 'package:werwolf/voting/hunter_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
 import 'package:werwolf/widgets/end_screen.dart';
@@ -44,6 +45,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
   // the phase for which this player has already cast their day vote, so we show
   // the waiting screen instead of the vote screen after they voted
   Phase? _votedPhase;
+
+  // set once this (dead) hunter has fired their revenge shot, so the picker
+  // disappears immediately instead of lingering until the next snapshot
+  bool _hunterShot = false;
 
   // set once we start navigating away from the day screen (to night or end)
   bool _leaving = false;
@@ -236,6 +241,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
           a.voteResult.alsoDiedIds.map(_playerName).join(', ');
       return '$lynched scheidet aus. $partners stirbt aus Liebeskummer.';
     }
+    if (a.hasHunterShot()) {
+      return '${_playerName(a.hunterShot.shooterId)} (Jäger) reißt '
+          '${_playerName(a.hunterShot.targetId)} mit in den Tod.';
+    }
     if (a.hasGameEnd()) {
       return a.gameEnd.winningTeam == Role.WEREWOLF
           ? 'Die Werwölfe gewinnen!'
@@ -300,6 +309,41 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       secondsLeft: _secondsLeft(update),
       onVote: _submitVote,
     );
+  }
+
+  // The hunter's revenge picker, shown to the (dead) hunter during HUNTER_REVENGE.
+  // The DeathGate keeps them on this screen (you_must_take_revenge) until they
+  // shoot; afterwards the death screen takes over.
+  Widget? _buildHunterOverlay(GameUpdate update) {
+    if (update.currentPhase != Phase.HUNTER_REVENGE) return null;
+    if (_hunterShot) return null;
+    if (!update.hasOpenPrompt() ||
+        update.openPrompt.whichPrompt() != ActionPrompt_Prompt.hunter) {
+      return null;
+    }
+    final targets = update.players.where((p) => p.isAlive).toList();
+    return HunterVoting(
+      targets: targets,
+      secondsLeft: _secondsLeft(update),
+      onShoot: _submitHunterShot,
+    );
+  }
+
+  Future<void> _submitHunterShot(String targetId) async {
+    final ok = await GameViewController.performAction(
+      GameAction(
+        lobbyCode: widget.lobbyCode,
+        hunter: HunterAction(targetId: targetId),
+      ),
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _hunterShot = true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Schuss fehlgeschlagen')),
+      );
+    }
   }
 
   // The sabotaged player sits out the whole day: during the discussion and the
@@ -421,6 +465,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
               update.hasAnnouncement() ? _announcementText(update.announcement) : '';
           final voteOverlay = _buildVoteOverlay(update);
           final sabotageOverlay = _buildSabotageOverlay(update);
+          final hunterOverlay = _buildHunterOverlay(update);
 
           return Stack(
             children: [
@@ -574,6 +619,10 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
               // sabotage notice, shown on top for the silenced player all day
               if (sabotageOverlay != null)
                 Positioned.fill(child: sabotageOverlay),
+
+              // hunter revenge picker, shown to the dead hunter during HUNTER_REVENGE
+              if (hunterOverlay != null)
+                Positioned.fill(child: hunterOverlay),
             ],
           );
         },

@@ -807,6 +807,7 @@ class GameUpdate extends $pb.GeneratedMessage {
     PauseState? pause,
     $core.bool? youAreSabotaged,
     $core.String? loverPartnerId,
+    $core.bool? youMustTakeRevenge,
   }) {
     final $result = create();
     if (currentPhase != null) {
@@ -842,6 +843,9 @@ class GameUpdate extends $pb.GeneratedMessage {
     if (loverPartnerId != null) {
       $result.loverPartnerId = loverPartnerId;
     }
+    if (youMustTakeRevenge != null) {
+      $result.youMustTakeRevenge = youMustTakeRevenge;
+    }
     return $result;
   }
   GameUpdate._() : super();
@@ -860,6 +864,7 @@ class GameUpdate extends $pb.GeneratedMessage {
     ..aOM<PauseState>(13, _omitFieldNames ? '' : 'pause', subBuilder: PauseState.create)
     ..aOB(14, _omitFieldNames ? '' : 'youAreSabotaged')
     ..aOS(15, _omitFieldNames ? '' : 'loverPartnerId')
+    ..aOB(16, _omitFieldNames ? '' : 'youMustTakeRevenge')
     ..hasRequiredFields = false
   ;
 
@@ -991,6 +996,17 @@ class GameUpdate extends $pb.GeneratedMessage {
   $core.bool hasLoverPartnerId() => $_has(10);
   @$pb.TagNumber(15)
   void clearLoverPartnerId() => clearField(15);
+
+  /// true only for a just-killed hunter who still owes a revenge shot: keeps the
+  /// client on the revenge screen instead of latching the death screen
+  @$pb.TagNumber(16)
+  $core.bool get youMustTakeRevenge => $_getBF(11);
+  @$pb.TagNumber(16)
+  set youMustTakeRevenge($core.bool v) { $_setBool(11, v); }
+  @$pb.TagNumber(16)
+  $core.bool hasYouMustTakeRevenge() => $_has(11);
+  @$pb.TagNumber(16)
+  void clearYouMustTakeRevenge() => clearField(16);
 }
 
 class PlayerStatus extends $pb.GeneratedMessage {
@@ -2743,7 +2759,6 @@ class VoteResultEvent extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearTied() => clearField(2);
 
-  /// lover(s) who died of heartbreak together with the lynched player
   @$pb.TagNumber(3)
   $core.List<$core.String> get alsoDiedIds => $_getList(2);
 }

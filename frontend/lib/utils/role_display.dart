@@ -11,6 +11,7 @@ String roleCardAsset(Role role) => switch (role) {
       Role.FOX => 'assets/PNGs/Fuchs.png',
       Role.SABOTEUR => 'assets/PNGs/sabateur.png',
       Role.CUPID => 'assets/PNGs/Armor.png',
+      Role.HUNTER => 'assets/PNGs/Jäger.png',
       _ => 'assets/PNGs/villager.png',
     };
 

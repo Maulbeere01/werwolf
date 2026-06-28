@@ -43,6 +43,14 @@ public class GameState {
 
     public String sabotagedPlayerId;
 
+    // Hunter revenge (interrupt): when a hunter dies (any cause), pendingHunterId
+    // is set and the loop diverts into HUNTER_REVENGE before continuing where it
+    // would have gone (resumeAfterHunter). hunterShotTargetId holds the hunter's
+    // pick until it is resolved when that phase ends.
+    public String pendingHunterId;
+    public Phase resumeAfterHunter;
+    public String hunterShotTargetId;
+
     // Committed werewolf night votes for NIGHT_WEREWOLVES: voterId -> targetId.
     // A vote is final once placed (commit) and is resolved into attackedThisNight
     // when the phase ends. Cleared when the phase starts.

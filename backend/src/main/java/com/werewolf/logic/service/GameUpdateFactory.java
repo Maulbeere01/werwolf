@@ -64,6 +64,10 @@ public final class GameUpdateFactory {
             b.setLoverPartnerId(state.loverA);
         }
 
+        // the just-killed hunter still owes a revenge shot: their client stays on
+        // the revenge screen instead of latching the death screen
+        b.setYouMustTakeRevenge(userId.equals(state.pendingHunterId));
+
         return b.build();
     }
 

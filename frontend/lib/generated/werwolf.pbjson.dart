@@ -267,6 +267,7 @@ const GameUpdate$json = {
     {'1': 'pause', '3': 13, '4': 1, '5': 11, '6': '.werewolf.PauseState', '10': 'pause'},
     {'1': 'you_are_sabotaged', '3': 14, '4': 1, '5': 8, '10': 'youAreSabotaged'},
     {'1': 'lover_partner_id', '3': 15, '4': 1, '5': 9, '10': 'loverPartnerId'},
+    {'1': 'you_must_take_revenge', '3': 16, '4': 1, '5': 8, '10': 'youMustTakeRevenge'},
   ],
   '9': [
     {'1': 2, '2': 3},
@@ -288,8 +289,8 @@ final $typed_data.Uint8List gameUpdateDescriptor = $convert.base64Decode(
     'NlbWVudBI+Cg1waGFzZV9lbmRzX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFt'
     'cFILcGhhc2VFbmRzQXQSKgoFcGF1c2UYDSABKAsyFC53ZXJld29sZi5QYXVzZVN0YXRlUgVwYX'
     'VzZRIqChF5b3VfYXJlX3NhYm90YWdlZBgOIAEoCFIPeW91QXJlU2Fib3RhZ2VkEigKEGxvdmVy'
-    'X3BhcnRuZXJfaWQYDyABKAlSDmxvdmVyUGFydG5lcklkSgQIAhADSgQIAxAESgQIBRAGSgQIBh'
-    'AH');
+    'X3BhcnRuZXJfaWQYDyABKAlSDmxvdmVyUGFydG5lcklkEjEKFXlvdV9tdXN0X3Rha2VfcmV2ZW'
+    '5nZRgQIAEoCFISeW91TXVzdFRha2VSZXZlbmdlSgQIAhADSgQIAxAESgQIBRAGSgQIBhAH');
 
 @$core.Deprecated('Use playerStatusDescriptor instead')
 const PlayerStatus$json = {

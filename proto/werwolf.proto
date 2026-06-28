@@ -166,6 +166,10 @@ message GameUpdate {
   // set only in a lover's own snapshot: the id of the player they are in love
   // with (empty for everyone else). Lets each lover privately know their partner.
   string lover_partner_id = 15;
+
+  // true only for a just-killed hunter who still owes a revenge shot, keeps the
+  // client on the revenge screen instead of latching the death screen
+  bool you_must_take_revenge = 16;
 }
 
 message PlayerStatus {

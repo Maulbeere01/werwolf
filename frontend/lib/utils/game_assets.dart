@@ -15,6 +15,7 @@ const List<String> kGameImageAssets = <String>[
   'assets/PNGs/Armor.png',
   'assets/PNGs/Fuchs.png',
   'assets/PNGs/sabateur.png',
+  'assets/PNGs/Jäger.png',
   'assets/PNGs/Backside.png',
 ];
 
