@@ -8,7 +8,7 @@ class Rules extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+      backgroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 80,
@@ -16,7 +16,7 @@ class Rules extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
 
-        // leadingWidth: 80,
+        leadingWidth: 80,
 
         leading: Align(
           alignment: Alignment.center,

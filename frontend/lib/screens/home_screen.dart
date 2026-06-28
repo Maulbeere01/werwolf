@@ -255,10 +255,14 @@ class _HomescreenState extends State<Homescreen> {
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(50),
                             ),
                           ),
-                          child: const Text("Spiel erstellen"),
+                          child: const Text("Spiel erstellen",
+                            style: TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
 
@@ -272,10 +276,14 @@ class _HomescreenState extends State<Homescreen> {
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(50),
                             ),
                           ),
-                          child: const Text("Spiel beitreten"),
+                          child: const Text("Spiel beitreten",
+                            style: TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -298,7 +306,7 @@ class _HomescreenState extends State<Homescreen> {
                     "Regeln ansehen",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
