@@ -28,7 +28,7 @@ class RoleRevealCard extends StatefulWidget {
 }
 
 const double _revealCardWidth = 280;
-const double _revealCardHeight = 412;
+const double _revealCardHeight = 600;
 
 class _RoleRevealCardState extends State<RoleRevealCard>
     with SingleTickerProviderStateMixin {
@@ -47,7 +47,7 @@ class _RoleRevealCardState extends State<RoleRevealCard>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     );
-    _bob = Tween<double>(begin: 0.0, end: -16.0).animate(
+    _bob = Tween<double>(begin: 0.0, end: -6.0).animate(
       CurvedAnimation(parent: _bobController, curve: Curves.easeInOut),
     );
     _bobController.repeat(reverse: true);
@@ -144,7 +144,7 @@ class _RoleRevealCardState extends State<RoleRevealCard>
 
   Widget _buildCardCorner() {
     const double cardWidth = 340;
-    const double cardHeight = 500;
+    const double cardHeight = 600;
     const double scale = 1 / 2.2;
     return Material(
       color: Colors.transparent,

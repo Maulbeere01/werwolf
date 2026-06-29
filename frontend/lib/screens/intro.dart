@@ -192,13 +192,16 @@ class _IntroState extends State<Intro> {
               children: [
                 const SizedBox(height: 120),
 
-                const Text(
-                  "In einem weit entfernten Dorf...",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'BagelFatOne',
-                    fontSize: 40,
-                    color: Color.fromARGB(255, 51, 50, 94),
+                SizedBox(
+                  width: double.infinity,
+                  child: const Text(
+                    "In einem weit\nentfernten Dorf...",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'BagelFatOne',
+                      fontSize: 32,
+                      color: Color.fromARGB(255, 51, 50, 94),
+                    ),
                   ),
                 ),
 

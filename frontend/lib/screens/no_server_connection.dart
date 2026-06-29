@@ -75,9 +75,9 @@ class NoServerConnection extends StatelessWidget {
                     label: const Text(
                       "Erneut versuchen",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         letterSpacing: 0.5,
-                        fontFamily: 'BagelFatOne',
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
