@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:werwolf/screens/night_start.dart';
 import 'package:werwolf/screens/rules.dart';
+import 'package:werwolf/lobby/leave_lobby.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/controllers/game_view_controller.dart';
 import 'package:werwolf/controllers/game_stream_controller.dart';
@@ -19,6 +20,8 @@ import 'package:werwolf/widgets/death_gate.dart';
 import 'package:werwolf/widgets/end_screen.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
 import 'package:werwolf/widgets/sabotage_notice.dart';
+import 'package:werwolf/narration/narration_service.dart';
+import 'package:werwolf/narration/narration_mute_button.dart';
 
 class DayStart extends StatefulWidget {
   final String lobbyCode;
@@ -67,6 +70,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
       seed: widget.initialUpdate,
     );
     _stream.addListener(_onTransition);
+    NarrationService.instance.attach(_stream);
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
@@ -196,6 +200,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
   @override
   void dispose() {
     _stream.removeListener(_onTransition);
+    NarrationService.instance.detach(_stream);
     _ticker?.cancel();
     _controller.dispose();
     _stream.dispose();
@@ -399,7 +404,12 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return ConnectionStatusScope(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) confirmAndLeaveLobby(context);
+      },
+      child: ConnectionStatusScope(
       controller: _stream,
       child: DeathGate(
         controller: _stream,
@@ -414,7 +424,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
         leading: Align(
           alignment: Alignment.center,
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
+            onTap: () => confirmAndLeaveLobby(context),
             child: Container(
               width: 40,
               height: 40,
@@ -623,9 +633,21 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
               // hunter revenge picker, shown to the dead hunter during HUNTER_REVENGE
               if (hunterOverlay != null)
                 Positioned.fill(child: hunterOverlay),
+
+              // narration mute toggle, kept on top so it stays reachable
+              const SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: NarrationMuteButton(),
+                  ),
+                ),
+              ),
             ],
           );
         },
+      ),
       ),
       ),
       ),

@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:werwolf/auth/session_store.dart';
+import 'package:werwolf/narration/narration_service.dart';
+import 'package:werwolf/screens/create_game.dart';
+import 'package:werwolf/screens/home_screen.dart';
 import 'package:werwolf/widgets/progress_bar.dart';
 
 class Endscreen extends StatefulWidget {
@@ -44,11 +48,26 @@ class _EndscreenState extends State<Endscreen> {
     super.dispose();
   }
 
+  Future<void> _leaveTo(WidgetBuilder builder) async {
+    NarrationService.instance.reset();
+    await SessionStore.clearLobbyCode();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: builder),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leaveTo((_) => const Homescreen());
+      },
+      child: Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -182,7 +201,8 @@ class _EndscreenState extends State<Endscreen> {
 
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () =>
+                                    _leaveTo((_) => const Homescreen()),
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
@@ -200,7 +220,8 @@ class _EndscreenState extends State<Endscreen> {
 
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () =>
+                                    _leaveTo((_) => const CreateGame()),
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
@@ -225,6 +246,7 @@ class _EndscreenState extends State<Endscreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

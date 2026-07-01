@@ -70,32 +70,56 @@ public class GameLoopService {
     static final long WITCH_PHASE_SECONDS = 40;
     static final long FOX_PHASE_SECONDS = 40;
 
-    // placeholder durations (seconds)
+    // When the hunter's revenge shot ends the game, hold the HUNTER_REVENGE reveal
+    // this long before concluding to GAME_END, so the "the hunter took someone"
+    // narration (~12s) plays out on the hunter screen before the win screen appears.
+    static final long HUNTER_WIN_REVEAL_SECONDS = 14;
+
+    // Phase durations (seconds). These also bound how long the narrator voice
+    // lines have to play before the phase advances (frontend lib/narration): a
+    // duration must be >= the lines that play when the phase BEGINS, or the line
+    // gets cut off. The night action phases (40-60s) already dwarf their ~15s
+    // wake-up lines; NIGHT_START and DAY_RESULT are sized to their narration.
     static final Map<Phase, Long> PHASE_DURATIONS = Map.ofEntries(
-            Map.entry(Phase.NIGHT_START,      10L),
+            Map.entry(Phase.NIGHT_START,      55L),
             Map.entry(Phase.NIGHT_CUPID,      40L),
             Map.entry(Phase.NIGHT_WEREWOLVES, WEREWOLF_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_SEER,       SEER_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_WITCH,      WITCH_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_FOX,        FOX_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_SABOTEUR, 40L),
-            Map.entry(Phase.DAY_RESULT,       10L),
-            Map.entry(Phase.DAY_DISCUSSION,   10L),   // increase timer to 30 seconds
+            // morning "Der Tag beginnt" scene. Set to 20s the morning
+            // narration (close-eyes/wake/victim/lover lines) can run longer and
+            // then continues into the discussion phase.
+            Map.entry(Phase.DAY_RESULT,       16L),
+            Map.entry(Phase.DAY_DISCUSSION,   10L),   // "Diskutiert..." (~7s)
             Map.entry(Phase.DAY_VOTING,       DAY_VOTE_PHASE_SECONDS),
             Map.entry(Phase.HUNTER_REVENGE,   30L)
     );
 
-    private static long durationOf(Phase phase) {
+    // Bounds for the lobby's configurable discussion length (see CreateLobby /
+    // LobbySettings.discussion_time_seconds). The value is clamped to this range
+    // at game start in GameServiceImp.
+    public static final long MIN_DISCUSSION_SECONDS = 10;
+    public static final long MAX_DISCUSSION_SECONDS = 120;
+
+    // Duration of a phase. DAY_DISCUSSION is configurable per lobby (the host's
+    // discussion-length setting, stored on the GameState at game start); every
+    // other phase uses the fixed PHASE_DURATIONS table.
+    private static long durationOf(GameState state, Phase phase) {
+        if (phase == Phase.DAY_DISCUSSION && state != null && state.discussionSeconds > 0) {
+            return state.discussionSeconds;
+        }
         return PHASE_DURATIONS.getOrDefault(phase, 10L);
     }
 
     public void start(String lobbyCode) {
         GameState state = gameStateService.get(lobbyCode);
         if (state != null) {
-            state.phaseEndsAt = Instant.now().plusSeconds(durationOf(state.phase));
+            state.phaseEndsAt = Instant.now().plusSeconds(durationOf(state, state.phase));
             gameStateService.save(state);
         }
-        long firstDelay = state != null ? durationOf(state.phase) : 10L;
+        long firstDelay = state != null ? durationOf(state, state.phase) : 10L;
         ScheduledFuture<?> future = scheduler.schedule(() -> tickLoop(lobbyCode), firstDelay, TimeUnit.SECONDS);
         activeLoops.put(lobbyCode, future);
         log.info("[LOOP] Started phase loop for lobby {}", lobbyCode);
@@ -245,6 +269,28 @@ public class GameLoopService {
                 return;
             }
 
+            // Deferred game end: a previous tick detected a win but kept the current
+            // phase held so its result narration could play instead of being cut off
+            // by an instant jump to GAME_END — the DAY_RESULT morning reveal
+            // (close-eyes -> day breaks -> night victim) or the HUNTER_REVENGE
+            // reveal (the hunter's shot). That hold is up now, so end the game.
+            // lastAnnouncement (the deaths / hunter shot) is left untouched so it
+            // rides along on the GAME_END snapshot and the win line can follow it.
+            if (state.winningTeam != null) {
+                Lobby endLobby = lobbyManager.getLobby(lobbyCode);
+                concludeGame(state, state.winningTeam);
+                gameStateService.save(state);
+                if (endLobby != null) {
+                    endLobby.players.forEach(p ->
+                            lobbySubscriptionService.sendTo(lobbyCode, p.id,
+                                    GameUpdateFactory.snapshot(state, endLobby, p.id)));
+                }
+                log.info("[LOOP] Lobby {} ended after result reveal: {} win",
+                        lobbyCode, state.winningTeam);
+                stop(lobbyCode);
+                return;
+            }
+
             // Clear the per-phase transient data before resolving the ending phase,
             // so any announcement produced while resolving (e.g. the day vote result)
             // is still present when the personalised snapshot is sent below.
@@ -259,7 +305,18 @@ public class GameLoopService {
             // a death may already have decided the game (e.g. lynching the last wolf)
             Role winner = checkWinner(state);
             if (winner != null) {
-                concludeGame(state, winner);
+                if (leaving == Phase.HUNTER_REVENGE) {
+                    // The hunter's revenge shot just ended the game. As with the
+                    // night deaths at DAY_RESULT, don't cut to GAME_END instantly
+                    // (which would cram the hunter-shot line and the win line into
+                    // one end-screen snapshot). Keep the HUNTER_REVENGE reveal a
+                    // little longer so its "the hunter took someone" narration plays
+                    // on the hunter screen; the deferred-win guard at the top of the
+                    // next tick ends the game and the win line then follows.
+                    state.winningTeam = winner;
+                } else {
+                    concludeGame(state, winner);
+                }
             } else {
                 state.phase = nextPhaseConsideringHunter(state, leaving);
             }
@@ -267,19 +324,36 @@ public class GameLoopService {
             Lobby lobby = lobbyManager.getLobby(lobbyCode);
 
             // onEnter for the new phase may apply deaths (the night victims at
-            // DAY_RESULT), so re-check the win condition afterwards
-            if (state.phase != Phase.GAME_END && lobby != null) {
+            // DAY_RESULT), so re-check the win condition afterwards. Skipped once a
+            // win is already pending (a deferred hunter-shot win, above) so we don't
+            // re-run onEnter for the phase we are deliberately holding.
+            if (state.phase != Phase.GAME_END && state.winningTeam == null && lobby != null) {
                 onEnter(state, lobby);
                 winner = checkWinner(state);
                 if (winner != null) {
-                    concludeGame(state, winner);
+                    if (state.phase == Phase.DAY_RESULT) {
+                        // The night's deaths just decided the game. Don't jump
+                        // straight to GAME_END: that would cram close-eyes,
+                        // day-break, victim and win narration into one instant and
+                        // skip the night hold. Instead keep the DAY_RESULT morning
+                        // phase (recording the winner) so its narration plays; the
+                        // deferred-win guard at the top of the next tick ends the game.
+                        state.winningTeam = winner;
+                    } else {
+                        concludeGame(state, winner);
+                    }
                 }
             }
 
             if (state.phase == Phase.GAME_END) {
                 state.phaseEndsAt = null;
             } else {
-                long duration = durationOf(state.phase);
+                // A deferred hunter-shot win holds HUNTER_REVENGE only long enough for
+                // its reveal narration, not the full revenge timer. (A deferred
+                // DAY_RESULT win keeps that phase's normal morning duration.)
+                long duration = (state.winningTeam != null && state.phase == Phase.HUNTER_REVENGE)
+                        ? HUNTER_WIN_REVEAL_SECONDS
+                        : durationOf(state, state.phase);
                 state.phaseEndsAt = Instant.now().plusSeconds(duration);
                 ScheduledFuture<?> next = scheduler.schedule(() -> tickLoop(lobbyCode), duration, TimeUnit.SECONDS);
                 activeLoops.put(lobbyCode, next);
@@ -296,7 +370,7 @@ public class GameLoopService {
 
             log.info("[LOOP] Lobby {} advanced to phase {} ({}s)",
                     lobbyCode, state.phase,
-                    state.phase == Phase.GAME_END ? 0 : durationOf(state.phase));
+                    state.phase == Phase.GAME_END ? 0 : durationOf(state, state.phase));
 
             if (state.phase == Phase.GAME_END) {
                 stop(lobbyCode);

@@ -45,9 +45,9 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
       }
     });
 
-    // the game continues automatically: after 5s we leave the result screen so
+    // the game continues automatically: after this we leave the result screen so
     // the next night can begin
-    _autoCloseTimer = Timer(const Duration(seconds: 5), () {
+    _autoCloseTimer = Timer(const Duration(seconds: 6), () {
       if (mounted) Navigator.of(context).maybePop();
     });
   }

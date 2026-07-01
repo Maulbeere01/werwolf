@@ -67,6 +67,7 @@ flutter:
     - assets/config.json
     - assets/config.prod.json
     - assets/hintergrund.mp3
+    - assets/mp3/voice_lines/
     - assets/icons/
     - assets/BG/
     - assets/PNGs/
