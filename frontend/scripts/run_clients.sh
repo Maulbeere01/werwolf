@@ -14,6 +14,8 @@ IS_PROD=0
 WIN_WIDTH=400
 WIN_HEIGHT=860
 
+export PULSE_SERVER=unix:/dev/null
+
 for arg in "$@"; do
   case "$arg" in
     --skip-build) SKIP_BUILD=1 ;;
