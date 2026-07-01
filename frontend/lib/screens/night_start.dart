@@ -513,7 +513,7 @@ class _NightStartState extends State<NightStart>
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontFamily: 'BagelFatOne',
-                                fontSize: 36,
+                                fontSize: 32,
                                 color: Color.fromARGB(255, 51, 50, 94),
                               ),
                             ),

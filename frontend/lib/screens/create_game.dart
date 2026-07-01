@@ -156,9 +156,9 @@ class _CreateGameState extends State<CreateGame> {
         title: const Text(
           "Spiel erstellen",
           style: TextStyle(
-            fontFamily: 'BagelFatOne',
-            fontSize: 28,
+            fontSize: 20,
             color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
         toolbarHeight: 80,

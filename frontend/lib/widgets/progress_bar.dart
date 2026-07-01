@@ -55,7 +55,7 @@ class SpieleProgressBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(26),
               ),
             Text(
-              "Spiel $aktuelleSpielNummer von $gesamtSpiele",
+              "$aktuelleSpielNummer / $gesamtSpiele",
               style: const TextStyle(
                 color: Colors.black,
                 fontSize: 15,

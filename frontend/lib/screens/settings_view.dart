@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:werwolf/controllers/login_view_controller.dart';
 import 'package:werwolf/main.dart';
 
@@ -49,7 +50,6 @@ class EinstellungenView extends StatelessWidget {
     final Color dividerColor = colorScheme.outlineVariant;
 
     final List<String> einstellungenOptionen = [
-      'Sprache',
       'Konto',
       'Nutzungsbedingungen',
       'Datenschutzerklärung',
@@ -60,18 +60,35 @@ class EinstellungenView extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
+        toolbarHeight: 80,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            child: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 18),
-              onPressed: () => Navigator.of(context).pop(),
+        scrolledUnderElevation: 0,
+
+        leadingWidth: 80,
+
+        leading: Align(
+          alignment: Alignment.center,
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: SvgPicture.asset(
+                  'assets/icons/back.svg',
+                  width: 20,
+                  height: 20,
+                ),
+              ),
             ),
           ),
         ),
+
         title: Text(
           'Einstellungen',
           style: TextStyle(
