@@ -91,13 +91,15 @@ const UserProfile$json = {
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'username', '3': 2, '4': 1, '5': 9, '10': 'username'},
     {'1': 'score', '3': 3, '4': 1, '5': 5, '10': 'score'},
+    {'1': 'avatar', '3': 4, '4': 1, '5': 9, '10': 'avatar'},
   ],
 };
 
 /// Descriptor for `UserProfile`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List userProfileDescriptor = $convert.base64Decode(
     'CgtVc2VyUHJvZmlsZRIXCgd1c2VyX2lkGAEgASgJUgZ1c2VySWQSGgoIdXNlcm5hbWUYAiABKA'
-    'lSCHVzZXJuYW1lEhQKBXNjb3JlGAMgASgFUgVzY29yZQ==');
+    'lSCHVzZXJuYW1lEhQKBXNjb3JlGAMgASgFUgVzY29yZRIWCgZhdmF0YXIYBCABKAlSBmF2YXRh'
+    'cg==');
 
 @$core.Deprecated('Use loginRequestDescriptor instead')
 const LoginRequest$json = {
@@ -153,6 +155,18 @@ const ProfileRequest$json = {
 /// Descriptor for `ProfileRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List profileRequestDescriptor = $convert.base64Decode(
     'Cg5Qcm9maWxlUmVxdWVzdBIkCg50YXJnZXRfdXNlcl9pZBgBIAEoCVIMdGFyZ2V0VXNlcklk');
+
+@$core.Deprecated('Use updateAvatarRequestDescriptor instead')
+const UpdateAvatarRequest$json = {
+  '1': 'UpdateAvatarRequest',
+  '2': [
+    {'1': 'avatar', '3': 1, '4': 1, '5': 9, '10': 'avatar'},
+  ],
+};
+
+/// Descriptor for `UpdateAvatarRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateAvatarRequestDescriptor = $convert.base64Decode(
+    'ChNVcGRhdGVBdmF0YXJSZXF1ZXN0EhYKBmF2YXRhchgBIAEoCVIGYXZhdGFy');
 
 @$core.Deprecated('Use roleCountDescriptor instead')
 const RoleCount$json = {

@@ -26,4 +26,6 @@ public class UserEntity {
     private LocalDateTime createdAt;
 
     private Integer exp = 0;
+
+    private String avatar;
 }

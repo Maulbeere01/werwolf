@@ -23,7 +23,8 @@ service UserService {
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc Register (RegisterRequest) returns (google.protobuf.Empty);
   rpc GetProfile (ProfileRequest) returns (UserProfile);
-  
+  rpc UpdateAvatar (UpdateAvatarRequest) returns (UserProfile);
+
   // rpc GetGameHistory (GameHistoryRequest) returns (GameHistoryResponse);
   // rpc BuySkin (SkinRequest) returns (google.protobuf.Empty);
 }
@@ -84,6 +85,7 @@ message UserProfile {
   string user_id = 1;
   string username = 2;
   int32 score = 3;
+  string avatar = 4; // filename of the chosen built-in profile picture, empty if unset
 }
 
 message LoginRequest {
@@ -104,6 +106,10 @@ message RegisterRequest {
 
 message ProfileRequest {
   string target_user_id = 1; // empty for own profile
+}
+
+message UpdateAvatarRequest {
+  string avatar = 1; // filename of one of the built-in profile pictures
 }
 
 // lobby

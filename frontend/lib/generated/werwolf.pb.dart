@@ -23,6 +23,7 @@ class UserProfile extends $pb.GeneratedMessage {
     $core.String? userId,
     $core.String? username,
     $core.int? score,
+    $core.String? avatar,
   }) {
     final $result = create();
     if (userId != null) {
@@ -34,6 +35,9 @@ class UserProfile extends $pb.GeneratedMessage {
     if (score != null) {
       $result.score = score;
     }
+    if (avatar != null) {
+      $result.avatar = avatar;
+    }
     return $result;
   }
   UserProfile._() : super();
@@ -44,6 +48,7 @@ class UserProfile extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'score', $pb.PbFieldType.O3)
+    ..aOS(4, _omitFieldNames ? '' : 'avatar')
     ..hasRequiredFields = false
   ;
 
@@ -94,6 +99,15 @@ class UserProfile extends $pb.GeneratedMessage {
   $core.bool hasScore() => $_has(2);
   @$pb.TagNumber(3)
   void clearScore() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get avatar => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set avatar($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasAvatar() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearAvatar() => clearField(4);
 }
 
 class LoginRequest extends $pb.GeneratedMessage {
@@ -352,6 +366,56 @@ class ProfileRequest extends $pb.GeneratedMessage {
   $core.bool hasTargetUserId() => $_has(0);
   @$pb.TagNumber(1)
   void clearTargetUserId() => clearField(1);
+}
+
+class UpdateAvatarRequest extends $pb.GeneratedMessage {
+  factory UpdateAvatarRequest({
+    $core.String? avatar,
+  }) {
+    final $result = create();
+    if (avatar != null) {
+      $result.avatar = avatar;
+    }
+    return $result;
+  }
+  UpdateAvatarRequest._() : super();
+  factory UpdateAvatarRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory UpdateAvatarRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UpdateAvatarRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'werewolf'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'avatar')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  UpdateAvatarRequest clone() => UpdateAvatarRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  UpdateAvatarRequest copyWith(void Function(UpdateAvatarRequest) updates) => super.copyWith((message) => updates(message as UpdateAvatarRequest)) as UpdateAvatarRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateAvatarRequest create() => UpdateAvatarRequest._();
+  UpdateAvatarRequest createEmptyInstance() => create();
+  static $pb.PbList<UpdateAvatarRequest> createRepeated() => $pb.PbList<UpdateAvatarRequest>();
+  @$core.pragma('dart2js:noInline')
+  static UpdateAvatarRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UpdateAvatarRequest>(create);
+  static UpdateAvatarRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get avatar => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set avatar($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasAvatar() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAvatar() => clearField(1);
 }
 
 class RoleCount extends $pb.GeneratedMessage {
@@ -997,7 +1061,7 @@ class GameUpdate extends $pb.GeneratedMessage {
   @$pb.TagNumber(15)
   void clearLoverPartnerId() => clearField(15);
 
-  /// true only for a just-killed hunter who still owes a revenge shot: keeps the
+  /// true only for a just-killed hunter who still owes a revenge shot, keeps the
   /// client on the revenge screen instead of latching the death screen
   @$pb.TagNumber(16)
   $core.bool get youMustTakeRevenge => $_getBF(11);

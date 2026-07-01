@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:werwolf/services/grpc_handler.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/widgets/progress_bar.dart';
 import 'package:werwolf/widgets/profile_picker.dart';
 
@@ -13,81 +13,66 @@ class ProfilView extends StatefulWidget {
 }
 
 class _ProfilViewState extends State<ProfilView> {
-  String? _imagePath;
-  final List<String> _assetPfps = const [
-    'assets/PFP/wolf_pfp.png',
-    'assets/PFP/seher_pfp.png',
-    'assets/PFP/sabateur_png.png',
-    'assets/PFP/jäger_pfp.png',
-    'assets/PFP/hexe_png.png',
-    'assets/PFP/fuchs_pfp.png',
-    'assets/PFP/dorfbewohner_pfp.png',
-    'assets/PFP/armor_pfp.png',
+  // Filenames must match the VALID_AVATARS whitelist in the backend's
+  // UserServiceImpl; the server rejects anything else.
+  static const List<String> _avatarFilenames = [
+    'wolf_pfp.png',
+    'seher_pfp.png',
+    'sabateur_png.png',
+    'jäger_pfp.png',
+    'hexe_png.png',
+    'fuchs_pfp.png',
+    'dorfbewohner_pfp.png',
+    'armor_pfp.png',
   ];
 
-  Future<void> _waehleProfilbild() async {
-    // Show options: Kamera or Auswahl aus mitgelieferten Profilbildern
-    final choice = await showModalBottomSheet<String?>(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Kamera'),
-            onTap: () => Navigator.of(context).pop('camera'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.image),
-            title: const Text('Profilbild wählen'),
-            onTap: () => Navigator.of(context).pop('assets'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.close),
-            title: const Text('Abbrechen'),
-            onTap: () => Navigator.of(context).pop(null),
-          ),
-        ],
-      ),
-    );
+  String? _avatar;
 
-    if (choice == null) return;
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
 
-    if (choice == 'camera') {
-      final ImagePicker picker = ImagePicker();
-      try {
-        final XFile? foto = await picker.pickImage(
-          source: ImageSource.camera,
-          imageQuality: 80,
-        );
-
-        if (foto != null) {
-          setState(() {
-            _imagePath = foto.path;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fehler beim Laden des Bildes: $e')),
-          );
-        }
+  Future<void> _loadProfile() async {
+    try {
+      final grpc = await GrpcHandler.instance();
+      final profile = await grpc.userClient.getProfile(ProfileRequest());
+      if (mounted && profile.avatar.isNotEmpty) {
+        setState(() {
+          _avatar = profile.avatar;
+        });
       }
-    } else if (choice == 'assets') {
-      await _pickFromAssets();
+    } catch (e) {
+      // ignore: avoid_print
+      print('[PROFILE] load skipped: $e');
     }
   }
 
-  Future<void> _pickFromAssets() async {
+  Future<void> _waehleProfilbild() async {
     final selected = await showDialog<String>(
       context: context,
-      builder: (context) => ProfilePicker(assets: _assetPfps),
+      builder: (context) => ProfilePicker(
+        assets: _avatarFilenames.map((f) => 'assets/PFP/$f').toList(),
+      ),
     );
 
-    if (selected != null) {
-      setState(() {
-        _imagePath = selected;
-      });
+    if (selected == null) return;
+
+    final filename = selected.split('/').last;
+    setState(() {
+      _avatar = filename;
+    });
+
+    try {
+      final grpc = await GrpcHandler.instance();
+      await grpc.userClient.updateAvatar(UpdateAvatarRequest(avatar: filename));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler beim Speichern des Profilbilds: $e')),
+        );
+      }
     }
   }
 
@@ -160,23 +145,21 @@ class _ProfilViewState extends State<ProfilView> {
                         decoration: BoxDecoration(
                           color: cardColor,
                           shape: BoxShape.circle,
-                          image: _imagePath != null
+                          image: _avatar != null
                               ? DecorationImage(
-                                  image: _imagePath!.startsWith('assets/')
-                                      ? AssetImage(_imagePath!) as ImageProvider
-                                      : FileImage(File(_imagePath!)),
+                                  image: AssetImage('assets/PFP/$_avatar'),
                                   fit: BoxFit.cover,
                                 )
                               : null,
                         ),
-                        child: _imagePath == null
+                        child: _avatar == null
                             ? Icon(Icons.person, size: 70, color: textColor.withOpacity(0.3))
                             : null,
                       ),
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: theme.primaryColor,
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                        child: const Icon(Icons.edit, color: Colors.white, size: 18),
                       ),
                     ],
                   ),

@@ -5,6 +5,7 @@ import com.werewolf.grpc.*;
 import com.google.protobuf.Empty;
 import com.werewolf.persistence.entity.UserEntity;
 import com.werewolf.persistence.repository.UserRepository;
+import com.werewolf.auth.AuthContext;
 import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -12,10 +13,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.util.Set;
+
 @Slf4j
 @GrpcService
 @RequiredArgsConstructor
 public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
+
+    // keep in sync with frontend/lib/screens/profile_view.dart _assetPfps
+    private static final Set<String> VALID_AVATARS = Set.of(
+            "wolf_pfp.png",
+            "seher_pfp.png",
+            "sabateur_png.png",
+            "jäger_pfp.png",
+            "hexe_png.png",
+            "fuchs_pfp.png",
+            "dorfbewohner_pfp.png",
+            "armor_pfp.png"
+    );
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -63,17 +78,10 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             UserEntity user = userOpt.get();
             log.info("[LOGIN] Success for username='{}' userId={}", user.getUsername(), user.getId());
 
-            // build profile
-            UserProfile profile = UserProfile.newBuilder()
-                    .setUserId(String.valueOf(user.getId()))
-                    .setUsername(user.getUsername())
-                    .setScore(user.getExp())
-                    .build();
-
             // build response
             LoginResponse response = LoginResponse.newBuilder()
                     .setToken(jwtService.generateToken(user.getId(), user.getUsername()))
-                    .setProfile(profile)
+                    .setProfile(toProfile(user))
                     .build();
 
             responseObserver.onNext(response);
@@ -84,5 +92,57 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
                     .withDescription("invalid credentials")
                     .asRuntimeException());
         }
+    }
+
+    @Override
+    public void getProfile(ProfileRequest request, StreamObserver<UserProfile> responseObserver) {
+        String targetId = request.getTargetUserId();
+        String userId = targetId.isEmpty() ? AuthContext.USER_ID_KEY.get() : targetId;
+
+        var userOpt = userRepository.findById(Long.valueOf(userId));
+        if (userOpt.isEmpty()) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("user not found")
+                    .asRuntimeException());
+            return;
+        }
+
+        responseObserver.onNext(toProfile(userOpt.get()));
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void updateAvatar(UpdateAvatarRequest request, StreamObserver<UserProfile> responseObserver) {
+        if (!VALID_AVATARS.contains(request.getAvatar())) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription("unknown avatar")
+                    .asRuntimeException());
+            return;
+        }
+
+        String userId = AuthContext.USER_ID_KEY.get();
+        var userOpt = userRepository.findById(Long.valueOf(userId));
+        if (userOpt.isEmpty()) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("user not found")
+                    .asRuntimeException());
+            return;
+        }
+
+        UserEntity user = userOpt.get();
+        user.setAvatar(request.getAvatar());
+        userRepository.save(user);
+
+        responseObserver.onNext(toProfile(user));
+        responseObserver.onCompleted();
+    }
+
+    private UserProfile toProfile(UserEntity user) {
+        return UserProfile.newBuilder()
+                .setUserId(String.valueOf(user.getId()))
+                .setUsername(user.getUsername())
+                .setScore(user.getExp())
+                .setAvatar(user.getAvatar() == null ? "" : user.getAvatar())
+                .build();
     }
 }
