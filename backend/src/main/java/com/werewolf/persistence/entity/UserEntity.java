@@ -28,4 +28,16 @@ public class UserEntity {
     private Integer exp = 0;
 
     private String avatar;
+
+    @Column(name = "games_played")
+    private Integer gamesPlayed = 0;
+
+    @Column(name = "games_won_werewolf")
+    private Integer gamesWonWerewolf = 0;
+
+    @Column(name = "games_won_villager")
+    private Integer gamesWonVillager = 0;
+
+    @Column(name = "games_lost")
+    private Integer gamesLost = 0;
 }

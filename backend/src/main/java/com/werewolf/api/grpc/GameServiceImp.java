@@ -225,6 +225,7 @@ public class GameServiceImp extends GameServiceGrpc.GameServiceImplBase {
                     .setName(p.name)
                     .setIsAlive(p.alive)
                     .setIsHost(p.id.equals(lobby.hostId))
+                    .setAvatar(p.avatar == null ? "" : p.avatar)
                     .build());
         }
 

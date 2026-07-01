@@ -24,6 +24,10 @@ class UserProfile extends $pb.GeneratedMessage {
     $core.String? username,
     $core.int? score,
     $core.String? avatar,
+    $core.int? gamesPlayed,
+    $core.int? gamesWonWerewolf,
+    $core.int? gamesWonVillager,
+    $core.int? gamesLost,
   }) {
     final $result = create();
     if (userId != null) {
@@ -38,6 +42,18 @@ class UserProfile extends $pb.GeneratedMessage {
     if (avatar != null) {
       $result.avatar = avatar;
     }
+    if (gamesPlayed != null) {
+      $result.gamesPlayed = gamesPlayed;
+    }
+    if (gamesWonWerewolf != null) {
+      $result.gamesWonWerewolf = gamesWonWerewolf;
+    }
+    if (gamesWonVillager != null) {
+      $result.gamesWonVillager = gamesWonVillager;
+    }
+    if (gamesLost != null) {
+      $result.gamesLost = gamesLost;
+    }
     return $result;
   }
   UserProfile._() : super();
@@ -49,6 +65,10 @@ class UserProfile extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'score', $pb.PbFieldType.O3)
     ..aOS(4, _omitFieldNames ? '' : 'avatar')
+    ..a<$core.int>(5, _omitFieldNames ? '' : 'gamesPlayed', $pb.PbFieldType.O3)
+    ..a<$core.int>(6, _omitFieldNames ? '' : 'gamesWonWerewolf', $pb.PbFieldType.O3)
+    ..a<$core.int>(7, _omitFieldNames ? '' : 'gamesWonVillager', $pb.PbFieldType.O3)
+    ..a<$core.int>(8, _omitFieldNames ? '' : 'gamesLost', $pb.PbFieldType.O3)
     ..hasRequiredFields = false
   ;
 
@@ -108,6 +128,42 @@ class UserProfile extends $pb.GeneratedMessage {
   $core.bool hasAvatar() => $_has(3);
   @$pb.TagNumber(4)
   void clearAvatar() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get gamesPlayed => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set gamesPlayed($core.int v) { $_setSignedInt32(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasGamesPlayed() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearGamesPlayed() => clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.int get gamesWonWerewolf => $_getIZ(5);
+  @$pb.TagNumber(6)
+  set gamesWonWerewolf($core.int v) { $_setSignedInt32(5, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasGamesWonWerewolf() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearGamesWonWerewolf() => clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.int get gamesWonVillager => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set gamesWonVillager($core.int v) { $_setSignedInt32(6, v); }
+  @$pb.TagNumber(7)
+  $core.bool hasGamesWonVillager() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearGamesWonVillager() => clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.int get gamesLost => $_getIZ(7);
+  @$pb.TagNumber(8)
+  set gamesLost($core.int v) { $_setSignedInt32(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasGamesLost() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearGamesLost() => clearField(8);
 }
 
 class LoginRequest extends $pb.GeneratedMessage {
@@ -1082,6 +1138,7 @@ class PlayerStatus extends $pb.GeneratedMessage {
     $core.String? votedForTargetId,
     Role? role,
     $core.bool? isHost,
+    $core.String? avatar,
   }) {
     final $result = create();
     if (id != null) {
@@ -1105,6 +1162,9 @@ class PlayerStatus extends $pb.GeneratedMessage {
     if (isHost != null) {
       $result.isHost = isHost;
     }
+    if (avatar != null) {
+      $result.avatar = avatar;
+    }
     return $result;
   }
   PlayerStatus._() : super();
@@ -1119,6 +1179,7 @@ class PlayerStatus extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'votedForTargetId')
     ..e<Role>(6, _omitFieldNames ? '' : 'role', $pb.PbFieldType.OE, defaultOrMaker: Role.ROLE_UNSPECIFIED, valueOf: Role.valueOf, enumValues: Role.values)
     ..aOB(7, _omitFieldNames ? '' : 'isHost')
+    ..aOS(8, _omitFieldNames ? '' : 'avatar')
     ..hasRequiredFields = false
   ;
 
@@ -1205,6 +1266,15 @@ class PlayerStatus extends $pb.GeneratedMessage {
   $core.bool hasIsHost() => $_has(6);
   @$pb.TagNumber(7)
   void clearIsHost() => clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get avatar => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set avatar($core.String v) { $_setString(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasAvatar() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearAvatar() => clearField(8);
 }
 
 enum GameAction_Action {

@@ -143,6 +143,10 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
                 .setUsername(user.getUsername())
                 .setScore(user.getExp())
                 .setAvatar(user.getAvatar() == null ? "" : user.getAvatar())
+                .setGamesPlayed(user.getGamesPlayed())
+                .setGamesWonWerewolf(user.getGamesWonWerewolf())
+                .setGamesWonVillager(user.getGamesWonVillager())
+                .setGamesLost(user.getGamesLost())
                 .build();
     }
 }

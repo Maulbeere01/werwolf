@@ -30,6 +30,7 @@ public class GameLoopService {
     private final GameStateService gameStateService;
     private final LobbyManager lobbyManager;
     private final LobbySubscriptionService lobbySubscriptionService;
+    private final PlayerStatsService playerStatsService;
 
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
@@ -192,6 +193,7 @@ public class GameLoopService {
         state.phase = Phase.GAME_END;
         state.phaseEndsAt = null;
         state.pendingPrompts.clear();
+        playerStatsService.recordGameEnd(state.players.values(), winningTeam);
         log.info("[LOOP] Game over: {} win", winningTeam);
     }
 

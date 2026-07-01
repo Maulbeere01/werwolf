@@ -4,6 +4,7 @@ import 'package:werwolf/services/grpc_handler.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/widgets/progress_bar.dart';
 import 'package:werwolf/widgets/profile_picker.dart';
+import 'package:werwolf/utils/stats_display.dart';
 
 class ProfilView extends StatefulWidget {
   const ProfilView({super.key});
@@ -27,6 +28,7 @@ class _ProfilViewState extends State<ProfilView> {
   ];
 
   String? _avatar;
+  UserProfile? _profile;
 
   @override
   void initState() {
@@ -38,9 +40,10 @@ class _ProfilViewState extends State<ProfilView> {
     try {
       final grpc = await GrpcHandler.instance();
       final profile = await grpc.userClient.getProfile(ProfileRequest());
-      if (mounted && profile.avatar.isNotEmpty) {
+      if (mounted) {
         setState(() {
-          _avatar = profile.avatar;
+          _profile = profile;
+          if (profile.avatar.isNotEmpty) _avatar = profile.avatar;
         });
       }
     } catch (e) {
@@ -74,6 +77,32 @@ class _ProfilViewState extends State<ProfilView> {
         );
       }
     }
+  }
+
+  // The cap doubles every time the score reaches it (10 -> 20 -> 40 -> ...),
+  // so this never maxes out no matter how high the score climbs.
+  Widget _statProgressRow(String label, int score) {
+    final cap = progressCapFor(score);
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: SpieleProgressBar(
+            aktuelleSpielNummer: score,
+            gesamtSpiele: cap,
+            starteAnimation: true,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -116,8 +145,8 @@ class _ProfilViewState extends State<ProfilView> {
         ),
 
         title: Text(
-          'Profil',
-          style: TextStyle(
+          _profile?.username ?? 'Profil',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 20,
@@ -167,11 +196,16 @@ class _ProfilViewState extends State<ProfilView> {
               ),
               const SizedBox(height: 40),
 
-              SpieleProgressBar(aktuelleSpielNummer: 1, gesamtSpiele: 3, starteAnimation: false),
+              SpieleProgressBar(
+                aktuelleSpielNummer: (_profile?.gamesPlayed ?? 0) - (_profile?.gamesLost ?? 0),
+                gesamtSpiele: _profile != null && _profile!.gamesPlayed > 0 ? _profile!.gamesPlayed : 1,
+                starteAnimation: true,
+                label: "${winRatePercent(_profile?.gamesPlayed ?? 0, _profile?.gamesLost ?? 0).toStringAsFixed(2)} % Winrate",
+              ),
               const SizedBox(height: 20),
 
               const Text(
-                "Challenges",
+                "Statistik",
                 style: TextStyle(
                     fontFamily: 'BagelFatOne',
                     color: Colors.white,
@@ -185,67 +219,20 @@ class _ProfilViewState extends State<ProfilView> {
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
                   children: [
-                    Row(
-                      children: [
-                        const Text(
-                          "Platzhalter",
-                          style: TextStyle( color: Colors.white, fontSize: 18),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3, starteAnimation: true)),
-                      ],
-                    ),
+                    _statProgressRow("Spiele gespielt", _profile?.gamesPlayed ?? 0),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Text(
-                          "Platzhalter",
-                          style: TextStyle( color: Colors.white, fontSize: 18),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3, starteAnimation: true)),
-                      ],
-                    ),
+                    _statProgressRow("Werwolf-Siege", _profile?.gamesWonWerewolf ?? 0),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Text(
-                          "Platzhalter",
-                          style: TextStyle( color: Colors.white, fontSize: 18),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3, starteAnimation: true)),
-                      ],
-                    ),
+                    _statProgressRow("Dorfbewohner-Siege", _profile?.gamesWonVillager ?? 0),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Text(
-                          "Platzhalter",
-                          style: TextStyle( color: Colors.white, fontSize: 18),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3, starteAnimation: true)),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        const Text(
-                          "Platzhalter",
-                          style: TextStyle( color: Colors.white, fontSize: 18),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3, starteAnimation: true)),
-                      ],
-                    ),
+                    _statProgressRow("Spiele verloren", _profile?.gamesLost ?? 0),
                   ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-            
+
             ],
           ),
         ),

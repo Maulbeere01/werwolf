@@ -5,11 +5,17 @@ class SpieleProgressBar extends StatelessWidget {
   final int gesamtSpiele;
   final bool starteAnimation;
 
+  /// Overrides the default "current / total" text (e.g. for a percentage
+  /// display) while the fill ratio is still derived from
+  /// aktuelleSpielNummer/gesamtSpiele.
+  final String? label;
+
   const SpieleProgressBar({
     super.key,
     required this.aktuelleSpielNummer,
     required this.gesamtSpiele,
     required this.starteAnimation,
+    this.label,
   });
 
   @override
@@ -55,7 +61,7 @@ class SpieleProgressBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(26),
               ),
             Text(
-              "$aktuelleSpielNummer / $gesamtSpiele",
+              label ?? "$aktuelleSpielNummer / $gesamtSpiele",
               style: const TextStyle(
                 color: Colors.black,
                 fontSize: 15,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:werwolf/controllers/game_view_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/screens/home_screen.dart';
 import 'package:werwolf/screens/qr_code_screen.dart';
 
 const int kMinPlayers = 4;
@@ -97,6 +98,25 @@ class _CreateGameState extends State<CreateGame> {
     });
   }
 
+  // Usually just pops back to Home. But reached via the Endscreen's "Neues
+  // Spiel" button, this is the only route left on the stack (that button
+  // clears everything down to CreateGame, since going back to the finished
+  // game's Endscreen isn't a valid destination) - popping there would be a
+  // no-op and leave the back button dead, so fall back to Home directly.
+  void _goBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const Homescreen(),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    }
+  }
+
   Future<void> _createLobby() async {
     setState(() => _creating = true);
 
@@ -169,7 +189,7 @@ class _CreateGameState extends State<CreateGame> {
         leading: Align(
           alignment: Alignment.center,
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
+            onTap: _goBack,
             child: Container(
               width: 40,
               height: 40,

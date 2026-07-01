@@ -200,6 +200,10 @@ class UserServiceImplTest {
         user.setPasswordHash(passwordEncoder.encode("secret"));
         user.setExp(5);
         user.setAvatar("hexe_png.png");
+        user.setGamesPlayed(7);
+        user.setGamesWonWerewolf(2);
+        user.setGamesWonVillager(3);
+        user.setGamesLost(2);
         userRepository.save(user);
 
         ProfileRequest request = ProfileRequest.newBuilder().build();
@@ -214,6 +218,10 @@ class UserServiceImplTest {
         assertEquals("selfprofileuser", profile.getUsername());
         assertEquals("hexe_png.png", profile.getAvatar());
         assertEquals(5, profile.getScore());
+        assertEquals(7, profile.getGamesPlayed());
+        assertEquals(2, profile.getGamesWonWerewolf());
+        assertEquals(3, profile.getGamesWonVillager());
+        assertEquals(2, profile.getGamesLost());
         verify(observer).onCompleted();
     }
 }

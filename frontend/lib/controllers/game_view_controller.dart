@@ -30,18 +30,16 @@ class GameViewController {
     }
   }
 
-  static Future<String?> joinLobby(String lobbyCode) async {
+  // Throws GrpcError on failure (e.g. StatusCode.notFound for an unknown code,
+  // StatusCode.failedPrecondition for a full/already-started lobby) so the
+  // caller can show a message that matches the actual reason.
+  static Future<String> joinLobby(String lobbyCode) async {
     final grpc = await GrpcHandler.instance();
-    try {
-      final request = JoinRequest()..lobbyCode = lobbyCode;
-      final response = await grpc.gameClient.joinLobby(request);
-      AuthState.lobbyCode = response.lobbyCode;
-      await SessionStore.save();
-      print('[LOBBY] Joined lobby with code: ${response.lobbyCode}');
-      return response.lobbyCode;
-    } catch (e) {
-      print('[LOBBY] Error joining lobby: $e');
-      return null;
-    }
+    final request = JoinRequest()..lobbyCode = lobbyCode;
+    final response = await grpc.gameClient.joinLobby(request);
+    AuthState.lobbyCode = response.lobbyCode;
+    await SessionStore.save();
+    print('[LOBBY] Joined lobby with code: ${response.lobbyCode}');
+    return response.lobbyCode;
   }
 }

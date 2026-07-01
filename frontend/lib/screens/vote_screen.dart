@@ -85,7 +85,7 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Text(
-                  "Das Volk hat\nentschieden!",
+                  "Das Volk hat\nentschieden",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -209,8 +209,8 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
 
                       Text(
                         widget.spielerName != null
-                            ? "Ein schweres Schweigen legt sich über das Dorf. \n\n Ein neues Opfer wurde gefunden"
-                            : "Ein schweres Schweigen legt sich über das Dorf. \n\n Die Nacht bricht herein...",
+                            ? "Ein schweres Schweigen legt sich über das Dorf. \n\n Der Dorfplatz leert sich, jeder kehrt in sein Haus zurück..."
+                            : "Die Bewohner konnten sich nicht einig werden. \n\n Der Dorfplatz leert sich, jeder kehrt in sein Haus zurück...",
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white60,

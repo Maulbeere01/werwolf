@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:werwolf/screens/intro.dart';
 import 'package:werwolf/services/grpc_handler.dart';
 import 'package:werwolf/screens/home_screen.dart';
@@ -10,6 +9,7 @@ import 'package:werwolf/controllers/game_stream_controller.dart';
 import 'package:werwolf/utils/game_assets.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
 import 'package:werwolf/widgets/connection_status.dart';
+import 'package:werwolf/widgets/player_tile.dart';
 
 class QRCodeScreen extends StatefulWidget {
   final String lobbyCode;
@@ -176,23 +176,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                 children: [
                   const SizedBox(height: 20),
 
-                  // QR CODE
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: QrImageView(
-                      data: 'silentvillage://join?code=${widget.lobbyCode}',
-                      version: QrVersions.auto,
-                      size: 150,
-                      backgroundColor: Colors.white,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
                   // LOBBY CODE
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
@@ -248,10 +231,7 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
                                   )
                                 : ListView.builder(
                                     itemCount: players.length,
-                                    itemBuilder: (_, i) => _PlayerTile(
-                                      name: players[i].name,
-                                      isHost: players[i].isHost,
-                                    ),
+                                    itemBuilder: (_, i) => PlayerTile(player: players[i]),
                                   ),
                           ),
                         ],
@@ -304,48 +284,6 @@ class _QRCodeScreenState extends State<QRCodeScreen> {
           ),
         );
       },
-      ),
-    );
-  }
-}
-
-class _PlayerTile extends StatelessWidget {
-  final String name;
-  final bool isHost;
-
-  const _PlayerTile({required this.name, required this.isHost});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.white24,
-            child: Text(
-              name[0].toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ),
-          if (isHost) const Icon(Icons.star, color: Colors.amber, size: 18),
-        ],
       ),
     );
   }

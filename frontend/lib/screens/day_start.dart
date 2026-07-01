@@ -182,7 +182,7 @@ class _DayStartState extends State<DayStart> with SingleTickerProviderStateMixin
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => Endscreen(gewinner: winningTeamName(winningTeamOf(update))),
+        builder: (_) => Endscreen(gewinner: winningTeamSentence(winningTeamOf(update))),
       ),
     );
   }

@@ -92,7 +92,8 @@ public final class GameUpdateFactory {
                 .setId(p.id)
                 .setName(p.name)
                 .setIsAlive(p.alive)
-                .setIsHost(p.id.equals(hostId));
+                .setIsHost(p.id.equals(hostId))
+                .setAvatar(p.avatar == null ? "" : p.avatar);
         // a player's role is revealed to everyone once they are dead
         if (!p.alive && p.role != null) {
             b.setRole(p.role);

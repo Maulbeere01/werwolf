@@ -92,6 +92,10 @@ const UserProfile$json = {
     {'1': 'username', '3': 2, '4': 1, '5': 9, '10': 'username'},
     {'1': 'score', '3': 3, '4': 1, '5': 5, '10': 'score'},
     {'1': 'avatar', '3': 4, '4': 1, '5': 9, '10': 'avatar'},
+    {'1': 'games_played', '3': 5, '4': 1, '5': 5, '10': 'gamesPlayed'},
+    {'1': 'games_won_werewolf', '3': 6, '4': 1, '5': 5, '10': 'gamesWonWerewolf'},
+    {'1': 'games_won_villager', '3': 7, '4': 1, '5': 5, '10': 'gamesWonVillager'},
+    {'1': 'games_lost', '3': 8, '4': 1, '5': 5, '10': 'gamesLost'},
   ],
 };
 
@@ -99,7 +103,9 @@ const UserProfile$json = {
 final $typed_data.Uint8List userProfileDescriptor = $convert.base64Decode(
     'CgtVc2VyUHJvZmlsZRIXCgd1c2VyX2lkGAEgASgJUgZ1c2VySWQSGgoIdXNlcm5hbWUYAiABKA'
     'lSCHVzZXJuYW1lEhQKBXNjb3JlGAMgASgFUgVzY29yZRIWCgZhdmF0YXIYBCABKAlSBmF2YXRh'
-    'cg==');
+    'chIhCgxnYW1lc19wbGF5ZWQYBSABKAVSC2dhbWVzUGxheWVkEiwKEmdhbWVzX3dvbl93ZXJld2'
+    '9sZhgGIAEoBVIQZ2FtZXNXb25XZXJld29sZhIsChJnYW1lc193b25fdmlsbGFnZXIYByABKAVS'
+    'EGdhbWVzV29uVmlsbGFnZXISHQoKZ2FtZXNfbG9zdBgIIAEoBVIJZ2FtZXNMb3N0');
 
 @$core.Deprecated('Use loginRequestDescriptor instead')
 const LoginRequest$json = {
@@ -317,6 +323,7 @@ const PlayerStatus$json = {
     {'1': 'voted_for_target_id', '3': 5, '4': 1, '5': 9, '10': 'votedForTargetId'},
     {'1': 'role', '3': 6, '4': 1, '5': 14, '6': '.werewolf.Role', '10': 'role'},
     {'1': 'is_host', '3': 7, '4': 1, '5': 8, '10': 'isHost'},
+    {'1': 'avatar', '3': 8, '4': 1, '5': 9, '10': 'avatar'},
   ],
 };
 
@@ -325,7 +332,8 @@ final $typed_data.Uint8List playerStatusDescriptor = $convert.base64Decode(
     'CgxQbGF5ZXJTdGF0dXMSDgoCaWQYASABKAlSAmlkEhIKBG5hbWUYAiABKAlSBG5hbWUSGQoIaX'
     'NfYWxpdmUYAyABKAhSB2lzQWxpdmUSGwoJaGFzX3ZvdGVkGAQgASgIUghoYXNWb3RlZBItChN2'
     'b3RlZF9mb3JfdGFyZ2V0X2lkGAUgASgJUhB2b3RlZEZvclRhcmdldElkEiIKBHJvbGUYBiABKA'
-    '4yDi53ZXJld29sZi5Sb2xlUgRyb2xlEhcKB2lzX2hvc3QYByABKAhSBmlzSG9zdA==');
+    '4yDi53ZXJld29sZi5Sb2xlUgRyb2xlEhcKB2lzX2hvc3QYByABKAhSBmlzSG9zdBIWCgZhdmF0'
+    'YXIYCCABKAlSBmF2YXRhcg==');
 
 @$core.Deprecated('Use gameActionDescriptor instead')
 const GameAction$json = {

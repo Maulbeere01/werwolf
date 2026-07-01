@@ -3,6 +3,7 @@ package com.werewolf.logic.service;
 import com.werewolf.logic.model.Lobby;
 import com.werewolf.logic.model.Player;
 import com.werewolf.grpc.LobbySettings;
+import com.werewolf.persistence.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.UUID;
 public class LobbyManager {
 
     private final LobbyService lobbyService;
+    private final UserRepository userRepository;
 
     public Lobby createLobby(String hostId, String hostName, LobbySettings settings) {
 
@@ -24,6 +26,7 @@ public class LobbyManager {
         Player host = new Player();
         host.id = hostId;
         host.name = hostName;
+        host.avatar = avatarOf(hostId);
 
         lobby.players.add(host);
 
@@ -55,9 +58,19 @@ public class LobbyManager {
         Player player = new Player();
         player.id = userId;
         player.name = username;
+        player.avatar = avatarOf(userId);
 
         lobby.players.add(player);
         return lobby;
+    }
+
+    // Looked up once, at join time, rather than on every game update: a player's
+    // avatar rarely changes mid-game and this keeps the hot broadcast path
+    // (GameUpdateFactory, ticking on every phase/action) free of DB access.
+    private String avatarOf(String userId) {
+        return userRepository.findById(Long.valueOf(userId))
+                .map(user -> user.getAvatar())
+                .orElse(null);
     }
 
     public Lobby getLobby(String code) {
