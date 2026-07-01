@@ -23,7 +23,8 @@ service UserService {
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc Register (RegisterRequest) returns (google.protobuf.Empty);
   rpc GetProfile (ProfileRequest) returns (UserProfile);
-  
+  rpc UpdateAvatar (UpdateAvatarRequest) returns (UserProfile);
+
   // rpc GetGameHistory (GameHistoryRequest) returns (GameHistoryResponse);
   // rpc BuySkin (SkinRequest) returns (google.protobuf.Empty);
 }
@@ -84,6 +85,11 @@ message UserProfile {
   string user_id = 1;
   string username = 2;
   int32 score = 3;
+  string avatar = 4; // filename of the chosen built-in profile picture, empty if unset
+  int32 games_played = 5;
+  int32 games_won_werewolf = 6;  // games won while holding the WEREWOLF role
+  int32 games_won_villager = 7;  // games won while holding any non-WEREWOLF role
+  int32 games_lost = 8;
 }
 
 message LoginRequest {
@@ -104,6 +110,10 @@ message RegisterRequest {
 
 message ProfileRequest {
   string target_user_id = 1; // empty for own profile
+}
+
+message UpdateAvatarRequest {
+  string avatar = 1; // filename of one of the built-in profile pictures
 }
 
 // lobby
@@ -180,6 +190,7 @@ message PlayerStatus {
   string voted_for_target_id = 5; // masked by backend
   Role role = 6;                  // masked by backend
   bool is_host = 7;
+  string avatar = 8; // filename of the chosen built-in profile picture, empty if unset
 }
 
 message GameAction {

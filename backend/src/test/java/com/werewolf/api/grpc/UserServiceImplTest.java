@@ -1,10 +1,15 @@
 package com.werewolf.api.grpc;
 
+import com.werewolf.auth.AuthContext;
 import com.werewolf.auth.JwtService;
 import com.werewolf.grpc.RegisterRequest;
 import com.werewolf.grpc.LoginRequest;
 import com.werewolf.grpc.LoginResponse;
+import com.werewolf.grpc.ProfileRequest;
+import com.werewolf.grpc.UpdateAvatarRequest;
+import com.werewolf.grpc.UserProfile;
 import com.google.protobuf.Empty;
+import io.grpc.Context;
 import com.werewolf.persistence.entity.UserEntity;
 import com.werewolf.persistence.repository.UserRepository;
 import io.grpc.stub.StreamObserver;
@@ -134,5 +139,89 @@ class UserServiceImplTest {
         assertTrue(errorCaptor.getValue() instanceof StatusRuntimeException);
         StatusRuntimeException exception = (StatusRuntimeException) errorCaptor.getValue();
         assertEquals(Status.Code.UNAUTHENTICATED, exception.getStatus().getCode());
+    }
+
+    @Test
+    void updateAvatar_shouldPersistAndReturnProfile_whenAvatarIsValid() {
+        UserEntity user = new UserEntity();
+        user.setUsername("avataruser");
+        user.setEmail("avatar@mail.com");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
+        user.setExp(0);
+        userRepository.save(user);
+
+        UpdateAvatarRequest request = UpdateAvatarRequest.newBuilder()
+                .setAvatar("wolf_pfp.png")
+                .build();
+
+        StreamObserver<UserProfile> observer = mock(StreamObserver.class);
+        ArgumentCaptor<UserProfile> responseCaptor = ArgumentCaptor.forClass(UserProfile.class);
+
+        Context withUser = Context.current().withValue(AuthContext.USER_ID_KEY, String.valueOf(user.getId()));
+        withUser.run(() -> userService.updateAvatar(request, observer));
+
+        verify(observer).onNext(responseCaptor.capture());
+        assertEquals("wolf_pfp.png", responseCaptor.getValue().getAvatar());
+        verify(observer).onCompleted();
+
+        assertEquals("wolf_pfp.png", userRepository.findById(user.getId()).orElseThrow().getAvatar());
+    }
+
+    @Test
+    void updateAvatar_shouldReject_whenAvatarIsUnknown() {
+        UserEntity user = new UserEntity();
+        user.setUsername("badavataruser");
+        user.setEmail("badavatar@mail.com");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
+        user.setExp(0);
+        userRepository.save(user);
+
+        UpdateAvatarRequest request = UpdateAvatarRequest.newBuilder()
+                .setAvatar("not_a_real_avatar.png")
+                .build();
+
+        StreamObserver<UserProfile> observer = mock(StreamObserver.class);
+        ArgumentCaptor<Throwable> errorCaptor = ArgumentCaptor.forClass(Throwable.class);
+
+        Context withUser = Context.current().withValue(AuthContext.USER_ID_KEY, String.valueOf(user.getId()));
+        withUser.run(() -> userService.updateAvatar(request, observer));
+
+        verify(observer).onError(errorCaptor.capture());
+        StatusRuntimeException exception = (StatusRuntimeException) errorCaptor.getValue();
+        assertEquals(Status.Code.INVALID_ARGUMENT, exception.getStatus().getCode());
+        assertNull(userRepository.findById(user.getId()).orElseThrow().getAvatar());
+    }
+
+    @Test
+    void getProfile_shouldReturnOwnProfile_whenTargetIsEmpty() {
+        UserEntity user = new UserEntity();
+        user.setUsername("selfprofileuser");
+        user.setEmail("selfprofile@mail.com");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
+        user.setExp(5);
+        user.setAvatar("hexe_png.png");
+        user.setGamesPlayed(7);
+        user.setGamesWonWerewolf(2);
+        user.setGamesWonVillager(3);
+        user.setGamesLost(2);
+        userRepository.save(user);
+
+        ProfileRequest request = ProfileRequest.newBuilder().build();
+        StreamObserver<UserProfile> observer = mock(StreamObserver.class);
+        ArgumentCaptor<UserProfile> responseCaptor = ArgumentCaptor.forClass(UserProfile.class);
+
+        Context withUser = Context.current().withValue(AuthContext.USER_ID_KEY, String.valueOf(user.getId()));
+        withUser.run(() -> userService.getProfile(request, observer));
+
+        verify(observer).onNext(responseCaptor.capture());
+        UserProfile profile = responseCaptor.getValue();
+        assertEquals("selfprofileuser", profile.getUsername());
+        assertEquals("hexe_png.png", profile.getAvatar());
+        assertEquals(5, profile.getScore());
+        assertEquals(7, profile.getGamesPlayed());
+        assertEquals(2, profile.getGamesWonWerewolf());
+        assertEquals(3, profile.getGamesWonVillager());
+        assertEquals(2, profile.getGamesLost());
+        verify(observer).onCompleted();
     }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:grpc/grpc.dart';
 import 'package:werwolf/screens/rules.dart';
 import 'package:werwolf/screens/create_game.dart';
 import 'package:werwolf/screens/qr_code_screen.dart';
@@ -44,6 +45,25 @@ class _HomescreenState extends State<Homescreen> {
     super.dispose();
   }
 
+  // Maps the backend's join-failure reason to a German message. NOT_FOUND
+  // means the code doesn't match any lobby; FAILED_PRECONDITION covers a full
+  // or already-started lobby (see LobbyManager.joinLobby) - both were
+  // previously shown as "Lobby nicht gefunden", which was wrong for a full
+  // lobby that does exist.
+  String _joinErrorText(Object error) {
+    if (error is GrpcError && error.code == StatusCode.failedPrecondition) {
+      final message = error.message ?? '';
+      if (message.toLowerCase().contains('full')) {
+        return 'Die Lobby ist bereits voll.';
+      }
+      if (message.toLowerCase().contains('started')) {
+        return 'Das Spiel hat bereits begonnen.';
+      }
+      return 'Der Lobby kann gerade nicht beigetreten werden.';
+    }
+    return 'Lobby nicht gefunden. Bitte Code prüfen.';
+  }
+
   Future<void> _showJoinDialog() async {
     _codeController.clear();
 
@@ -55,7 +75,13 @@ class _HomescreenState extends State<Homescreen> {
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
+            // Ignore the keyboard's bottom inset so the dialog stays put
+            // instead of shrinking/shifting (and overflowing) when the
+            // keyboard opens; the keyboard just overlays on top instead.
+            return MediaQuery.removeViewInsets(
+              context: context,
+              removeBottom: true,
+              child: AlertDialog(
               title: const Text('Spiel beitreten'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -94,11 +120,10 @@ class _HomescreenState extends State<Homescreen> {
                             errorText = null;
                           });
 
-                          final lobbyCode = await GameViewController.joinLobby(code);
+                          try {
+                            final lobbyCode = await GameViewController.joinLobby(code);
 
-                          if (!context.mounted) return;
-
-                          if (lobbyCode != null) {
+                            if (!context.mounted) return;
                             Navigator.of(dialogContext).pop();
                             if (!mounted) return;
                             Navigator.of(context).push(
@@ -108,10 +133,11 @@ class _HomescreenState extends State<Homescreen> {
                                 reverseTransitionDuration: Duration.zero,
                               ),
                             );
-                          } else {
+                          } catch (e) {
+                            if (!context.mounted) return;
                             setDialogState(() {
                               loading = false;
-                              errorText = 'Lobby nicht gefunden. Bitte Code prüfen.';
+                              errorText = _joinErrorText(e);
                             });
                           }
                         },
@@ -124,6 +150,7 @@ class _HomescreenState extends State<Homescreen> {
                       : const Text('Beitreten'),
                 ),
               ],
+              ),
             );
           },
         );
@@ -255,10 +282,14 @@ class _HomescreenState extends State<Homescreen> {
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(50),
                             ),
                           ),
-                          child: const Text("Spiel erstellen"),
+                          child: const Text("Spiel erstellen",
+                            style: TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
 
@@ -272,10 +303,14 @@ class _HomescreenState extends State<Homescreen> {
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(50),
                             ),
                           ),
-                          child: const Text("Spiel beitreten"),
+                          child: const Text("Spiel beitreten",
+                            style: TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -298,7 +333,7 @@ class _HomescreenState extends State<Homescreen> {
                     "Regeln ansehen",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(

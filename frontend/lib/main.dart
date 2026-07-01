@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:grpc/grpc.dart';
 import 'package:werwolf/services/grpc_handler.dart';
 import 'package:werwolf/screens/login_view.dart';
@@ -10,10 +11,12 @@ import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
 import 'package:werwolf/controllers/login_view_controller.dart';
 import 'package:werwolf/generated/werwolf.pb.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock the app to upright portrait; it never rotates to landscape.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // The in-game backgrounds are large, which
   // overflows the image cache's 100 MB default and gets one evicted right after
@@ -95,7 +98,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00008B),
+          seedColor: const Color.fromARGB(255, 30, 42, 74),
           brightness: Brightness.light,
         ),
       ),
@@ -116,23 +119,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
-  late final AudioPlayer audioPlayer;
-
-  @override
-  void initState() {
-    super.initState();
-    audioPlayer = AudioPlayer();
-
-    audioPlayer.setReleaseMode(ReleaseMode.loop);
-    audioPlayer.play(AssetSource('hintergrund.mp3'));
-  }
-
-  @override
-  void dispose() {
-    audioPlayer.stop();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

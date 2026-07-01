@@ -1,18 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:werwolf/auth/session_store.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
+import 'package:werwolf/narration/narration_service.dart';
+import 'package:werwolf/screens/create_game.dart';
+import 'package:werwolf/screens/home_screen.dart';
+import 'package:werwolf/services/grpc_handler.dart';
+import 'package:werwolf/utils/stats_display.dart';
 import 'package:werwolf/widgets/progress_bar.dart';
 
 class Endscreen extends StatefulWidget {
-  /// Name of the winning team, e.g. "Werwölfe" or "Dorf".
+  /// Full result sentence, e.g. "Die Werwölfe haben gewonnen" or "Das Dorf hat
+  /// gewonnen" (see winningTeamSentence).
   final String gewinner;
-  final int aktuelleSpielNummer;
-  final int gesamtSpiele;
 
   const Endscreen({
     super.key,
-    this.gewinner = "Werwölfe",
-    this.aktuelleSpielNummer = 1,
-    this.gesamtSpiele = 1,
+    this.gewinner = "Die Werwölfe haben gewonnen",
   });
 
   @override
@@ -24,6 +28,7 @@ class _EndscreenState extends State<Endscreen> {
 
   Alignment _textAlignment = Alignment.center;
   bool _zeigeDetails = false;
+  UserProfile? _profile;
 
   @override
   void initState() {
@@ -36,6 +41,26 @@ class _EndscreenState extends State<Endscreen> {
         });
       }
     });
+
+    _loadProfile();
+  }
+
+  // The backend persists the game result before broadcasting the GAME_END
+  // snapshot that lands us on this screen, so this already reflects the
+  // just-finished round.
+  Future<void> _loadProfile() async {
+    try {
+      final grpc = await GrpcHandler.instance();
+      final profile = await grpc.userClient.getProfile(ProfileRequest());
+      if (mounted) {
+        setState(() {
+          _profile = profile;
+        });
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('[ENDSCREEN] profile load skipped: $e');
+    }
   }
 
   @override
@@ -44,11 +69,53 @@ class _EndscreenState extends State<Endscreen> {
     super.dispose();
   }
 
+  Future<void> _leaveTo(WidgetBuilder builder) async {
+    NarrationService.instance.reset();
+    await SessionStore.clearLobbyCode();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: builder),
+      (route) => false,
+    );
+  }
+
+  // The cap doubles every time the score reaches it (10 -> 20 -> 40 -> ...),
+  // so this never maxes out no matter how high the score climbs.
+  Widget _statProgressRow(String label, int score) {
+    final cap = progressCapFor(score);
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: const TextStyle(
+                fontFamily: 'BagelFatOne', color: Colors.white, fontSize: 18),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: SpieleProgressBar(
+            aktuelleSpielNummer: score,
+            gesamtSpiele: cap,
+            starteAnimation: _zeigeDetails,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leaveTo((_) => const Homescreen());
+      },
+      child: Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -71,7 +138,7 @@ class _EndscreenState extends State<Endscreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Text(
-                  "Die ${widget.gewinner} \n hat/haben gewonnen",
+                  widget.gewinner,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -93,16 +160,8 @@ class _EndscreenState extends State<Endscreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      SpieleProgressBar(
-                        aktuelleSpielNummer: widget.aktuelleSpielNummer,
-                        gesamtSpiele: widget.gesamtSpiele,
-                        starteAnimation: _zeigeDetails,
-                      ),
-
-                      const SizedBox(height: 50),
-
                       const Text(
-                        "Challenges",
+                        "Statistik",
                         style: TextStyle(
                             fontFamily: 'BagelFatOne',
                             color: Colors.white,
@@ -115,60 +174,13 @@ class _EndscreenState extends State<Endscreen> {
                       SizedBox(
                         height: 20,
                       ),
-                      Row(
-                        children: [
-                          const Text(
-                            "Gewinne 3 Spiele",
-                            style: TextStyle(
-                                fontFamily: 'BagelFatOne',
-                                color: Colors.white,
-                                fontSize: 20
-                            ),
-                          ),
-                          const SizedBox(width: 70),
-                          Expanded(
-                              child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3, starteAnimation: _zeigeDetails,)
-                          ),
-                        ],
-                      ),
-
+                      _statProgressRow("Spiele gespielt", _profile?.gamesPlayed ?? 0),
                       const SizedBox(height: 20),
-
-                      Row(
-                        children: [
-                          const Text(
-                            "Gewinne 3 Spiele",
-                            style: TextStyle(
-                                fontFamily: 'BagelFatOne',
-                                color: Colors.white,
-                                fontSize: 20
-                            ),
-                          ),
-                          const SizedBox(width: 70),
-                          Expanded(
-                              child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3,starteAnimation: _zeigeDetails,)
-                          ),
-                        ],
-                      ),
-
+                      _statProgressRow("Werwolf-Siege", _profile?.gamesWonWerewolf ?? 0),
                       const SizedBox(height: 20),
-
-                      Row(
-                        children: [
-                          const Text(
-                            "Gewinne 3 Spiele",
-                            style: TextStyle(
-                                fontFamily: 'BagelFatOne',
-                                color: Colors.white,
-                                fontSize: 20
-                            ),
-                          ),
-                          const SizedBox(width: 70),
-                          Expanded(
-                              child: SpieleProgressBar(aktuelleSpielNummer: 2, gesamtSpiele: 3,starteAnimation: _zeigeDetails,)
-                          ),
-                        ],
-                      ),
+                      _statProgressRow("Dorfbewohner-Siege", _profile?.gamesWonVillager ?? 0),
+                      const SizedBox(height: 20),
+                      _statProgressRow("Spiele verloren", _profile?.gamesLost ?? 0),
 
                       SizedBox(
                         height: 60,
@@ -182,7 +194,8 @@ class _EndscreenState extends State<Endscreen> {
 
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () =>
+                                    _leaveTo((_) => const Homescreen()),
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
@@ -200,7 +213,8 @@ class _EndscreenState extends State<Endscreen> {
 
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () =>
+                                    _leaveTo((_) => const CreateGame()),
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
@@ -225,6 +239,7 @@ class _EndscreenState extends State<Endscreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

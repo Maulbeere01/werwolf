@@ -11,6 +11,9 @@ import 'package:werwolf/utils/role_display.dart';
 import 'package:werwolf/screens/settings_view.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
+import 'package:werwolf/narration/narration_service.dart';
+import 'package:werwolf/narration/narration_mute_button.dart';
+import 'package:werwolf/lobby/leave_lobby.dart';
 
 class Intro extends StatefulWidget {
   final String lobbyCode;
@@ -45,6 +48,12 @@ class _IntroState extends State<Intro> {
       seed: widget.initialUpdate,
     );
     _controller.addListener(_onUpdate);
+
+    // start the narration layer and play the intro story (the screen drives the
+    // intro explicitly; the phase resolver stays silent during NIGHT_START)
+    NarrationService.instance.attach(_controller);
+    NarrationService.instance.playIntro();
+    NarrationService.instance.playIntroOutro();
 
     // hold black briefly so the backgrounds are painted/uploaded, then fade out
     _coverTimer = Timer(_coverHold, () {
@@ -89,13 +98,19 @@ class _IntroState extends State<Intro> {
   @override
   void dispose() {
     _coverTimer?.cancel();
+    NarrationService.instance.detach(_controller);
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ConnectionStatusScope(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) confirmAndLeaveLobby(context);
+      },
+      child: ConnectionStatusScope(
       controller: _controller,
       child: Scaffold(
       extendBodyBehindAppBar: true,
@@ -108,7 +123,7 @@ class _IntroState extends State<Intro> {
         leading: Align(
           alignment: Alignment.center,
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
+            onTap: () => confirmAndLeaveLobby(context),
             child: Container(
               width: 40,
               height: 40,
@@ -192,13 +207,16 @@ class _IntroState extends State<Intro> {
               children: [
                 const SizedBox(height: 120),
 
-                const Text(
-                  "In einem weit entfernten Dorf...",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'BagelFatOne',
-                    fontSize: 40,
-                    color: Color.fromARGB(255, 51, 50, 94),
+                SizedBox(
+                  width: double.infinity,
+                  child: const Text(
+                    "In einem weit\nentfernten Dorf...",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'BagelFatOne',
+                      fontSize: 32,
+                      color: Color.fromARGB(255, 51, 50, 94),
+                    ),
                   ),
                 ),
 
@@ -242,6 +260,16 @@ class _IntroState extends State<Intro> {
             child: RoleRevealCard(role: selfRoleOf(_controller.currentUpdate)),
           ),
 
+          const SafeArea(
+            child: Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: NarrationMuteButton(),
+              ),
+            ),
+          ),
+
           // black cover that fades out, hiding the first-frame background load
           Positioned.fill(
             child: IgnorePointer(
@@ -255,6 +283,7 @@ class _IntroState extends State<Intro> {
             ),
           ),
         ],
+      ),
       ),
       ),
     );

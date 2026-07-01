@@ -14,6 +14,10 @@ public class GameState {
     public String lobbyCode;
     public Phase phase = Phase.LOBBY;
 
+    // Length of the DAY_DISCUSSION phase in seconds, taken from the lobby's
+    // discussion_time_seconds setting at game start
+    public long discussionSeconds = 0;
+
     // Cupid: the two lovers (chosen on the first night). If one dies, so does the
     // other. cupidDone guards that cupid only ever wakes once, even on a timeout.
     public String loverA;
@@ -67,7 +71,11 @@ public class GameState {
     // targets was a werewolf; from then on the NIGHT_FOX phase is skipped.
     public boolean foxHasPower = true;
 
-    // The team that has met its win condition once the game reaches GAME_END
-    // (WEREWOLF or VILLAGER); null while the game is still running.
+    // The team that has met its win condition (WEREWOLF or VILLAGER); null while
+    // the game is still undecided. Normally set together with phase = GAME_END
+    // (see concludeGame). The one exception is a win decided by the night's deaths:
+    // it is recorded here while the phase is still DAY_RESULT so the morning reveal
+    // narration can play, and the loop concludes to GAME_END on the next tick (see
+    // the deferred-win guard in GameLoopService.tickLoop).
     public Role winningTeam;
 }

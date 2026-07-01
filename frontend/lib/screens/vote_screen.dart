@@ -45,9 +45,9 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
       }
     });
 
-    // the game continues automatically: after 5s we leave the result screen so
+    // the game continues automatically: after this we leave the result screen so
     // the next night can begin
-    _autoCloseTimer = Timer(const Duration(seconds: 5), () {
+    _autoCloseTimer = Timer(const Duration(seconds: 6), () {
       if (mounted) Navigator.of(context).maybePop();
     });
   }
@@ -85,12 +85,12 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Text(
-                  "Das Volk hat\nentschieden!",
+                  "Das Volk hat\nentschieden",
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
                     fontFamily: "BagelFatOne",
-                    fontSize: 40,
+                    fontSize: 56,
                   ),
                 ),
               ),
@@ -137,14 +137,14 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
                               const SizedBox(height: 8),
                               const Text(
                                 "Wurde vom Dorf gehängt.",
-                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                                style: TextStyle(color: Colors.white70, fontSize: 18),
                               ),
                               if (widget.rolle != null) ...[
                                 const Divider(height: 32, color: Colors.white12),
                                 const Text(
                                   "Das Opfer war:",
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 18,
                                     color: Colors.white38,
                                     letterSpacing: 1.2,
                                   ),
@@ -182,7 +182,7 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
                                       : "starb aus Liebeskummer",
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
-                                      color: Colors.white70, fontSize: 14),
+                                      color: Colors.white70, fontSize: 18),
                                 ),
                               ],
                             ] else ...[
@@ -190,15 +190,15 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
                                 "Das Dorf konnte sich nicht einigen.",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 22,
-                                  fontFamily: "BagelFatOne",
+                                  fontSize: 24,
                                   color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               const Text(
                                 "Niemand wurde gehängt.",
-                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                                style: TextStyle(color: Colors.white70, fontSize: 18),
                               ),
                             ],
                           ],
@@ -209,12 +209,12 @@ class _WahlergebnisScreenState extends State<WahlergebnisScreen> {
 
                       Text(
                         widget.spielerName != null
-                            ? "Ein schweres Schweigen legt sich über das Dorf. \n Ein neues Opfer wurde gefunden"
-                            : "Ein schweres Schweigen legt sich über das Dorf. \n Die Nacht bricht herein...",
+                            ? "Ein schweres Schweigen legt sich über das Dorf. \n\n Der Dorfplatz leert sich, jeder kehrt in sein Haus zurück..."
+                            : "Die Bewohner konnten sich nicht einig werden. \n\n Der Dorfplatz leert sich, jeder kehrt in sein Haus zurück...",
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white60,
-                          fontSize: 15,
+                          fontSize: 18,
                           fontStyle: FontStyle.italic,
                         ),
                       ),

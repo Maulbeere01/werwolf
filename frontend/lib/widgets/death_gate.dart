@@ -27,7 +27,17 @@ class DeathGate extends StatefulWidget {
 class _DeathGateState extends State<DeathGate> {
   // How long the result that killed the player stays visible before the
   // personal death screen takes over.
-  static const Duration _revealDelay = Duration(seconds: 5);
+  //
+  // Must stay strictly greater than NightStart's _nightToDayHold (5s): a
+  // night death is detected while DeathGate is still mounted on the (about to
+  // be replaced) night screen, racing this timer against the night screen's
+  // own navigation to DayStart. If this timer won that race, the death screen
+  // would flash on the old night screen and then get replaced by the day
+  // result reveal when DayStart takes over - only to flip back to the death
+  // screen a few seconds later on a fresh DeathGate. Keeping this delay above
+  // the hold means the night screen always navigates away first, so the
+  // reveal only ever plays out once, cleanly, on the day screen.
+  static const Duration _revealDelay = Duration(seconds: 7);
 
   // null until the death screen is actually shown; holds the role + cause
   // captured at the moment of death (later updates clear the announcement).

@@ -39,7 +39,9 @@ String roleName(Role role) => switch (role) {
       _ => 'Unbekannt',
     };
 
-String winningTeamName(Role team) => team == Role.WEREWOLF ? 'Werwölfe' : 'Dorf';
+String winningTeamSentence(Role team) => team == Role.WEREWOLF
+    ? 'Die Werwölfe haben gewonnen'
+    : 'Das Dorf hat gewonnen';
 
 /// The winning team carried by a GAME_END update, from either the dedicated
 /// field or the GameEnd announcement.

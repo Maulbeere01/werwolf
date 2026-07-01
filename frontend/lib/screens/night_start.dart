@@ -20,6 +20,9 @@ import 'package:werwolf/voting/werewolf_voting.dart';
 import 'package:werwolf/widgets/connection_status.dart';
 import 'package:werwolf/widgets/death_gate.dart';
 import 'package:werwolf/widgets/role_reveal_card.dart';
+import 'package:werwolf/narration/narration_service.dart';
+import 'package:werwolf/narration/narration_mute_button.dart';
+import 'package:werwolf/lobby/leave_lobby.dart';
 
 class NightStart extends StatefulWidget {
   final String lobbyCode;
@@ -54,13 +57,21 @@ class _NightStartState extends State<NightStart>
   // hand off to the day screen only once
   bool _navigatedToDay = false;
 
-  // Each night phase opens with a 5s view of the plain night scene before the
-  // action UI appears. _introPhase is the phase that delay is running for and
-  // _overlayReadyAt is when the action UI may be shown.
-  static const Duration _introDelay = Duration(seconds: 5);
-  Phase? _introPhase;
-  DateTime? _overlayReadyAt;
-  Timer? _introTimer;
+  // Keep the night on screen this much longer after the backend flips to a day
+  // phase, so the last role's "close your eyes" narration plays out before the
+  // day UI appears (the day-break line then lands right as we switch). Tune here.
+  static const Duration _nightToDayHold = Duration(seconds: 5);
+  Timer? _dayNavTimer;
+
+  // A night phase's action UI is held back until the role's wake-up line is
+  // actually narrated (NarrationService.narratedActionPhase), so it appears in
+  // sync with the voice rather than the instant the backend changes phase.
+  // Safety net: if the narration never cues (e.g. audio failed, or a phase is
+  // misconfigured shorter than its narration), the UI is shown anyway once the
+  // phase has only this many seconds left, so the player can still act. Anchored
+  // to phase_ends_at (not phase start) so it never fires during normal, possibly
+  // delayed, narration regardless of how the voice-line timing is tuned.
+  static const int _gateFallbackSecondsLeft = 15;
 
   @override
   void initState() {
@@ -76,9 +87,9 @@ class _NightStartState extends State<NightStart>
       seed: widget.initialUpdate,
     );
     _stream.addListener(_onPhase);
-
-    // gate the first phase's action UI behind the intro delay from the start
-    _maybeStartIntro(widget.initialUpdate.currentPhase);
+    NarrationService.instance.attach(_stream);
+    // reveal a role's action UI the moment its wake-up line is narrated
+    NarrationService.instance.narratedActionPhase.addListener(_onGate);
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
@@ -99,30 +110,18 @@ class _NightStartState extends State<NightStart>
   @override
   void dispose() {
     _ticker?.cancel();
-    _introTimer?.cancel();
+    _dayNavTimer?.cancel();
     _stream.removeListener(_onPhase);
+    NarrationService.instance.narratedActionPhase.removeListener(_onGate);
+    NarrationService.instance.detach(_stream);
     _controller.dispose();
     _stream.dispose();
     super.dispose();
   }
 
-  static bool _isNightActionPhase(Phase phase) =>
-      phase == Phase.NIGHT_CUPID ||
-      phase == Phase.NIGHT_WEREWOLVES ||
-      phase == Phase.NIGHT_SEER ||
-      phase == Phase.NIGHT_WITCH ||
-      phase == Phase.NIGHT_FOX ||
-      phase == Phase.NIGHT_SABOTEUR;
-
-  // When a new night phase begins, start its 5s intro delay (once per phase).
-  void _maybeStartIntro(Phase phase) {
-    if (!_isNightActionPhase(phase) || phase == _introPhase) return;
-    _introPhase = phase;
-    _overlayReadyAt = DateTime.now().add(_introDelay);
-    _introTimer?.cancel();
-    _introTimer = Timer(_introDelay, () {
-      if (mounted) setState(() {});
-    });
+  // Re-render when the narration unlocks a role's action UI.
+  void _onGate() {
+    if (mounted) setState(() {});
   }
 
   // Once the night is over the backend moves the game into the day phases or
@@ -132,21 +131,33 @@ class _NightStartState extends State<NightStart>
   // animation has finished.
   void _onPhase() {
     final phase = _stream.currentUpdate.currentPhase;
-    _maybeStartIntro(phase);
 
     if (_navigatedToDay) return;
-    if (!_isDayPhase(phase) && phase != Phase.GAME_END) return;
+    final isGameEnd = phase == Phase.GAME_END;
+    if (!_isDayPhase(phase) && !isGameEnd) return;
 
     _navigatedToDay = true;
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => DayStart(
-          lobbyCode: widget.lobbyCode,
-          initialUpdate: _stream.currentUpdate,
+
+    void goToDay() {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => DayStart(
+            lobbyCode: widget.lobbyCode,
+            initialUpdate: _stream.currentUpdate,
+          ),
         ),
-      ),
-    );
+      );
+    }
+
+    // On a normal day break, linger on the night a few seconds so the last
+    // role's "close your eyes" finishes first. A game ending at night skips the
+    // hold (it goes straight to the result/end screen).
+    if (isGameEnd) {
+      goToDay();
+    } else {
+      _dayNavTimer = Timer(_nightToDayHold, goToDay);
+    }
   }
 
   static bool _isDayPhase(Phase phase) =>
@@ -237,9 +248,13 @@ class _NightStartState extends State<NightStart>
     }
 
 
-    // Show the plain night scene for the first 5s of each night phase, so the
-    // transition animations/announcements are visible before the action UI.
-    if (_overlayReadyAt != null && DateTime.now().isBefore(_overlayReadyAt!)) {
+
+    final narratedNow =
+        NarrationService.instance.narratedActionPhase.value == phase;
+    final secondsLeft = _secondsLeft(update);
+    final phaseRunningOut =
+        secondsLeft != null && secondsLeft <= _gateFallbackSecondsLeft;
+    if (!narratedNow && !phaseRunningOut) {
       return null;
     }
 
@@ -362,7 +377,12 @@ class _NightStartState extends State<NightStart>
 
   @override
   Widget build(BuildContext context) {
-    return ConnectionStatusScope(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) confirmAndLeaveLobby(context);
+      },
+      child: ConnectionStatusScope(
       controller: _stream,
       child: DeathGate(
         controller: _stream,
@@ -377,7 +397,7 @@ class _NightStartState extends State<NightStart>
         leading: Align(
           alignment: Alignment.center,
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
+            onTap: () => confirmAndLeaveLobby(context),
             child: Container(
               width: 40,
               height: 40,
@@ -493,7 +513,7 @@ class _NightStartState extends State<NightStart>
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontFamily: 'BagelFatOne',
-                                fontSize: 36,
+                                fontSize: 32,
                                 color: Color.fromARGB(255, 51, 50, 94),
                               ),
                             ),
@@ -551,9 +571,21 @@ class _NightStartState extends State<NightStart>
 
               // role action screen, shown on top when it is this player's turn
               if (overlay != null) Positioned.fill(child: overlay),
+
+              // narration mute toggle, kept on top so it stays reachable
+              const SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: NarrationMuteButton(),
+                  ),
+                ),
+              ),
             ],
           );
         },
+      ),
       ),
       ),
       ),

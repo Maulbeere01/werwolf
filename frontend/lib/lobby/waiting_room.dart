@@ -105,7 +105,6 @@ class _WarteraumState extends State<Warteraum> {
           listenable: _controller,
           builder: (context, _) {
             final players = _controller.currentUpdate.players;
-            final playerNames = players.map((p) => p.name).toList();
             final host = players.where((p) => p.isHost);
             final hostName = host.isEmpty ? null : host.first.name;
 
@@ -125,20 +124,7 @@ class _WarteraumState extends State<Warteraum> {
                 const SizedBox(height: 30),
 
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: playerNames.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(24.0),
-                            child: Text(
-                              'Warte auf Spieler...',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white54,
-                              ),
-                            ),
-                          )
-                        : Spieleranzeige(players: playerNames),
-                  ),
+                  child: Spieleranzeige(players: players),
                 ),
 
                 Padding(
