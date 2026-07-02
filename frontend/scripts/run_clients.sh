@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# set -euo pipefail
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -50,11 +50,28 @@ if [[ ! -x "$BUNDLE/werwolf" ]]; then
 fi
 
 PIDS=()
+
 cleanup() {
   echo
   echo "Stopping ${#PIDS[@]} instance(s)..."
+
   for pid in "${PIDS[@]}"; do
-    kill "$pid" 2>/dev/null || true
+    kill -TERM -- "-$pid" 2>/dev/null || true
+  done
+
+  local waited=0
+  while [[ $waited -lt 5 ]]; do
+    local still_running=0
+    for pid in "${PIDS[@]}"; do
+      kill -0 "$pid" 2>/dev/null && still_running=1
+    done
+    [[ $still_running -eq 0 ]] && break
+    sleep 1
+    ((waited++))
+  done
+
+  for pid in "${PIDS[@]}"; do
+    kill -KILL -- "-$pid" 2>/dev/null || true
   done
 }
 trap cleanup EXIT INT TERM
@@ -66,11 +83,11 @@ for ((i = 1; i <= COUNT; i++)); do
   cp -r "$BUNDLE" "$RUN_DIR"
   if [[ "$AUTOLOGIN" -eq 1 ]]; then
     USERNAME="${USER_PREFIX}${i}"
-    WERWOLF_AUTOLOGIN_USER="$USERNAME" WERWOLF_AUTOLOGIN_PASS="$PASSWORD" "$RUN_DIR/werwolf" &
+    setsid env WERWOLF_AUTOLOGIN_USER="$USERNAME" WERWOLF_AUTOLOGIN_PASS="$PASSWORD" "$RUN_DIR/werwolf" &
     PIDS+=("$!")
     echo "    instance $i ->  $RUN_DIR (pid $!) [auto-login: $USERNAME]"
   else
-    "$RUN_DIR/werwolf" &
+    setsid "$RUN_DIR/werwolf" &
     PIDS+=("$!")
     echo "    instance $i ->  $RUN_DIR (pid $!)"
   fi
