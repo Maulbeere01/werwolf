@@ -63,9 +63,6 @@ Fuer die Prod-Konfiguration zusaetzlich `--dart-define=APP_ENV=prod` anhaengen.
 
 Standardmaessig loggt das Skript die Instanzen automatisch ein. Dafuer muessen vorher im Backend passende User angelegt sein, benannt nach dem Schema test1, test2 usw. (Praefix `test` plus Instanznummer), mit dem Passwort 1234567890, jeweils passend zur Anzahl der gestarteten Clients.
 
-#### Bekanntes Problem
-Bei mehreren gleichzeitigen Clients laeuft der geteilte PulseAudio-Sink (WSLg) voll, wodurch die App einfrieren kann (siehe `lib/narration/audio_session.dart`). Deshalb ist die Audioausgabe im `run_clients`-Skript deaktiviert. Fuer verlaessliche Audio- und Voice-Line-Tests mit mehreren Clients funktioniert aktuell nur ein echtes Telefon zuverlaessig.
-
 ### Icons
 App-Icons werden aus `assets/PNGs/icon.png` generiert:
 ```bash

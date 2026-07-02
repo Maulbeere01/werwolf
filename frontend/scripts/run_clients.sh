@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -14,7 +14,7 @@ IS_PROD=0
 WIN_WIDTH=400
 WIN_HEIGHT=860
 
-export PULSE_SERVER=unix:/dev/null
+# export PULSE_SERVER=unix:/dev/null
 
 for arg in "$@"; do
   case "$arg" in
