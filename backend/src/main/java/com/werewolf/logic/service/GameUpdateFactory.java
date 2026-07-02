@@ -51,6 +51,23 @@ public final class GameUpdateFactory {
                     .build());
         }
 
+        // the saboteur's victim sits out this day (set going into the day phases,
+        // cleared once the day vote resolves); tells their client to show the
+        // "you are sabotaged" screen instead of the discussion/vote UI
+        b.setYouAreSabotaged(userId.equals(state.sabotagedPlayerId));
+
+        // privately tell each lover who their partner is (only in their own
+        // snapshot, so nobody else learns the pairing)
+        if (userId.equals(state.loverA)) {
+            b.setLoverPartnerId(state.loverB);
+        } else if (userId.equals(state.loverB)) {
+            b.setLoverPartnerId(state.loverA);
+        }
+
+        // the just-killed hunter still owes a revenge shot: their client stays on
+        // the revenge screen instead of latching the death screen
+        b.setYouMustTakeRevenge(userId.equals(state.pendingHunterId));
+
         return b.build();
     }
 
@@ -75,7 +92,8 @@ public final class GameUpdateFactory {
                 .setId(p.id)
                 .setName(p.name)
                 .setIsAlive(p.alive)
-                .setIsHost(p.id.equals(hostId));
+                .setIsHost(p.id.equals(hostId))
+                .setAvatar(p.avatar == null ? "" : p.avatar);
         // a player's role is revealed to everyone once they are dead
         if (!p.alive && p.role != null) {
             b.setRole(p.role);

@@ -1,0 +1,33 @@
+import 'package:werwolf/services/grpc_handler.dart';
+import 'package:werwolf/auth/auth_state.dart';
+import 'package:werwolf/auth/session_store.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
+
+class LoginViewController  {
+
+  static Future<bool> loginUser(String username, String password) async {
+    final grpc = await GrpcHandler.instance();
+
+    try {
+      var request = LoginRequest();
+      request.username = username;
+      request.password = password;
+
+      final response = await grpc.userClient.login(request);
+      AuthState.token = response.token;
+      AuthState.userId = response.profile.userId;
+      await SessionStore.save();
+
+      print('[LOGIN] Success userId=${response.profile.userId}, username=${response.profile.username}');
+      print('[LOGIN] Token: ${response.token.substring(0, 20)}...');
+      return true;
+    } catch (e) {
+      print('[LOGIN] Error: $e');
+      return false;
+    }
+  }
+
+  static Future<void> logout() async {
+    await SessionStore.clearAll();
+  }
+}

@@ -1,5 +1,5 @@
 import 'package:grpc/grpc.dart';
-import 'auth_state.dart';
+import 'package:werwolf/auth/auth_state.dart';
 
 class AuthInterceptor implements ClientInterceptor {
   @override

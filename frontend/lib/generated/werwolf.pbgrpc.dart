@@ -34,6 +34,10 @@ class UserServiceClient extends $grpc.Client {
       '/werewolf.UserService/GetProfile',
       ($0.ProfileRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.UserProfile.fromBuffer(value));
+  static final _$updateAvatar = $grpc.ClientMethod<$0.UpdateAvatarRequest, $0.UserProfile>(
+      '/werewolf.UserService/UpdateAvatar',
+      ($0.UpdateAvatarRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.UserProfile.fromBuffer(value));
 
   UserServiceClient($grpc.ClientChannel channel,
       {$grpc.CallOptions? options,
@@ -51,6 +55,10 @@ class UserServiceClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$0.UserProfile> getProfile($0.ProfileRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getProfile, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.UserProfile> updateAvatar($0.UpdateAvatarRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateAvatar, request, options: options);
   }
 }
 
@@ -80,6 +88,13 @@ abstract class UserServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.ProfileRequest.fromBuffer(value),
         ($0.UserProfile value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UpdateAvatarRequest, $0.UserProfile>(
+        'UpdateAvatar',
+        updateAvatar_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.UpdateAvatarRequest.fromBuffer(value),
+        ($0.UserProfile value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.LoginResponse> login_Pre($grpc.ServiceCall call, $async.Future<$0.LoginRequest> request) async {
@@ -94,9 +109,14 @@ abstract class UserServiceBase extends $grpc.Service {
     return getProfile(call, await request);
   }
 
+  $async.Future<$0.UserProfile> updateAvatar_Pre($grpc.ServiceCall call, $async.Future<$0.UpdateAvatarRequest> request) async {
+    return updateAvatar(call, await request);
+  }
+
   $async.Future<$0.LoginResponse> login($grpc.ServiceCall call, $0.LoginRequest request);
   $async.Future<$1.Empty> register($grpc.ServiceCall call, $0.RegisterRequest request);
   $async.Future<$0.UserProfile> getProfile($grpc.ServiceCall call, $0.ProfileRequest request);
+  $async.Future<$0.UserProfile> updateAvatar($grpc.ServiceCall call, $0.UpdateAvatarRequest request);
 }
 @$pb.GrpcServiceName('werewolf.GameService')
 class GameServiceClient extends $grpc.Client {

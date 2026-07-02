@@ -5,8 +5,11 @@ import com.werewolf.logic.model.GameState;
 import com.werewolf.logic.model.Lobby;
 
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,6 +30,7 @@ public class GameLoopService {
     private final GameStateService gameStateService;
     private final LobbyManager lobbyManager;
     private final LobbySubscriptionService lobbySubscriptionService;
+    private final PlayerStatsService playerStatsService;
 
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
@@ -37,15 +41,19 @@ public class GameLoopService {
     // NIGHT_START is the one-off intro. The game then loops over CYCLE
     // (night -> day -> night) until a win condition ends it (see checkWinner /
     // concludeGame); phases without a living holder are skipped (see shouldSkip).
+    // HUNTER_REVENGE is NOT part of the regular cycle: it is an interrupt injected
+    // by nextPhaseConsideringHunter the moment a hunter dies, after which the loop
+    // resumes where it would have gone (see resumeAfterHunter).
     static final List<Phase> CYCLE = List.of(
+            Phase.NIGHT_CUPID,
             Phase.NIGHT_WEREWOLVES,
             Phase.NIGHT_SEER,
             Phase.NIGHT_WITCH,
             Phase.NIGHT_FOX,
+            Phase.NIGHT_SABOTEUR,
             Phase.DAY_RESULT,
             Phase.DAY_DISCUSSION,
-            Phase.DAY_VOTING,
-            Phase.HUNTER_REVENGE
+            Phase.DAY_VOTING
     );
 
     // werewolves get a full minute to agree on a victim
@@ -61,31 +69,58 @@ public class GameLoopService {
     // the seer and the witch each get 40s to make their choice
     static final long SEER_PHASE_SECONDS = 40;
     static final long WITCH_PHASE_SECONDS = 40;
+    static final long FOX_PHASE_SECONDS = 40;
 
-    // placeholder durations (seconds)
+    // When the hunter's revenge shot ends the game, hold the HUNTER_REVENGE reveal
+    // this long before concluding to GAME_END, so the "the hunter took someone"
+    // narration (~12s) plays out on the hunter screen before the win screen appears.
+    static final long HUNTER_WIN_REVEAL_SECONDS = 14;
+
+    // Phase durations (seconds). These also bound how long the narrator voice
+    // lines have to play before the phase advances (frontend lib/narration): a
+    // duration must be >= the lines that play when the phase BEGINS, or the line
+    // gets cut off. The night action phases (40-60s) already dwarf their ~15s
+    // wake-up lines; NIGHT_START and DAY_RESULT are sized to their narration.
     static final Map<Phase, Long> PHASE_DURATIONS = Map.ofEntries(
-            Map.entry(Phase.NIGHT_START,      10L),
+            Map.entry(Phase.NIGHT_START,      55L),
+            Map.entry(Phase.NIGHT_CUPID,      40L),
             Map.entry(Phase.NIGHT_WEREWOLVES, WEREWOLF_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_SEER,       SEER_PHASE_SECONDS),
             Map.entry(Phase.NIGHT_WITCH,      WITCH_PHASE_SECONDS),
-            Map.entry(Phase.NIGHT_FOX,        10L),
-            Map.entry(Phase.DAY_RESULT,       10L),
-            Map.entry(Phase.DAY_DISCUSSION,   10L),   // increase timer to 30 seconds
+            Map.entry(Phase.NIGHT_FOX,        FOX_PHASE_SECONDS),
+            Map.entry(Phase.NIGHT_SABOTEUR, 40L),
+            // morning "Der Tag beginnt" scene. Set to 20s the morning
+            // narration (close-eyes/wake/victim/lover lines) can run longer and
+            // then continues into the discussion phase.
+            Map.entry(Phase.DAY_RESULT,       16L),
+            Map.entry(Phase.DAY_DISCUSSION,   10L),   // "Diskutiert..." (~7s)
             Map.entry(Phase.DAY_VOTING,       DAY_VOTE_PHASE_SECONDS),
-            Map.entry(Phase.HUNTER_REVENGE,   10L)
+            Map.entry(Phase.HUNTER_REVENGE,   30L)
     );
 
-    private static long durationOf(Phase phase) {
+    // Bounds for the lobby's configurable discussion length (see CreateLobby /
+    // LobbySettings.discussion_time_seconds). The value is clamped to this range
+    // at game start in GameServiceImp.
+    public static final long MIN_DISCUSSION_SECONDS = 10;
+    public static final long MAX_DISCUSSION_SECONDS = 120;
+
+    // Duration of a phase. DAY_DISCUSSION is configurable per lobby (the host's
+    // discussion-length setting, stored on the GameState at game start); every
+    // other phase uses the fixed PHASE_DURATIONS table.
+    private static long durationOf(GameState state, Phase phase) {
+        if (phase == Phase.DAY_DISCUSSION && state != null && state.discussionSeconds > 0) {
+            return state.discussionSeconds;
+        }
         return PHASE_DURATIONS.getOrDefault(phase, 10L);
     }
 
     public void start(String lobbyCode) {
         GameState state = gameStateService.get(lobbyCode);
         if (state != null) {
-            state.phaseEndsAt = Instant.now().plusSeconds(durationOf(state.phase));
+            state.phaseEndsAt = Instant.now().plusSeconds(durationOf(state, state.phase));
             gameStateService.save(state);
         }
-        long firstDelay = state != null ? durationOf(state.phase) : 10L;
+        long firstDelay = state != null ? durationOf(state, state.phase) : 10L;
         ScheduledFuture<?> future = scheduler.schedule(() -> tickLoop(lobbyCode), firstDelay, TimeUnit.SECONDS);
         activeLoops.put(lobbyCode, future);
         log.info("[LOOP] Started phase loop for lobby {}", lobbyCode);
@@ -103,6 +138,37 @@ public class GameLoopService {
             if (!shouldSkip(state, candidate)) return candidate;
         }
         return Phase.GAME_END; // nothing left to run (should not happen)
+    }
+
+    // Wraps nextPhase with the hunter-revenge interrupt: the moment a hunter dies
+    // (pendingHunterId set, during onExit/onEnter of the leaving phase), the loop
+    // diverts into HUNTER_REVENGE and remembers where it would have gone, then
+    // resumes there once the revenge is resolved. A revenge shot that kills another
+    // hunter chains into a further HUNTER_REVENGE before resuming.
+    private Phase nextPhaseConsideringHunter(GameState state, Phase leaving) {
+        if (leaving == Phase.HUNTER_REVENGE) {
+            if (state.pendingHunterId != null) return Phase.HUNTER_REVENGE; // chained
+            Phase resume = state.resumeAfterHunter != null
+                    ? state.resumeAfterHunter
+                    : nextPhase(state, leaving);
+            state.resumeAfterHunter = null;
+            return resume;
+        }
+        Phase normalNext = nextPhase(state, leaving);
+        if (state.pendingHunterId != null) {
+            state.resumeAfterHunter = normalNext;
+            return Phase.HUNTER_REVENGE;
+        }
+        return normalNext;
+    }
+
+    // Flag the hunter for a revenge shot if the player who just died is a (now
+    // dead) hunter. Called from every place a player is killed.
+    private void markHunterPendingIfHunter(GameState state, String deadId) {
+        Player p = state.players.get(deadId);
+        if (p != null && p.role == Role.HUNTER) {
+            state.pendingHunterId = deadId;
+        }
     }
 
     // Win conditions, evaluated after every death: the werewolves win once they
@@ -127,6 +193,7 @@ public class GameLoopService {
         state.phase = Phase.GAME_END;
         state.phaseEndsAt = null;
         state.pendingPrompts.clear();
+        playerStatsService.recordGameEnd(state.players.values(), winningTeam);
         log.info("[LOOP] Game over: {} win", winningTeam);
     }
 
@@ -136,24 +203,29 @@ public class GameLoopService {
     // village doesn't already know
     private boolean shouldSkip(GameState state, Phase phase) {
         return switch (phase) {
+            // cupid only ever wakes once (the first night). cupidDone is set the
+            // moment the phase runs, so even a timeout without a pick won't repeat it
+            case NIGHT_CUPID -> countAlive(state, Role.CUPID) == 0 || state.cupidDone;
             case NIGHT_WEREWOLVES -> countAlive(state, Role.WEREWOLF) == 0;
             case NIGHT_SEER -> countAlive(state, Role.SEER) == 0;
             case NIGHT_WITCH -> countAlive(state, Role.WITCH) == 0
                     || (!state.witchHasHealPotion && !state.witchHasPoisonPotion);
-            case NIGHT_FOX -> countAlive(state, Role.FOX) == 0;
-            // the hunter only takes revenge when a hunter is in the game AND dead;
-            // a living hunter must never be prompted to shoot
-            case HUNTER_REVENGE -> !roleInGame(state, Role.HUNTER) || countAlive(state, Role.HUNTER) > 0;
+            // the fox acts only while it still has its power AND at least five
+            // players are alive (so peeking at three still leaves real ambiguity)
+            case NIGHT_FOX -> countAlive(state, Role.FOX) == 0
+                    || !state.foxHasPower
+                    || countAliveTotal(state) < 5;
+            case NIGHT_SABOTEUR -> countAlive(state, Role.SABOTEUR) == 0;
             default -> false;
         };
     }
 
-    private boolean roleInGame(GameState state, Role role) {
-        return state.players.values().stream().anyMatch(p -> p.role == role);
-    }
-
     private long countAlive(GameState state, Role role) {
         return state.players.values().stream().filter(p -> p.role == role && p.alive).count();
+    }
+
+    private long countAliveTotal(GameState state) {
+        return state.players.values().stream().filter(p -> p.alive).count();
     }
 
     public void stop(String lobbyCode) {
@@ -199,6 +271,28 @@ public class GameLoopService {
                 return;
             }
 
+            // Deferred game end: a previous tick detected a win but kept the current
+            // phase held so its result narration could play instead of being cut off
+            // by an instant jump to GAME_END — the DAY_RESULT morning reveal
+            // (close-eyes -> day breaks -> night victim) or the HUNTER_REVENGE
+            // reveal (the hunter's shot). That hold is up now, so end the game.
+            // lastAnnouncement (the deaths / hunter shot) is left untouched so it
+            // rides along on the GAME_END snapshot and the win line can follow it.
+            if (state.winningTeam != null) {
+                Lobby endLobby = lobbyManager.getLobby(lobbyCode);
+                concludeGame(state, state.winningTeam);
+                gameStateService.save(state);
+                if (endLobby != null) {
+                    endLobby.players.forEach(p ->
+                            lobbySubscriptionService.sendTo(lobbyCode, p.id,
+                                    GameUpdateFactory.snapshot(state, endLobby, p.id)));
+                }
+                log.info("[LOOP] Lobby {} ended after result reveal: {} win",
+                        lobbyCode, state.winningTeam);
+                stop(lobbyCode);
+                return;
+            }
+
             // Clear the per-phase transient data before resolving the ending phase,
             // so any announcement produced while resolving (e.g. the day vote result)
             // is still present when the personalised snapshot is sent below.
@@ -213,27 +307,55 @@ public class GameLoopService {
             // a death may already have decided the game (e.g. lynching the last wolf)
             Role winner = checkWinner(state);
             if (winner != null) {
-                concludeGame(state, winner);
+                if (leaving == Phase.HUNTER_REVENGE) {
+                    // The hunter's revenge shot just ended the game. As with the
+                    // night deaths at DAY_RESULT, don't cut to GAME_END instantly
+                    // (which would cram the hunter-shot line and the win line into
+                    // one end-screen snapshot). Keep the HUNTER_REVENGE reveal a
+                    // little longer so its "the hunter took someone" narration plays
+                    // on the hunter screen; the deferred-win guard at the top of the
+                    // next tick ends the game and the win line then follows.
+                    state.winningTeam = winner;
+                } else {
+                    concludeGame(state, winner);
+                }
             } else {
-                state.phase = nextPhase(state, leaving);
+                state.phase = nextPhaseConsideringHunter(state, leaving);
             }
 
             Lobby lobby = lobbyManager.getLobby(lobbyCode);
 
             // onEnter for the new phase may apply deaths (the night victims at
-            // DAY_RESULT), so re-check the win condition afterwards
-            if (state.phase != Phase.GAME_END && lobby != null) {
+            // DAY_RESULT), so re-check the win condition afterwards. Skipped once a
+            // win is already pending (a deferred hunter-shot win, above) so we don't
+            // re-run onEnter for the phase we are deliberately holding.
+            if (state.phase != Phase.GAME_END && state.winningTeam == null && lobby != null) {
                 onEnter(state, lobby);
                 winner = checkWinner(state);
                 if (winner != null) {
-                    concludeGame(state, winner);
+                    if (state.phase == Phase.DAY_RESULT) {
+                        // The night's deaths just decided the game. Don't jump
+                        // straight to GAME_END: that would cram close-eyes,
+                        // day-break, victim and win narration into one instant and
+                        // skip the night hold. Instead keep the DAY_RESULT morning
+                        // phase (recording the winner) so its narration plays; the
+                        // deferred-win guard at the top of the next tick ends the game.
+                        state.winningTeam = winner;
+                    } else {
+                        concludeGame(state, winner);
+                    }
                 }
             }
 
             if (state.phase == Phase.GAME_END) {
                 state.phaseEndsAt = null;
             } else {
-                long duration = durationOf(state.phase);
+                // A deferred hunter-shot win holds HUNTER_REVENGE only long enough for
+                // its reveal narration, not the full revenge timer. (A deferred
+                // DAY_RESULT win keeps that phase's normal morning duration.)
+                long duration = (state.winningTeam != null && state.phase == Phase.HUNTER_REVENGE)
+                        ? HUNTER_WIN_REVEAL_SECONDS
+                        : durationOf(state, state.phase);
                 state.phaseEndsAt = Instant.now().plusSeconds(duration);
                 ScheduledFuture<?> next = scheduler.schedule(() -> tickLoop(lobbyCode), duration, TimeUnit.SECONDS);
                 activeLoops.put(lobbyCode, next);
@@ -250,7 +372,7 @@ public class GameLoopService {
 
             log.info("[LOOP] Lobby {} advanced to phase {} ({}s)",
                     lobbyCode, state.phase,
-                    state.phase == Phase.GAME_END ? 0 : durationOf(state.phase));
+                    state.phase == Phase.GAME_END ? 0 : durationOf(state, state.phase));
 
             if (state.phase == Phase.GAME_END) {
                 stop(lobbyCode);
@@ -266,6 +388,14 @@ public class GameLoopService {
     // DAY_VOTING end, etc. Each case sends private info to the relevant role via sendTo()
     private void onEnter(GameState state, Lobby lobby) {
         switch (state.phase) {
+            case NIGHT_CUPID -> {
+                // cupid wakes exactly once; mark it so the phase never repeats
+                state.cupidDone = true;
+                notifyByRole(state, lobby, Role.CUPID,
+                        ActionPrompt.newBuilder().setCupid(CupidPrompt.newBuilder()
+                                .addAllCandidateIds(aliveAllIds(state))
+                                .build()).build());
+            }
             case NIGHT_WEREWOLVES -> {
                 state.werewolfVotes.clear(); // fresh tally each night
                 state.deadPlayers.clear();   // discard stale day-vote entries before the new night
@@ -290,9 +420,36 @@ public class GameLoopService {
                                 .build()).build());
             }
             case NIGHT_FOX -> notifyByRole(state, lobby, Role.FOX,
-                    ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder().build()).build());
-            case HUNTER_REVENGE -> notifyByRole(state, lobby, Role.HUNTER,
-                    ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder().build()).build());
+                    ActionPrompt.newBuilder().setFox(FoxPrompt.newBuilder()
+                            .addAllCandidateIds(aliveTargetIds(state, Role.FOX))
+                            .build()).build());
+
+            case NIGHT_SABOTEUR -> {
+
+                state.sabotagedPlayerId = null;
+
+                notifyByRole(
+                        state,
+                        lobby,
+                        Role.SABOTEUR,
+                        ActionPrompt.newBuilder()
+                                .setSaboteur(
+                                        SaboteurPrompt.newBuilder()
+                                                .addAllCandidateIds(
+                                                        aliveTargetIds(state, Role.SABOTEUR))
+                                                .build())
+                                .build());
+            }
+            // the hunter is already DEAD here, so notifyByRole (alive only) would
+            // never reach them: send the revenge prompt straight to that player id
+            case HUNTER_REVENGE -> {
+                if (state.pendingHunterId != null) {
+                    state.pendingPrompts.put(state.pendingHunterId,
+                            ActionPrompt.newBuilder().setHunter(HunterPrompt.newBuilder()
+                                    .addAllCandidateIds(aliveAllIds(state))
+                                    .build()).build());
+                }
+            }
 
             // morning: apply the deaths gathered during the night and reveal them
             case DAY_RESULT -> resolveNightDeaths(state);
@@ -315,6 +472,7 @@ public class GameLoopService {
         switch (leaving) {
             case NIGHT_WEREWOLVES -> resolveWerewolfAttack(state);
             case DAY_VOTING -> resolveDayVote(state);
+            case HUNTER_REVENGE -> resolveHunterShot(state);
             default -> {}
         }
     }
@@ -352,6 +510,14 @@ public class GameLoopService {
                 .toList();
     }
 
+    // every living player; cupid may pair any two of them (including itself)
+    private List<String> aliveAllIds(GameState state) {
+        return state.players.values().stream()
+                .filter(p -> p.alive)
+                .map(p -> p.id)
+                .toList();
+    }
+
     private void notifyByRole(GameState state, Lobby lobby, Role role, ActionPrompt prompt) {
         // Only record the prompt; it is delivered via the full personalised
         // snapshot that tickLoop broadcasts right after onEnter. We deliberately
@@ -365,20 +531,34 @@ public class GameLoopService {
     // nobody dies. The result is stored in lastAnnouncement and delivered to every
     // player through the snapshot that follows this phase transition.
     private void resolveDayVote(GameState state) {
-        long alivePlayers = state.players.values().stream()
-                .filter(p -> p.alive).count();
+        // the sabotaged player sits this day out: they cast no vote and don't
+        // count towards the half-of-the-living threshold for a lynch either,
+        String sabotaged = state.sabotagedPlayerId;
+        long eligibleVoters = state.players.values().stream()
+                .filter(p -> p.alive)
+                .filter(p -> !p.id.equals(sabotaged))
+                .count();
 
+        Map<String, String> effectiveVotes = new HashMap<>(state.votes);
+        if (sabotaged != null) {
+            // defensive: the sabotaged player's vote is already rejected on the
+            // way in (DayVotingAbility), but drop any stray entry from the tally
+            effectiveVotes.remove(sabotaged);
+        }
+        // consume the sabotage so it only affects this one day vote (and a dead
+        // saboteur, whose night phase is skipped, can't keep silencing)
+        state.sabotagedPlayerId = null;
         // abstentions (skip votes) have an empty target and elect nobody; only
         // real votes for an actual player are tallied here.
-        Map<String, Long> tally = state.votes.values().stream()
+        Map<String, Long> tally = effectiveVotes.values().stream()
                 .filter(id -> id != null && !id.isEmpty())
                 .collect(java.util.stream.Collectors.groupingBy(
                         id -> id, java.util.stream.Collectors.counting()));
 
-        // at least half of the living players must have voted for a real player
-        // (skips do NOT count) for a lynch to be possible
+        // at least half of the eligible (living, non-sabotaged) players must have
+        // voted for a real player (skips do NOT count) for a lynch to be possible
         long votesForSomeone = tally.values().stream().mapToLong(Long::longValue).sum();
-        boolean halfVotedForSomeone = votesForSomeone * 2L >= alivePlayers;
+        boolean halfVotedForSomeone = votesForSomeone * 2L >= eligibleVoters;
 
         PublicAnnouncement announcement;
         if (tally.isEmpty() || !halfVotedForSomeone) {
@@ -401,13 +581,30 @@ public class GameLoopService {
                 String eliminatedId = topTargets.get(0);
                 Player p = state.players.get(eliminatedId);
                 if (p != null) p.alive = false;
+                markHunterPendingIfHunter(state, eliminatedId);
                 if (!state.deadPlayers.contains(eliminatedId)) {
                     state.deadPlayers.add(eliminatedId);
+                }
+                // a lynched lover dies together with their partner (heartbreak);
+                // both deaths are announced to the village in the vote result
+                List<String> alsoDied = new ArrayList<>();
+                String partner = loverPartnerOf(state, eliminatedId);
+                if (partner != null) {
+                    Player lp = state.players.get(partner);
+                    if (lp != null && lp.alive) {
+                        lp.alive = false;
+                        markHunterPendingIfHunter(state, partner);
+                        alsoDied.add(partner);
+                        if (!state.deadPlayers.contains(partner)) {
+                            state.deadPlayers.add(partner);
+                        }
+                    }
                 }
                 announcement = PublicAnnouncement.newBuilder()
                         .setVoteResult(VoteResultEvent.newBuilder()
                                 .setEliminatedPlayerId(eliminatedId)
                                 .setTied(false)
+                                .addAllAlsoDiedIds(alsoDied)
                                 .build())
                         .build();
             }
@@ -422,20 +619,39 @@ public class GameLoopService {
     // player) and announce it. As with the day vote, the announcement rides along
     // on the snapshot sent right after this phase transition.
     private void resolveNightDeaths(GameState state) {
-        List<PlayerDeath> killedThisNight = new ArrayList<>();
+        // Seed each queued victim's cause: the werewolves' target is
+        // attackedThisNight, anyone else queued during the night was the witch's
+        // poison. Lover chaining (below) appends more victims with HEARTBREAK.
+        Map<String, EliminationCause> causes = new LinkedHashMap<>();
         for (String id : state.deadPlayers) {
+            causes.putIfAbsent(id, id.equals(state.attackedThisNight)
+                    ? EliminationCause.KILLED_BY_WEREWOLVES
+                    : EliminationCause.KILLED_BY_WITCH);
+        }
+
+        // Work through the victims as a queue: killing a lover drags their
+        // partner in, which appends to the queue. Using a queue (not a for-each
+        // over deadPlayers) keeps that safe and terminates once everyone is dead.
+        List<PlayerDeath> killedThisNight = new ArrayList<>();
+        Deque<String> queue = new ArrayDeque<>(state.deadPlayers);
+        while (!queue.isEmpty()) {
+            String id = queue.poll();
             Player p = state.players.get(id);
-            if (p != null && p.alive) {
-                p.alive = false;
-                // the werewolves' victim is attackedThisNight; anyone else who
-                // died this night was poisoned by the witch
-                EliminationCause cause = id.equals(state.attackedThisNight)
-                        ? EliminationCause.KILLED_BY_WEREWOLVES
-                        : EliminationCause.KILLED_BY_WITCH;
-                killedThisNight.add(PlayerDeath.newBuilder()
-                        .setPlayerId(id)
-                        .setCause(cause)
-                        .build());
+            if (p == null || !p.alive) continue;
+            p.alive = false;
+            markHunterPendingIfHunter(state, id);
+            killedThisNight.add(PlayerDeath.newBuilder()
+                    .setPlayerId(id)
+                    .setCause(causes.getOrDefault(id, EliminationCause.CAUSE_UNSPECIFIED))
+                    .build());
+
+            String partner = loverPartnerOf(state, id);
+            if (partner != null && !causes.containsKey(partner)) {
+                Player lp = state.players.get(partner);
+                if (lp != null && lp.alive) {
+                    causes.put(partner, EliminationCause.CAUSE_HEARTBREAK);
+                    queue.add(partner);
+                }
             }
         }
         state.deadPlayers.clear();
@@ -453,6 +669,67 @@ public class GameLoopService {
                     .build();
         }
         state.lastAnnouncement = announcement;
+    }
+
+    // A random living player other than the given one (the dying hunter), or
+    // null if there is nobody left to shoot.
+    private String randomAliveTarget(GameState state, String exclude) {
+        List<String> candidates = state.players.values().stream()
+                .filter(p -> p.alive && !p.id.equals(exclude))
+                .map(p -> p.id)
+                .toList();
+        if (candidates.isEmpty()) return null;
+        return candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
+    }
+
+    // The partner a player is in love with (cupid's pairing), or null if this
+    // player is not one of the two lovers.
+    private String loverPartnerOf(GameState state, String id) {
+        if (state.loverA == null || state.loverB == null) return null;
+        if (id.equals(state.loverA)) return state.loverB;
+        if (id.equals(state.loverB)) return state.loverA;
+        return null;
+    }
+
+    // Resolve the dying hunter's revenge shot when HUNTER_REVENGE ends: kill the
+    // chosen target (and drag in their lover), announce it, and clear the pending
+    // state. Killing another hunter re-arms pendingHunterId for a further round.
+    private void resolveHunterShot(GameState state) {
+        String shooter = state.pendingHunterId;
+        String target = state.hunterShotTargetId;
+        // clear first so a chained hunter death below re-arms a new revenge round
+        state.pendingHunterId = null;
+        state.hunterShotTargetId = null;
+
+        // the hunter never picked in time -> a random living player is shot
+        // instead (never the hunter themselves: they are already dead, so they
+        // are not among the living candidates)
+        if (target == null) {
+            target = randomAliveTarget(state, shooter);
+            if (target == null) return; // nobody left to shoot
+        }
+
+        Player t = state.players.get(target);
+        if (t == null || !t.alive) return;
+        t.alive = false;
+        markHunterPendingIfHunter(state, target);
+
+        // shooting a lover drags their partner into death as well
+        String partner = loverPartnerOf(state, target);
+        if (partner != null) {
+            Player lp = state.players.get(partner);
+            if (lp != null && lp.alive) {
+                lp.alive = false;
+                markHunterPendingIfHunter(state, partner);
+            }
+        }
+
+        state.lastAnnouncement = PublicAnnouncement.newBuilder()
+                .setHunterShot(HunterShotEvent.newBuilder()
+                        .setShooterId(shooter != null ? shooter : "")
+                        .setTargetId(target)
+                        .build())
+                .build();
     }
 
 

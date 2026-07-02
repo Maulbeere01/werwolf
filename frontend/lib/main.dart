@@ -1,16 +1,22 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:werwolf/LoginView.dart';
-import 'package:werwolf/RegistrationView.dart';
-import 'package:werwolf/HomeScreen.dart';
+import 'package:flutter/services.dart';
+import 'package:grpc/grpc.dart';
+import 'package:werwolf/services/grpc_handler.dart';
+import 'package:werwolf/screens/login_view.dart';
+import 'package:werwolf/screens/registration_view.dart';
+import 'package:werwolf/screens/home_screen.dart';
 import 'package:werwolf/auth/auth_state.dart';
 import 'package:werwolf/auth/session_store.dart';
-import 'package:werwolf/controller/LoginViewController.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:werwolf/controllers/login_view_controller.dart';
+import 'package:werwolf/generated/werwolf.pb.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Lock the app to upright portrait; it never rotates to landscape.
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // The in-game backgrounds are large, which
   // overflows the image cache's 100 MB default and gets one evicted right after
@@ -20,7 +26,39 @@ void main() async {
 
   await SessionStore.load();
   await _maybeAutoLogin();
+  await _validateSession();
   runApp(const MyApp());
+}
+
+/// A stored token can outlive its validity: it may be expired, or restored on a
+/// fresh install via Android's auto-backup of secure storage. Without a check
+/// the app would route straight to the home screen with a dead session, where
+/// creating/joining a lobby fails. Verify the token against the backend and
+/// drop the session on UNAUTHENTICATED so the user lands on login/register.
+/// Network errors are tolerated: we keep the token so a brief outage doesn't
+/// log the user out.
+Future<void> _validateSession() async {
+  if (AuthState.token == null) return;
+
+  try {
+    final grpc = await GrpcHandler.instance();
+    await grpc.userClient
+        .getProfile(ProfileRequest()) // empty target -> own profile
+        .timeout(const Duration(seconds: 8));
+  } on GrpcError catch (e) {
+    if (e.code == StatusCode.unauthenticated) {
+      await SessionStore.clearAll();
+      // ignore: avoid_print
+      print('[SESSION] stored token rejected (${e.code}); cleared');
+    } else {
+      // ignore: avoid_print
+      print('[SESSION] validation inconclusive (${e.code}); keeping token');
+    }
+  } catch (e) {
+    // Timeout / no connection: assume transient, keep the session.
+    // ignore: avoid_print
+    print('[SESSION] validation skipped: $e');
+  }
 }
 
 /// Dev: when WERWOLF_AUTOLOGIN_USER / WERWOLF_AUTOLOGIN_PASS are
@@ -60,7 +98,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00008B),
+          seedColor: const Color.fromARGB(255, 30, 42, 74),
           brightness: Brightness.light,
         ),
       ),
@@ -81,23 +119,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
-  late final AudioPlayer audioPlayer;
-
-  @override
-  void initState() {
-    super.initState();
-    audioPlayer = AudioPlayer();
-
-    audioPlayer.setReleaseMode(ReleaseMode.loop);
-    audioPlayer.play(AssetSource('hintergrund.mp3'));
-  }
-
-  @override
-  void dispose() {
-    audioPlayer.stop();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {

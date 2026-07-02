@@ -25,6 +25,8 @@ const Role$json = {
     {'1': 'FOX', '2': 5},
     {'1': 'VILLAGE_IDIOT', '2': 6},
     {'1': 'HUNTER', '2': 7},
+    {'1': 'CUPID', '2': 8},
+    {'1': 'SABOTEUR', '2': 9},
   ],
 };
 
@@ -32,7 +34,7 @@ const Role$json = {
 final $typed_data.Uint8List roleDescriptor = $convert.base64Decode(
     'CgRSb2xlEhQKEFJPTEVfVU5TUEVDSUZJRUQQABIMCghXRVJFV09MRhABEgwKCFZJTExBR0VSEA'
     'ISCAoEU0VFUhADEgkKBVdJVENIEAQSBwoDRk9YEAUSEQoNVklMTEFHRV9JRElPVBAGEgoKBkhV'
-    'TlRFUhAH');
+    'TlRFUhAHEgkKBUNVUElEEAgSDAoIU0FCT1RFVVIQCQ==');
 
 @$core.Deprecated('Use phaseDescriptor instead')
 const Phase$json = {
@@ -45,11 +47,13 @@ const Phase$json = {
     {'1': 'NIGHT_SEER', '2': 4},
     {'1': 'NIGHT_WITCH', '2': 5},
     {'1': 'NIGHT_FOX', '2': 6},
-    {'1': 'DAY_RESULT', '2': 7},
-    {'1': 'DAY_DISCUSSION', '2': 8},
-    {'1': 'DAY_VOTING', '2': 9},
-    {'1': 'HUNTER_REVENGE', '2': 10},
-    {'1': 'GAME_END', '2': 11},
+    {'1': 'NIGHT_SABOTEUR', '2': 7},
+    {'1': 'DAY_RESULT', '2': 8},
+    {'1': 'DAY_DISCUSSION', '2': 9},
+    {'1': 'DAY_VOTING', '2': 10},
+    {'1': 'HUNTER_REVENGE', '2': 11},
+    {'1': 'GAME_END', '2': 12},
+    {'1': 'NIGHT_CUPID', '2': 13},
   ],
 };
 
@@ -57,8 +61,9 @@ const Phase$json = {
 final $typed_data.Uint8List phaseDescriptor = $convert.base64Decode(
     'CgVQaGFzZRIVChFQSEFTRV9VTlNQRUNJRklFRBAAEgkKBUxPQkJZEAESDwoLTklHSFRfU1RBUl'
     'QQAhIUChBOSUdIVF9XRVJFV09MVkVTEAMSDgoKTklHSFRfU0VFUhAEEg8KC05JR0hUX1dJVENI'
-    'EAUSDQoJTklHSFRfRk9YEAYSDgoKREFZX1JFU1VMVBAHEhIKDkRBWV9ESVNDVVNTSU9OEAgSDg'
-    'oKREFZX1ZPVElORxAJEhIKDkhVTlRFUl9SRVZFTkdFEAoSDAoIR0FNRV9FTkQQCw==');
+    'EAUSDQoJTklHSFRfRk9YEAYSEgoOTklHSFRfU0FCT1RFVVIQBxIOCgpEQVlfUkVTVUxUEAgSEg'
+    'oOREFZX0RJU0NVU1NJT04QCRIOCgpEQVlfVk9USU5HEAoSEgoOSFVOVEVSX1JFVkVOR0UQCxIM'
+    'CghHQU1FX0VORBAMEg8KC05JR0hUX0NVUElEEA0=');
 
 @$core.Deprecated('Use eliminationCauseDescriptor instead')
 const EliminationCause$json = {
@@ -69,6 +74,7 @@ const EliminationCause$json = {
     {'1': 'KILLED_BY_WITCH', '2': 2},
     {'1': 'VOTED_OUT', '2': 3},
     {'1': 'CAUSE_HUNTER_REVENGE', '2': 4},
+    {'1': 'CAUSE_HEARTBREAK', '2': 5},
   ],
 };
 
@@ -76,7 +82,7 @@ const EliminationCause$json = {
 final $typed_data.Uint8List eliminationCauseDescriptor = $convert.base64Decode(
     'ChBFbGltaW5hdGlvbkNhdXNlEhUKEUNBVVNFX1VOU1BFQ0lGSUVEEAASGAoUS0lMTEVEX0JZX1'
     'dFUkVXT0xWRVMQARITCg9LSUxMRURfQllfV0lUQ0gQAhINCglWT1RFRF9PVVQQAxIYChRDQVVT'
-    'RV9IVU5URVJfUkVWRU5HRRAE');
+    'RV9IVU5URVJfUkVWRU5HRRAEEhQKEENBVVNFX0hFQVJUQlJFQUsQBQ==');
 
 @$core.Deprecated('Use userProfileDescriptor instead')
 const UserProfile$json = {
@@ -85,13 +91,21 @@ const UserProfile$json = {
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'username', '3': 2, '4': 1, '5': 9, '10': 'username'},
     {'1': 'score', '3': 3, '4': 1, '5': 5, '10': 'score'},
+    {'1': 'avatar', '3': 4, '4': 1, '5': 9, '10': 'avatar'},
+    {'1': 'games_played', '3': 5, '4': 1, '5': 5, '10': 'gamesPlayed'},
+    {'1': 'games_won_werewolf', '3': 6, '4': 1, '5': 5, '10': 'gamesWonWerewolf'},
+    {'1': 'games_won_villager', '3': 7, '4': 1, '5': 5, '10': 'gamesWonVillager'},
+    {'1': 'games_lost', '3': 8, '4': 1, '5': 5, '10': 'gamesLost'},
   ],
 };
 
 /// Descriptor for `UserProfile`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List userProfileDescriptor = $convert.base64Decode(
     'CgtVc2VyUHJvZmlsZRIXCgd1c2VyX2lkGAEgASgJUgZ1c2VySWQSGgoIdXNlcm5hbWUYAiABKA'
-    'lSCHVzZXJuYW1lEhQKBXNjb3JlGAMgASgFUgVzY29yZQ==');
+    'lSCHVzZXJuYW1lEhQKBXNjb3JlGAMgASgFUgVzY29yZRIWCgZhdmF0YXIYBCABKAlSBmF2YXRh'
+    'chIhCgxnYW1lc19wbGF5ZWQYBSABKAVSC2dhbWVzUGxheWVkEiwKEmdhbWVzX3dvbl93ZXJld2'
+    '9sZhgGIAEoBVIQZ2FtZXNXb25XZXJld29sZhIsChJnYW1lc193b25fdmlsbGFnZXIYByABKAVS'
+    'EGdhbWVzV29uVmlsbGFnZXISHQoKZ2FtZXNfbG9zdBgIIAEoBVIJZ2FtZXNMb3N0');
 
 @$core.Deprecated('Use loginRequestDescriptor instead')
 const LoginRequest$json = {
@@ -147,6 +161,18 @@ const ProfileRequest$json = {
 /// Descriptor for `ProfileRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List profileRequestDescriptor = $convert.base64Decode(
     'Cg5Qcm9maWxlUmVxdWVzdBIkCg50YXJnZXRfdXNlcl9pZBgBIAEoCVIMdGFyZ2V0VXNlcklk');
+
+@$core.Deprecated('Use updateAvatarRequestDescriptor instead')
+const UpdateAvatarRequest$json = {
+  '1': 'UpdateAvatarRequest',
+  '2': [
+    {'1': 'avatar', '3': 1, '4': 1, '5': 9, '10': 'avatar'},
+  ],
+};
+
+/// Descriptor for `UpdateAvatarRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateAvatarRequestDescriptor = $convert.base64Decode(
+    'ChNVcGRhdGVBdmF0YXJSZXF1ZXN0EhYKBmF2YXRhchgBIAEoCVIGYXZhdGFy');
 
 @$core.Deprecated('Use roleCountDescriptor instead')
 const RoleCount$json = {
@@ -259,6 +285,9 @@ const GameUpdate$json = {
     {'1': 'announcement', '3': 11, '4': 1, '5': 11, '6': '.werewolf.PublicAnnouncement', '10': 'announcement'},
     {'1': 'phase_ends_at', '3': 12, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'phaseEndsAt'},
     {'1': 'pause', '3': 13, '4': 1, '5': 11, '6': '.werewolf.PauseState', '10': 'pause'},
+    {'1': 'you_are_sabotaged', '3': 14, '4': 1, '5': 8, '10': 'youAreSabotaged'},
+    {'1': 'lover_partner_id', '3': 15, '4': 1, '5': 9, '10': 'loverPartnerId'},
+    {'1': 'you_must_take_revenge', '3': 16, '4': 1, '5': 8, '10': 'youMustTakeRevenge'},
   ],
   '9': [
     {'1': 2, '2': 3},
@@ -279,7 +308,9 @@ final $typed_data.Uint8List gameUpdateDescriptor = $convert.base64Decode(
     'bm5vdW5jZW1lbnQYCyABKAsyHC53ZXJld29sZi5QdWJsaWNBbm5vdW5jZW1lbnRSDGFubm91bm'
     'NlbWVudBI+Cg1waGFzZV9lbmRzX2F0GAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFt'
     'cFILcGhhc2VFbmRzQXQSKgoFcGF1c2UYDSABKAsyFC53ZXJld29sZi5QYXVzZVN0YXRlUgVwYX'
-    'VzZUoECAIQA0oECAMQBEoECAUQBkoECAYQBw==');
+    'VzZRIqChF5b3VfYXJlX3NhYm90YWdlZBgOIAEoCFIPeW91QXJlU2Fib3RhZ2VkEigKEGxvdmVy'
+    'X3BhcnRuZXJfaWQYDyABKAlSDmxvdmVyUGFydG5lcklkEjEKFXlvdV9tdXN0X3Rha2VfcmV2ZW'
+    '5nZRgQIAEoCFISeW91TXVzdFRha2VSZXZlbmdlSgQIAhADSgQIAxAESgQIBRAGSgQIBhAH');
 
 @$core.Deprecated('Use playerStatusDescriptor instead')
 const PlayerStatus$json = {
@@ -292,6 +323,7 @@ const PlayerStatus$json = {
     {'1': 'voted_for_target_id', '3': 5, '4': 1, '5': 9, '10': 'votedForTargetId'},
     {'1': 'role', '3': 6, '4': 1, '5': 14, '6': '.werewolf.Role', '10': 'role'},
     {'1': 'is_host', '3': 7, '4': 1, '5': 8, '10': 'isHost'},
+    {'1': 'avatar', '3': 8, '4': 1, '5': 9, '10': 'avatar'},
   ],
 };
 
@@ -300,7 +332,8 @@ final $typed_data.Uint8List playerStatusDescriptor = $convert.base64Decode(
     'CgxQbGF5ZXJTdGF0dXMSDgoCaWQYASABKAlSAmlkEhIKBG5hbWUYAiABKAlSBG5hbWUSGQoIaX'
     'NfYWxpdmUYAyABKAhSB2lzQWxpdmUSGwoJaGFzX3ZvdGVkGAQgASgIUghoYXNWb3RlZBItChN2'
     'b3RlZF9mb3JfdGFyZ2V0X2lkGAUgASgJUhB2b3RlZEZvclRhcmdldElkEiIKBHJvbGUYBiABKA'
-    '4yDi53ZXJld29sZi5Sb2xlUgRyb2xlEhcKB2lzX2hvc3QYByABKAhSBmlzSG9zdA==');
+    '4yDi53ZXJld29sZi5Sb2xlUgRyb2xlEhcKB2lzX2hvc3QYByABKAhSBmlzSG9zdBIWCgZhdmF0'
+    'YXIYCCABKAlSBmF2YXRhcg==');
 
 @$core.Deprecated('Use gameActionDescriptor instead')
 const GameAction$json = {
@@ -312,6 +345,8 @@ const GameAction$json = {
     {'1': 'seer', '3': 4, '4': 1, '5': 11, '6': '.werewolf.SeerAction', '9': 0, '10': 'seer'},
     {'1': 'fox', '3': 5, '4': 1, '5': 11, '6': '.werewolf.FoxAction', '9': 0, '10': 'fox'},
     {'1': 'hunter', '3': 6, '4': 1, '5': 11, '6': '.werewolf.HunterAction', '9': 0, '10': 'hunter'},
+    {'1': 'cupid', '3': 7, '4': 1, '5': 11, '6': '.werewolf.CupidAction', '9': 0, '10': 'cupid'},
+    {'1': 'saboteur', '3': 8, '4': 1, '5': 11, '6': '.werewolf.SaboteurAction', '9': 0, '10': 'saboteur'},
   ],
   '8': [
     {'1': 'action'},
@@ -324,8 +359,23 @@ final $typed_data.Uint8List gameActionDescriptor = $convert.base64Decode(
     'gLMhQud2VyZXdvbGYuVm90ZUFjdGlvbkgAUgR2b3RlEi0KBXdpdGNoGAMgASgLMhUud2VyZXdv'
     'bGYuV2l0Y2hBY3Rpb25IAFIFd2l0Y2gSKgoEc2VlchgEIAEoCzIULndlcmV3b2xmLlNlZXJBY3'
     'Rpb25IAFIEc2VlchInCgNmb3gYBSABKAsyEy53ZXJld29sZi5Gb3hBY3Rpb25IAFIDZm94EjAK'
-    'Bmh1bnRlchgGIAEoCzIWLndlcmV3b2xmLkh1bnRlckFjdGlvbkgAUgZodW50ZXJCCAoGYWN0aW'
-    '9u');
+    'Bmh1bnRlchgGIAEoCzIWLndlcmV3b2xmLkh1bnRlckFjdGlvbkgAUgZodW50ZXISLQoFY3VwaW'
+    'QYByABKAsyFS53ZXJld29sZi5DdXBpZEFjdGlvbkgAUgVjdXBpZBI2CghzYWJvdGV1chgIIAEo'
+    'CzIYLndlcmV3b2xmLlNhYm90ZXVyQWN0aW9uSABSCHNhYm90ZXVyQggKBmFjdGlvbg==');
+
+@$core.Deprecated('Use cupidActionDescriptor instead')
+const CupidAction$json = {
+  '1': 'CupidAction',
+  '2': [
+    {'1': 'player1_id', '3': 1, '4': 1, '5': 9, '10': 'player1Id'},
+    {'1': 'player2_id', '3': 2, '4': 1, '5': 9, '10': 'player2Id'},
+  ],
+};
+
+/// Descriptor for `CupidAction`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cupidActionDescriptor = $convert.base64Decode(
+    'CgtDdXBpZEFjdGlvbhIdCgpwbGF5ZXIxX2lkGAEgASgJUglwbGF5ZXIxSWQSHQoKcGxheWVyMl'
+    '9pZBgCIAEoCVIJcGxheWVyMklk');
 
 @$core.Deprecated('Use voteActionDescriptor instead')
 const VoteAction$json = {
@@ -377,6 +427,18 @@ const FoxAction$json = {
 final $typed_data.Uint8List foxActionDescriptor = $convert.base64Decode(
     'CglGb3hBY3Rpb24SHQoKdGFyZ2V0X2lkcxgBIAMoCVIJdGFyZ2V0SWRz');
 
+@$core.Deprecated('Use saboteurActionDescriptor instead')
+const SaboteurAction$json = {
+  '1': 'SaboteurAction',
+  '2': [
+    {'1': 'target_id', '3': 1, '4': 1, '5': 9, '10': 'targetId'},
+  ],
+};
+
+/// Descriptor for `SaboteurAction`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List saboteurActionDescriptor = $convert.base64Decode(
+    'Cg5TYWJvdGV1ckFjdGlvbhIbCgl0YXJnZXRfaWQYASABKAlSCHRhcmdldElk');
+
 @$core.Deprecated('Use hunterActionDescriptor instead')
 const HunterAction$json = {
   '1': 'HunterAction',
@@ -398,6 +460,8 @@ const ActionPrompt$json = {
     {'1': 'witch', '3': 3, '4': 1, '5': 11, '6': '.werewolf.WitchPrompt', '9': 0, '10': 'witch'},
     {'1': 'fox', '3': 4, '4': 1, '5': 11, '6': '.werewolf.FoxPrompt', '9': 0, '10': 'fox'},
     {'1': 'hunter', '3': 5, '4': 1, '5': 11, '6': '.werewolf.HunterPrompt', '9': 0, '10': 'hunter'},
+    {'1': 'saboteur', '3': 6, '4': 1, '5': 11, '6': '.werewolf.SaboteurPrompt', '9': 0, '10': 'saboteur'},
+    {'1': 'cupid', '3': 7, '4': 1, '5': 11, '6': '.werewolf.CupidPrompt', '9': 0, '10': 'cupid'},
   ],
   '8': [
     {'1': 'prompt'},
@@ -410,7 +474,9 @@ final $typed_data.Uint8List actionPromptDescriptor = $convert.base64Decode(
     '1wdEgAUgh3ZXJld29sZhIqCgRzZWVyGAIgASgLMhQud2VyZXdvbGYuU2VlclByb21wdEgAUgRz'
     'ZWVyEi0KBXdpdGNoGAMgASgLMhUud2VyZXdvbGYuV2l0Y2hQcm9tcHRIAFIFd2l0Y2gSJwoDZm'
     '94GAQgASgLMhMud2VyZXdvbGYuRm94UHJvbXB0SABSA2ZveBIwCgZodW50ZXIYBSABKAsyFi53'
-    'ZXJld29sZi5IdW50ZXJQcm9tcHRIAFIGaHVudGVyQggKBnByb21wdA==');
+    'ZXJld29sZi5IdW50ZXJQcm9tcHRIAFIGaHVudGVyEjYKCHNhYm90ZXVyGAYgASgLMhgud2VyZX'
+    'dvbGYuU2Fib3RldXJQcm9tcHRIAFIIc2Fib3RldXISLQoFY3VwaWQYByABKAsyFS53ZXJld29s'
+    'Zi5DdXBpZFByb21wdEgAUgVjdXBpZEIICgZwcm9tcHQ=');
 
 @$core.Deprecated('Use werewolfPromptDescriptor instead')
 const WerewolfPrompt$json = {
@@ -475,6 +541,30 @@ const HunterPrompt$json = {
 /// Descriptor for `HunterPrompt`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List hunterPromptDescriptor = $convert.base64Decode(
     'CgxIdW50ZXJQcm9tcHQSIwoNY2FuZGlkYXRlX2lkcxgBIAMoCVIMY2FuZGlkYXRlSWRz');
+
+@$core.Deprecated('Use saboteurPromptDescriptor instead')
+const SaboteurPrompt$json = {
+  '1': 'SaboteurPrompt',
+  '2': [
+    {'1': 'candidate_ids', '3': 1, '4': 3, '5': 9, '10': 'candidateIds'},
+  ],
+};
+
+/// Descriptor for `SaboteurPrompt`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List saboteurPromptDescriptor = $convert.base64Decode(
+    'Cg5TYWJvdGV1clByb21wdBIjCg1jYW5kaWRhdGVfaWRzGAEgAygJUgxjYW5kaWRhdGVJZHM=');
+
+@$core.Deprecated('Use cupidPromptDescriptor instead')
+const CupidPrompt$json = {
+  '1': 'CupidPrompt',
+  '2': [
+    {'1': 'candidate_ids', '3': 1, '4': 3, '5': 9, '10': 'candidateIds'},
+  ],
+};
+
+/// Descriptor for `CupidPrompt`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cupidPromptDescriptor = $convert.base64Decode(
+    'CgtDdXBpZFByb21wdBIjCg1jYW5kaWRhdGVfaWRzGAEgAygJUgxjYW5kaWRhdGVJZHM=');
 
 @$core.Deprecated('Use actionResultDescriptor instead')
 const ActionResult$json = {
@@ -587,13 +677,15 @@ const VoteResultEvent$json = {
   '2': [
     {'1': 'eliminated_player_id', '3': 1, '4': 1, '5': 9, '10': 'eliminatedPlayerId'},
     {'1': 'tied', '3': 2, '4': 1, '5': 8, '10': 'tied'},
+    {'1': 'also_died_ids', '3': 3, '4': 3, '5': 9, '10': 'alsoDiedIds'},
   ],
 };
 
 /// Descriptor for `VoteResultEvent`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List voteResultEventDescriptor = $convert.base64Decode(
     'Cg9Wb3RlUmVzdWx0RXZlbnQSMAoUZWxpbWluYXRlZF9wbGF5ZXJfaWQYASABKAlSEmVsaW1pbm'
-    'F0ZWRQbGF5ZXJJZBISCgR0aWVkGAIgASgIUgR0aWVk');
+    'F0ZWRQbGF5ZXJJZBISCgR0aWVkGAIgASgIUgR0aWVkEiIKDWFsc29fZGllZF9pZHMYAyADKAlS'
+    'C2Fsc29EaWVkSWRz');
 
 @$core.Deprecated('Use hunterShotEventDescriptor instead')
 const HunterShotEvent$json = {

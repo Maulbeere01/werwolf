@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:werwolf/controller/game_stream_controller.dart';
-import 'package:werwolf/no_server_connection.dart';
+import 'package:werwolf/controllers/game_stream_controller.dart';
+import 'package:werwolf/screens/no_server_connection.dart';
 
 /// Wraps a game screen and surfaces the stream's connection state on top of it:
 ///   - >= 3 s down  -> a small "reconnecting" spinner in the bottom-right corner

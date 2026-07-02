@@ -13,6 +13,17 @@ public class GameState {
     public Map<String, Player> players = new HashMap<>();
     public String lobbyCode;
     public Phase phase = Phase.LOBBY;
+
+    // Length of the DAY_DISCUSSION phase in seconds, taken from the lobby's
+    // discussion_time_seconds setting at game start
+    public long discussionSeconds = 0;
+
+    // Cupid: the two lovers (chosen on the first night). If one dies, so does the
+    // other. cupidDone guards that cupid only ever wakes once, even on a timeout.
+    public String loverA;
+    public String loverB;
+    public boolean cupidDone = false;
+
     // Player IDs marked for death during the current night. Witch can still remove entries
     // here before DAY_RESULT. At DAY_RESULT, process this list to set player.alive = false
     // and clear it for the next round
@@ -34,6 +45,16 @@ public class GameState {
     // The player the werewolves attacked this night; the witch may heal this id
     public String attackedThisNight;
 
+    public String sabotagedPlayerId;
+
+    // Hunter revenge (interrupt): when a hunter dies (any cause), pendingHunterId
+    // is set and the loop diverts into HUNTER_REVENGE before continuing where it
+    // would have gone (resumeAfterHunter). hunterShotTargetId holds the hunter's
+    // pick until it is resolved when that phase ends.
+    public String pendingHunterId;
+    public Phase resumeAfterHunter;
+    public String hunterShotTargetId;
+
     // Committed werewolf night votes for NIGHT_WEREWOLVES: voterId -> targetId.
     // A vote is final once placed (commit) and is resolved into attackedThisNight
     // when the phase ends. Cleared when the phase starts.
@@ -46,7 +67,15 @@ public class GameState {
     public boolean witchHasHealPotion = true;
     public boolean witchHasPoisonPotion = true;
 
-    // The team that has met its win condition once the game reaches GAME_END
-    // (WEREWOLF or VILLAGER); null while the game is still running.
+    // The fox keeps its power until a night where none of its three
+    // targets was a werewolf; from then on the NIGHT_FOX phase is skipped.
+    public boolean foxHasPower = true;
+
+    // The team that has met its win condition (WEREWOLF or VILLAGER); null while
+    // the game is still undecided. Normally set together with phase = GAME_END
+    // (see concludeGame). The one exception is a win decided by the night's deaths:
+    // it is recorded here while the phase is still DAY_RESULT so the morning reveal
+    // narration can play, and the loop concludes to GAME_END on the next tick (see
+    // the deferred-win guard in GameLoopService.tickLoop).
     public Role winningTeam;
 }
